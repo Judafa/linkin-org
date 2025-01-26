@@ -1,7 +1,7 @@
-;;; linkinorg.el --- Use fast and robust links in org mode
+;;; linkin-org.el --- Use fast and robust links in org mode
 
 ;; Author: Julien Dallot <judafa@protonmail.com>
-;; URL: https://github.com/Judafa/linkinorg
+;; URL: https://github.com/Judafa/linkin-org
 ;; Version: 0.1
 
 ;; This file is not part of GNU Emacs
@@ -37,7 +37,7 @@
 
 
 ;; this is the pattern for the id of a file
-(defconst linkinorg-id-pattern
+(defconst linkin-org-id-pattern
   (rx
    (or
     (seq (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit) "--")
@@ -60,22 +60,6 @@ the original string as the first part and nil as the second part."
         (list (substring input 0 index) (substring input index))
       (list input nil))))
 
-;; (setq link-id-pattern (rx
-;; 		       (= 4 digit)
-;; 		       (or "-" "")
-;; 		       (= 2 digit)
-;; 		       (or "-" "")
-;; 		       (= 2 digit)
-;; 		       (or "--" "T")
-;; 		       (= 2 digit)
-;; 		       (or ":" "")
-;; 		       (= 2 digit)
-;; 		       (or ":" "")
-;; 		       (= 2 digit)
-;; 		       (or "" (seq "--" (= 5 digit)))
-;; 		       (or "===" "--")
-;; 		       )
-;;       )
 
 (defun my/get-file-name-id (file-name)
   "tell if a file name has an id, returns the id string if yes, nil otherwise"
