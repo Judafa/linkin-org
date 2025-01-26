@@ -823,11 +823,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
-(nvmap :keymaps 'override :prefix "SPC"
-  "y"   '(copie-dans-presse-papier
-	  :which-key "Copie la chose sous le curseur dans presse-papier")
-  )
-
 (setq my/open-org-link-other-frame t)
 (setq my/open-org-link-in-dired t)
 
