@@ -642,9 +642,14 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 		  nil
 		  )
 		)
-
 	 )
     (other-window 1)
+
+    ;; deselect the text, if there is an active region
+    (if (pdf-view-active-region-p)
+	(pdf-view-deactivate-region)
+      )
+
     (if (and selected-text edges)
 	(progn
 	 (let*
