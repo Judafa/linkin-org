@@ -35,6 +35,7 @@
 ;; (require 'org)
 
 
+(require 'pdf-tools)
 
 ;; this is the pattern for the id of a file
 (defconst linkin-org-id-pattern
@@ -64,9 +65,9 @@ the original string as the first part and nil as the second part."
 (defun my/get-file-name-id (file-name)
   "tell if a file name has an id, returns the id string if yes, nil otherwise"
   (interactive)
-  (if (string-match link-id-pattern file-name)
+  (if (string-match linkin-org-id-pattern file-name)
       ;; this function returns a list of list of strings
-      (car (car (s-match-strings-all link-id-pattern file-name)))
+      (car (car (s-match-strings-all linkin-org-id-pattern file-name)))
     nil
     )
   )
@@ -74,9 +75,9 @@ the original string as the first part and nil as the second part."
 (defun my/remove-id-from-file-name (file-name)
   "take a file name and strip off the id part"
   (interactive)
-  (if (string-match link-id-pattern file-name)
+  (if (string-match linkin-org-id-pattern file-name)
       ;; this function returns a list of list of strings
-      (replace-regexp-in-string link-id-pattern "" file-name)
+      (replace-regexp-in-string linkin-org-id-pattern "" file-name)
     file-name
     )
   )
@@ -491,7 +492,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	 ;; for the edges
 	 (edges-str (car (cdr (cdr path+page+edges))))
 	 ;; separate the edges by |
-	 (edges-list-str (unless (not edges-str) (split-string edges-str "|")))
+	 (edges-list-str (unless (not edges-str) (split-string edges-str ";")))
 	 ;; convert from string to int, get a list of four floating points numbers, that's the edges
 	 (edges-list (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str))))
 	 )
@@ -651,7 +652,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	      ;; edges are actually outputed as a list of Lists-trees
 	      (edges (car edges))
 	      ;; concat the edges with |
-	      (string-edges (mapconcat #'prin1-to-string edges "|"))
+	      (string-edges (mapconcat #'prin1-to-string edges ";"))
 	      )
 	   (format "[[pdf:%s::%s::%s][[pdf] %s _ p%s _ \"%s\"]]" file page string-edges nom-fichier-tronque page selected-text-tronque)
 	   )
@@ -823,11 +824,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
-(nvmap :keymaps 'override :prefix "SPC"
-  "y"   '(copie-dans-presse-papier
-	  :which-key "Copie la chose sous le curseur dans presse-papier")
-  )
-
 (setq my/open-org-link-other-frame t)
 (setq my/open-org-link-in-dired t)
 
@@ -881,6 +877,21 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
   )
 
+
+;; code to yank the link of a given file
+(defun linkin-org-yank-link-of-file (file-path)
+  ;; check if the dired buffer containing that file is already open
+  (save-excursion
+    ;; go to the dired buffer with point on the file
+    (dired-jump nil file-path)
+    ;; yank the link
+    (my/dired-lien-court)
+    ;; close the dired buffer
+    (kill-buffer)
+    )
+  )
+
+
 (defun my/open-link-directly-other-frame ()
   (interactive)
   (setq my/open-org-link-in-dired nil)
@@ -891,23 +902,5 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 
-;; (nvmap :keymaps 'override
-;;   "C-;"   '(my/open-link-in-dired-other-frame :which-key "Ouvre la chose sous le curseur dans dired, dans une autre frame")
-;;   "C-:"   '(my/open-link-directly-other-frame :which-key "Ouvre la chose sous le curseur dans une autre frame")
-;;   ;; ";"   '(ouvre-lien-dans-dired-dans-autre-cadre :which-key "Ouvre la chose sous le curseur dans dired")
-;;   ;; ":"   '(ouvre-lien-dans-autre-cadre :which-key "Ouvre la chose sous le curseur dans une autre frame")
-;;   ;; "C-;"   '(org-open-at-point-global :which-key "Ouvre la chose sous le curseur")
-;;   )
 
-
-(nvmap :keymaps 'override
-  "g f"   '(my/open-link-in-dired-other-frame :which-key "Ouvre la chose sous le curseur dans dired, dans une autre frame")
-  )
-
-(nvmap :keymaps 'override :prefix "SPC"
-  ";"   '(my/open-link-in-dired-other-frame :which-key "Ouvre la chose sous le curseur dans dired, dans une autre frame")
-  ":"   '(my/open-link-directly-other-frame :which-key "Ouvre la chose sous le curseur dans une autre frame")
-  ;; ";"   '(ouvre-lien-dans-dired-dans-autre-cadre :which-key "Ouvre la chose sous le curseur dans dired")
-  ;; ":"   '(ouvre-lien-dans-autre-cadre :which-key "Ouvre la chose sous le curseur dans une autre frame")
-  "C-;"   '(org-open-at-point-global :which-key "Ouvre la chose sous le curseur")
-  )
+(provide 'linkin-org)
