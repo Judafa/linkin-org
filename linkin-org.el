@@ -120,13 +120,11 @@ the original string as the first part and nil as the second part."
 (defun find-first-matching-file (prefix dir)
   "Use ripgrep (rg) to find the first file matching PREFIX in DIR recursively.
 Returns the file path as a string or nil if not found."
-  (let (
-	(
-	 rg-command (format "rg -g \"%s*\" --files %s | head -n 1" prefix dir
-			    )
-		    )
-	(file-path "tmp")
-	)
+  (let* (
+	 (dir (expand-file-name dir))
+	 (rg-command (format "(rg -g \"%s*\" --files %s & find \"%s\" -type d -name \"%s*\") | head -n 1" prefix dir dir prefix))
+	 file-path
+	 )
     (message "rg-command: %s" rg-command)
     (with-temp-buffer
       (call-process-shell-command rg-command nil (current-buffer) nil)
