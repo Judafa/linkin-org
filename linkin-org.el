@@ -324,6 +324,76 @@ the original string as the first part and nil as the second part."
     )
   )
 
+;; ---------------------------------- file link
+
+;; rewriting org-link-open since they do some special treatment for file type links
+(defun org-link-open (link &optional arg)
+  "Open a link object LINK.
+
+ARG is an optional prefix argument.  Some link types may handle
+it.  For example, it determines what application to run when
+opening a \"file\" link.
+
+Functions responsible for opening the link are either hard-coded
+for internal and \"file\" links, or stored as a parameter in
+`org-link-parameters', which see."
+  (let ((type (org-element-property :type link))
+	(path (org-element-property :path link)))
+    (pcase type
+      ;; Opening a "file" link requires special treatment since we
+      ;; first need to integrate search option, if any.
+      ("file"
+       (let* ((option (org-element-property :search-option link))
+	      (path (if option (concat path "::" option) path)))
+
+
+	 ;; Start of changes
+	 ;; (org-link-open-as-file path
+	 ;; 			(pcase (org-element-property :application link)
+	 ;; 			  ((guard arg) arg)
+	 ;; 			  ("emacs" 'emacs)
+	 ;; 			  ("sys" 'system)))))
+	 (linkin-org-open-file-as-in-dired path)
+	 )
+       )
+      ;; End of changes
+
+      ;; Internal links.
+      ((or "coderef" "custom-id" "fuzzy" "radio")
+       (unless (run-hook-with-args-until-success 'org-open-link-functions path)
+	 (if (not arg) (org-mark-ring-push)
+	   (switch-to-buffer-other-window (org-link--buffer-for-internals)))
+	 (let ((destination
+		(org-with-wide-buffer
+		 (if (equal type "radio")
+		     (org-link--search-radio-target path)
+		   (org-link-search
+		    (pcase type
+		      ("custom-id" (concat "#" path))
+		      ("coderef" (format "(%s)" path))
+		      (_ path))
+		    ;; Prevent fuzzy links from matching themselves.
+		    (and (equal type "fuzzy")
+			 (+ 2 (org-element-begin link)))))
+		 (point))))
+	   (unless (and (<= (point-min) destination)
+			(>= (point-max) destination))
+	     (widen))
+	   (goto-char destination))))
+      (_
+       ;; Look for a dedicated "follow" function in custom links.
+       (let ((f (org-link-get-parameter type :follow)))
+	 (when (functionp f)
+	   ;; Function defined in `:follow' parameter may use a single
+	   ;; argument, as it was mandatory before Org 9.4.  This is
+	   ;; deprecated, but support it for now.
+	   (condition-case nil
+	       (funcall f path arg)
+	     (wrong-number-of-arguments
+	      (funcall f path)))))))))
+
+
+;; ---------------------------------- music link
 (org-add-link-type "mpd" 'org-mpd-open nil)
 ;; ishould use this instead
 ;; (org-link-set-parameters TYPE &rest PARAMETERS)
@@ -474,13 +544,14 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
+;; ---------------------------------- pdf link
 (org-add-link-type "pdf" 'org-pdf-open nil)
 ;; (setq my/open-pdf-link-other-frame nil)
 ;; (org-link-set-parameters "pdf" (:follow 'org-pdf-open))
 
 (defun org-pdf-open (link)
-  "Where page number is 105, the link should look like:
-   [[pdf:/path/to/file.pdf::105::((e1 e2 e3 e4))][My description.]]"
+  "Where page number is 105 and the positions to hightlight on the page are e1, e2, e3, e4, then the link should look like:
+   [[pdf:/path/to/file.pdf::105::e1;e2;e3;e4][My description.]]"
   (let* (
 	 (path+page+edges (split-string link "::"))
 	 ;; for the pdf file path
@@ -492,7 +563,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	 ;; for the edges
 	 (edges-str (car (cdr (cdr path+page+edges))))
 	 ;; separate the edges by |
-	 (edges-list-str (unless (not edges-str) (split-string edges-str ";")))
+	 (edges-list-str (unless (not edges-str) (split-string edges-str "[;|]")))
 	 ;; convert from string to int, get a list of four floating points numbers, that's the edges
 	 (edges-list (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str))))
 	 )
@@ -539,7 +610,8 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
                      )
 
 		;; switch to the frame
-		(select-frame-set-input-focus (window-frame pdf-window))
+		;; (select-frame-set-input-focus (window-frame pdf-window))
+		(select-frame (window-frame pdf-window))
 		;; switch to the window
 		(select-window pdf-window)
 
@@ -553,7 +625,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 		;; 	 (pixel-match (pdf-util-scale-relative-to-pixel edges-list))
 		;; 	 )
 		;;       (pdf-isearch-focus-match-batch pixel-match)
-		;;       ;; dont forget to scale the edges to the current display!
+		;;     
 		;;       (pdf-isearch-hl-matches pixel-match nil t)
 		;;       )
 		;;   ;; else, just go to the page
@@ -668,6 +740,8 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
+
+;; ---------------------------------- video link
 (org-add-link-type "video" 'org-video-open nil)
 
 (defun my/is-url (string)
@@ -780,6 +854,9 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     (kill-new (format "[[file:%s][[file] %s]]" chemin-fichier nom-fichier)))
   )
 
+
+;; ---------------------------------- general purpose functions
+
 ;; just take a list of two strings and make a link
 (defun take-list-of-two-strings-and-make-link (l &optional description)
   (if description
@@ -891,6 +968,18 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     (dired-jump nil file-path)
     ;; yank the link
     (my/dired-lien-court)
+    ;; close the dired buffer
+    (kill-buffer)
+    )
+  )
+
+;; to open a file as if it was opened from dired
+(defun linkin-org-open-file-as-in-dired (file-path)
+  (save-excursion
+    ;; go to the dired buffer with point on the file
+    (dired-jump nil file-path)
+    ;; open the file
+    (dired-open-file)
     ;; close the dired buffer
     (kill-buffer)
     )
