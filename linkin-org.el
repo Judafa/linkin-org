@@ -326,6 +326,59 @@ the original string as the first part and nil as the second part."
 
 ;; ---------------------------------- file link
 
+
+
+;; pour copier un lien vers le fichier texte courant
+(defun my/lien-fichier-et-ligne-du-curseur ()
+  (interactive)
+  (let*
+      (
+       (chemin-fichier-actuel (abbreviate-file-name (buffer-file-name)))
+       (nom-fichier-actuel-sans-chemin (file-name-nondirectory chemin-fichier-actuel))
+       (ligne-actuelle (line-number-at-pos))
+       (lien (format "[[file:%s::%d][[file] %s _ l%d]]"
+		     chemin-fichier-actuel
+		     ligne-actuelle
+		     nom-fichier-actuel-sans-chemin
+		     ligne-actuelle
+		     )
+	     )
+       )
+    lien
+    )
+  )
+
+;; Pour créer un lien org vers le fichier sous le curseur
+;; place le lien dans le kill ring
+(defun my/dired-lien-court ()
+  (interactive)
+  (let* (
+         (chemin-fichier (abbreviate-file-name (dired-file-name-at-point)))
+	 ;; le nom du fichier sans le chemin
+	 (nom-fichier
+	  ;; if the file under point is a directory
+	  (if (file-directory-p chemin-fichier)
+	      ;; remove the trailing slash, get the name of the directory
+	      (file-name-nondirectory (directory-file-name chemin-fichier))
+	    ;; else if it's a file
+	   (file-name-nondirectory chemin-fichier)
+	   )
+	  )
+	 ;; le nom du fichier sans l'id, si il y a id
+	 (nom-fichier (my/remove-id-from-file-name nom-fichier))
+	 (nom-fichier-sans-ext (file-name-sans-extension nom-fichier))
+	 (extension (file-name-extension nom-fichier))
+	 ;; tronque le nom du fichier s'il est trop long
+	 (nom-fichier (if (> (length nom-fichier) 70)
+                          (concat (substring nom-fichier-sans-ext 0 50)  " [___] " "." extension)
+			nom-fichier)
+		      )
+	 )
+    (kill-new (format "[[file:%s][[file] %s]]" chemin-fichier nom-fichier)))
+  )
+
+
+
 ;; rewriting org-link-open since they do some special treatment for file type links
 (defun org-link-open (link &optional arg)
   "Open a link object LINK.
@@ -805,56 +858,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 ;; Fonction polymorphe (dépendante du mode majeur) pour copier la chose sous le curseur dans le presse-papier
 
 
-;; pour copier un lien vers le fichier texte courant
-(defun my/lien-fichier-et-ligne-du-curseur ()
-  (interactive)
-  (let*
-      (
-       (chemin-fichier-actuel (abbreviate-file-name (buffer-file-name)))
-       (nom-fichier-actuel-sans-chemin (file-name-nondirectory chemin-fichier-actuel))
-       (ligne-actuelle (line-number-at-pos))
-       (lien (format "[[file:%s::%d][[file] %s _ l%d]]"
-		     chemin-fichier-actuel
-		     ligne-actuelle
-		     nom-fichier-actuel-sans-chemin
-		     ligne-actuelle
-		     )
-	     )
-       )
-    lien
-    )
-  )
-
-;; Pour créer un lien org vers le fichier sous le curseur
-;; place le lien dans le kill ring
-(defun my/dired-lien-court ()
-  (interactive)
-  (let* (
-         (chemin-fichier (abbreviate-file-name (dired-file-name-at-point)))
-	 ;; le nom du fichier sans le chemin
-	 (nom-fichier
-	  ;; if the file under point is a directory
-	  (if (file-directory-p chemin-fichier)
-	      ;; remove the trailing slash, get the name of the directory
-	      (file-name-nondirectory (directory-file-name chemin-fichier))
-	    ;; else if it's a file
-	   (file-name-nondirectory chemin-fichier)
-	   )
-	  )
-	 ;; le nom du fichier sans l'id, si il y a id
-	 (nom-fichier (my/remove-id-from-file-name nom-fichier))
-	 (nom-fichier-sans-ext (file-name-sans-extension nom-fichier))
-	 (extension (file-name-extension nom-fichier))
-	 ;; tronque le nom du fichier s'il est trop long
-	 (nom-fichier (if (> (length nom-fichier) 70)
-                          (concat (substring nom-fichier-sans-ext 0 50)  " [___] " "." extension)
-			nom-fichier)
-		      )
-	 )
-    (kill-new (format "[[file:%s][[file] %s]]" chemin-fichier nom-fichier)))
-  )
-
-
 ;; ---------------------------------- general purpose functions
 
 ;; just take a list of two strings and make a link
@@ -960,31 +963,54 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 
+
+;; to do an action on a file as if the point was on that file in dired
+(defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
+  (save-excursion
+    (let*
+	(
+	 ;; get the full path
+	 (file-path (expand-file-name file-path))
+	 ;; get the list of dired buffer that already visit the directory of the file
+	 (dired-buffers-visiting-path (dired-buffers-for-dir (file-name-directory file-path)))
+	 ;; create a dired buffer visiting the directory of the file (or get the name of it if it already exists)
+	 (dired-buffer (dired-noselect (file-name-directory file-path)))
+	 )
+      (with-current-buffer dired-buffer
+	(let
+	    (
+	     ;; create a clone of the dired buffer
+	     (cloned-dired-buffer (clone-buffer))
+	     )
+	  ;; switch to the cloned dired buffer
+	  (switch-to-buffer cloned-dired-buffer)
+	  ;; update the cloned dired buffer
+	  (revert-buffer)
+	  ;; place the point on the file
+	  (dired-goto-file file-path)
+	  ;; do the function
+	  (funcall function-to-perform)
+	  ;; kill the cloned dired buffer
+	  (kill-buffer cloned-dired-buffer)
+	  )
+	)
+      ;; close the dired buffer if it was open in the first place
+      (unless dired-buffers-visiting-path
+	(kill-buffer dired-buffer)
+	)
+      )
+    )
+  )
+
+;; to open a file as if 
+(defun linkin-org-open-file-as-in-dired (file-path)
+  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+  )
+
 ;; code to yank the link of a given file
 (defun linkin-org-yank-link-of-file (file-path)
-  ;; check if the dired buffer containing that file is already open
-  (save-excursion
-    ;; go to the dired buffer with point on the file
-    (dired-jump nil file-path)
-    ;; yank the link
-    (my/dired-lien-court)
-    ;; close the dired buffer
-    (kill-buffer)
-    )
+  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'my/dired-lien-court)
   )
-
-;; to open a file as if it was opened from dired
-(defun linkin-org-open-file-as-in-dired (file-path)
-  (save-excursion
-    ;; go to the dired buffer with point on the file
-    (dired-jump nil file-path)
-    ;; open the file
-    (dired-open-file)
-    ;; close the dired buffer
-    (kill-buffer)
-    )
-  )
-
 
 (defun my/open-link-directly-other-frame ()
   (interactive)
