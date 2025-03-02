@@ -490,13 +490,17 @@ for internal and \"file\" links, or stored as a parameter in
 	 )
     ;; (linkin-org-open-file-as-in-dired file-path)
     ;; (find-file file-path)
-    
-    (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
-    (when line-number
-      (goto-line (string-to-number line-number))
-      )
-    (when column-number
-      (move-to-column (string-to-number column-number))
+    (if (file-exists-p file-path)
+	(progn
+	  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+	  (when line-number
+	    (goto-line (string-to-number line-number))
+	    )
+	  (when column-number
+	    (move-to-column (string-to-number column-number))
+	    )
+	  )
+      (message "Neither the file nor the id could be found")
       )
     )
   )
