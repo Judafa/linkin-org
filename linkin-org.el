@@ -116,6 +116,30 @@ the original string as the first part and nil as the second part."
    )
   )
 
+
+(defun find-first-matching-file (prefix dir)
+  "Use ripgrep (rg) to find the first file matching PREFIX in DIR recursively.
+Returns the file path as a string or nil if not found."
+  (let (
+	(
+	 rg-command (format "rg -g \"%s*\" --files %s | head -n 1" prefix dir
+			    )
+		    )
+	(file-path "tmp")
+	)
+    (message "rg-command: %s" rg-command)
+    (with-temp-buffer
+      (call-process-shell-command rg-command nil (current-buffer) nil)
+      (unless (zerop (buffer-size))
+        ;; (setq file-path (car (string-lines (buffer-string))))
+        (setq file-path (buffer-string))
+	)
+      )
+    file-path
+    )
+  )
+
+
 (defun linkin-org-is-link-path-correct (file-path)
   "returns the path to the file if it exists, use id utlimately to find the file"
   ;; (message (concat "the file name : " file-path))
@@ -157,30 +181,30 @@ the original string as the first part and nil as the second part."
       ;; (message (concat "the file name : " file-name))
       ;; (message (concat "the file id : " id-of-file-name))
       ;; try to find the lost file only if it has an id
-      (if id-of-file-name
-	  ;; list all files in the file directory
-	  (dolist
-	      ;; third t in directory-files-recursively is to include directories
-	      (tmp-file (directory-files-recursively file-dir ".*" t t) result)
-	    ;; Ensure the file or directory exists
-	    (let
-		(
-		 (tmp-file-name
-		  (if (equal (file-name-directory tmp-file) tmp-file)
-		      ;; if the file path is a directory
-		      (file-name-nondirectory (directory-file-name tmp-file))
-		    ;; else if the file path is a file
-		    (file-name-nondirectory tmp-file)
-		    )
-		  )
-		 )
-	     (when (and (file-exists-p tmp-file)
-			(string-prefix-p id-of-file-name tmp-file-name)
-			)
-               (setq result tmp-file)
-	       )
-	     )
-	    )
+      (if id-of-file-name (find-first-matching-file id-of-file-name file-dir)
+	  ;; ;; list all files in the file directory
+	  ;; (dolist
+	  ;;     ;; third t in directory-files-recursively is to include directories
+	  ;;     (tmp-file (directory-files-recursively file-dir ".*" t t) result)
+	  ;;   ;; Ensure the file or directory exists
+	  ;;   (let
+	  ;; 	(
+	  ;; 	 (tmp-file-name
+	  ;; 	  (if (equal (file-name-directory tmp-file) tmp-file)
+	  ;; 	      ;; if the file path is a directory
+	  ;; 	      (file-name-nondirectory (directory-file-name tmp-file))
+	  ;; 	    ;; else if the file path is a file
+	  ;; 	    (file-name-nondirectory tmp-file)
+	  ;; 	    )
+	  ;; 	  )
+	  ;; 	 )
+	  ;;    (when (and (file-exists-p tmp-file)
+	  ;; 		(string-prefix-p id-of-file-name tmp-file-name)
+	  ;; 		)
+          ;;      (setq result tmp-file)
+	  ;;      )
+	  ;;    )
+	  ;;   )
 	)
       )
     )
@@ -375,7 +399,16 @@ the original string as the first part and nil as the second part."
 			nom-fichier)
 		      )
 	 )
-    (kill-new (format "[[file:%s][[file] %s]]" chemin-fichier nom-fichier)))
+    (if nom-fichier
+	;; if it's a file, not a directory
+	(kill-new (format "[[file:%s][[file] %s]]" chemin-fichier nom-fichier)))
+    ;; otherwise, remove the trailing slash
+    (let* (
+	   (directory-name-without-slash (directory-file-name chemin-fichier))
+	   )
+      (kill-new (format "[[file:%s][[file] %s]]" directory-name-without-slash nom-fichier))
+    )
+  )
   )
 
 
