@@ -640,18 +640,18 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
        (track-path
 	(simple-mpc-query-get-%file%-for-result
 	 (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-	
-	;; remove the folder part and the extension
-	(title
-	 (file-name-nondirectory (file-name-sans-extension track-path))
-	 )
 	)
-       (format
-	"[[mpd:(\"%s\")::00:00:00][[music] %s]]"
-	track-path
-	title
+	
+       ;; remove the folder part and the extension
+       (title
+	(file-name-nondirectory (file-name-sans-extension track-path))
 	)
        )
+    (format
+     "[[mpd:(\"%s\")::00:00:00][[music] %s]]"
+     track-path
+     title
+     )
     )
   )
 
