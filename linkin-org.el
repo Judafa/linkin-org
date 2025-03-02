@@ -62,7 +62,7 @@ the original string as the first part and nil as the second part."
       (list input nil))))
 
 
-(defun my/get-file-name-id (file-name)
+(defun linkin-org-get-file-name-id (file-name)
   "tell if a file name has an id, returns the id string if yes, nil otherwise"
   (interactive)
   (if (string-match linkin-org-id-pattern file-name)
@@ -72,7 +72,7 @@ the original string as the first part and nil as the second part."
     )
   )
 
-(defun my/remove-id-from-file-name (file-name)
+(defun linkin-org-remove-id-from-file-name (file-name)
   "take a file name and strip off the id part"
   (interactive)
   (if (string-match linkin-org-id-pattern file-name)
@@ -82,7 +82,7 @@ the original string as the first part and nil as the second part."
     )
   )
 
-(defun my/transform-square-brackets (str)
+(defun linkin-org-transform-square-brackets (str)
   "Unescape occurrences of '\\\\', '\\[', and '\\]' in INPUT string."
   (let
       ((new-string
@@ -116,7 +116,7 @@ the original string as the first part and nil as the second part."
    )
   )
 
-(defun my/is-link-path-correct (file-path)
+(defun linkin-org-is-link-path-correct (file-path)
   "returns the path to the file if it exists, use id utlimately to find the file"
   ;; (message (concat "the file name : " file-path))
   ;; (message (concat "the file name : " file-path))
@@ -148,7 +148,7 @@ the original string as the first part and nil as the second part."
 	      )
 	    )
 	   ;; get the id of the file, if it has one
-	   (id-of-file-name (my/get-file-name-id file-name))
+	   (id-of-file-name (linkin-org-get-file-name-id file-name))
 	   result
 	   )
 
@@ -191,7 +191,7 @@ the original string as the first part and nil as the second part."
    )
   )
 
-(defun my/org-link-escape (link-string)
+(defun linkin-org-link-escape (link-string)
   (replace-regexp-in-string
    (rx (seq (group (zero-or-more "\\")) (group (or string-end (any "[]")))))
    (lambda (m)
@@ -201,7 +201,7 @@ the original string as the first part and nil as the second part."
    link-string nil t 1)
   )
 
-(defun my/turn-link-into-correct-one (link-string)
+(defun linkin-org-turn-link-into-correct-one (link-string)
   "take a link as a string and returns the same link but with a correct path"
 
   ;; get the link's type
@@ -226,10 +226,10 @@ the original string as the first part and nil as the second part."
 	     (link-metadata (car (cdr (split-string-at-double-colon link-raw-path))))
 	     ;; if the link has a path, then change it to the correct path
 	     (new-link-path (if link-path
-				(my/is-link-path-correct link-path))
+				(linkin-org-is-link-path-correct link-path))
 			    )
 	     ;; rebuild the link's correct path and metadata
-	     (new-link-path (my/org-link-escape (concat new-link-path link-metadata)))
+	     (new-link-path (linkin-org-link-escape (concat new-link-path link-metadata)))
 	     ;; build a new link based on that path
 	     (new-link-string (concat "[[" link-type ":" new-link-path "]]"))
 
@@ -257,7 +257,7 @@ the original string as the first part and nil as the second part."
 	   (link-raw-path (org-element-property :path link))
 	   ;; if the link has a path, then change it to the correct path
 	   (new-link-path (if link-raw-path
-			      (my/is-link-path-correct link-raw-path))
+			      (linkin-org-is-link-path-correct link-raw-path))
 			  )
 	   ;; build a new link based on that path
 	   (new-link
@@ -275,7 +275,7 @@ the original string as the first part and nil as the second part."
     )
   )
 
-(defun my/get-org-link-string-under-point ()
+(defun linkin-org-get-org-link-string-under-point ()
   "returns the string of an org link under point, returns nil if no link was found"
   (interactive)
   (if (org-in-regexp
@@ -292,13 +292,13 @@ the original string as the first part and nil as the second part."
     )
   )
 
-(defun my/org-open-link-at-point ()
+(defun linkin-org-open-link-at-point ()
   (interactive)
   (if-let (
 	   ;; get the link under point in string form
-	   (link-string (my/get-org-link-string-under-point))
+	   (link-string (linkin-org-get-org-link-string-under-point))
 	   ;; change the string link into a correct link (with correct path, following id)
-	   (new-link-string (my/turn-link-into-correct-one link-string))
+	   (new-link-string (linkin-org-turn-link-into-correct-one link-string))
 	   )
       (progn
 	(with-temp-buffer
@@ -317,11 +317,12 @@ the original string as the first part and nil as the second part."
   )
 
 ;; tries to open the link under point, otherwise fallback to org-open-at-point-global
-(defun my/org-open-at-point ()
+(defun linkin-org-open-at-point ()
   (interactive)
-  (unless (my/org-open-link-at-point)
-    (org-open-at-point-global)
-    )
+  (linkin-org-open-link-at-point)
+  ;; (unless (linkin-org-open-link-at-point)
+  ;;   (org-open-at-point-global)
+  ;;   )
   )
 
 ;; ---------------------------------- file link
@@ -329,7 +330,7 @@ the original string as the first part and nil as the second part."
 
 
 ;; pour copier un lien vers le fichier texte courant
-(defun my/lien-fichier-et-ligne-du-curseur ()
+(defun linkin-org-lien-fichier-et-ligne-du-curseur ()
   (interactive)
   (let*
       (
@@ -350,7 +351,7 @@ the original string as the first part and nil as the second part."
 
 ;; Pour créer un lien org vers le fichier sous le curseur
 ;; place le lien dans le kill ring
-(defun my/dired-lien-court ()
+(defun linkin-org-dired-get-link ()
   (interactive)
   (let* (
          (chemin-fichier (abbreviate-file-name (dired-file-name-at-point)))
@@ -365,7 +366,7 @@ the original string as the first part and nil as the second part."
 	   )
 	  )
 	 ;; le nom du fichier sans l'id, si il y a id
-	 (nom-fichier (my/remove-id-from-file-name nom-fichier))
+	 (nom-fichier (linkin-org-remove-id-from-file-name nom-fichier))
 	 (nom-fichier-sans-ext (file-name-sans-extension nom-fichier))
 	 (extension (file-name-extension nom-fichier))
 	 ;; tronque le nom du fichier s'il est trop long
@@ -396,8 +397,10 @@ for internal and \"file\" links, or stored as a parameter in
       ;; Opening a "file" link requires special treatment since we
       ;; first need to integrate search option, if any.
       ("file"
-       (let* ((option (org-element-property :search-option link))
-	      (path (if option (concat path "::" option) path)))
+       (let* (
+	      (option (org-element-property :search-option link))
+	      (path (if option (concat path "::" option) path))
+	      )
 
 
 	 ;; Start of changes
@@ -406,7 +409,8 @@ for internal and \"file\" links, or stored as a parameter in
 	 ;; 			  ((guard arg) arg)
 	 ;; 			  ("emacs" 'emacs)
 	 ;; 			  ("sys" 'system)))))
-	 (linkin-org-open-file-as-in-dired path)
+	 ;; (linkin-org-open-file-as-in-dired path)
+	 (linkin-org-file-open path)
 	 )
        )
       ;; End of changes
@@ -445,6 +449,26 @@ for internal and \"file\" links, or stored as a parameter in
 	     (wrong-number-of-arguments
 	      (funcall f path)))))))))
 
+(defun linkin-org-file-open (link)
+  "Open the file at LINK."
+  (let* (
+	 (link-parts (split-string link "::"))
+	 (file-path (car link-parts))
+	 (line-number (cadr link-parts))
+	 (column-number (caddr link-parts))
+	 )
+    ;; (linkin-org-open-file-as-in-dired file-path)
+    ;; (find-file file-path)
+    
+    (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+    (when line-number
+      (goto-line (string-to-number line-number))
+      )
+    (when column-number
+      (move-to-column (string-to-number column-number))
+      )
+    )
+  )
 
 ;; ---------------------------------- music link
 (org-add-link-type "mpd" 'org-mpd-open nil)
@@ -484,7 +508,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 ;; code that takes a mpd entry list (with file, title, etc) and returns the title
-(defun my/get-mpd-track-title (lst)
+(defun linkin-org-get-mpd-track-title (lst)
   "Return the element after 'Title if present in LST, else the element after 'file."
   (let ((title-pos (cl-position 'Title lst))
         (file-pos (cl-position 'file lst)))
@@ -523,7 +547,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
 
 ;; build the link
-(defun my/lien-mpd-mingus ()
+(defun linkin-org-lien-mpd-mingus ()
   (interactive)
   (let* (
 	 (list-songs
@@ -546,7 +570,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	    (
 	     ;; get the file name of the first song
 	     (title (if list-songs
-			(my/get-mpd-track-title (car
+			(linkin-org-get-mpd-track-title (car
 						 (mpd-get-playlist-entry
 						  mpd-inter-conn
 						  (car (last mingus-marked-list))
@@ -560,46 +584,47 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	 (format
 	  ;; "[[mpd:%s::00:00:00][[music] %s _ 00:00]]"
 	  "[[mpd:%s::00:00:00][[music] %s]]"
-	  (my/transform-square-brackets (prin1-to-string list-songs))
+	  (linkin-org-transform-square-brackets (prin1-to-string list-songs))
 	  title
 	  )
 	 )
       ;; else
       (let (
 	    (track-path (nth 1 (mingus-get-details)))
-	    (title (my/get-mpd-track-title (mingus-get-details)))
+	    (title (linkin-org-get-mpd-track-title (mingus-get-details)))
 	    )
 	;; (format "[[mpd:(\"%s\")::00:00:00][[music] %s _ 00:00]]" track-path title)
-	(format "[[mpd:(\"%s\")::00:00:00][[music] %s]]" (my/transform-square-brackets track-path) title)
+	(format "[[mpd:(\"%s\")::00:00:00][[music] %s]]" (linkin-org-transform-square-brackets track-path) title)
 	)
      )
     )
   )
 
-(defun my/link-mpd-simple-mpc ()
+(defun linkin-org-link-mpd-simple-mpc ()
   (interactive)
   (let*
       (
        (track-path
 	(simple-mpc-query-get-%file%-for-result
 	 (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+	
+	;; remove the folder part and the extension
+	(title
+	 (file-name-nondirectory (file-name-sans-extension track-path))
+	 )
 	)
-       ;; remove the folder part and the extension
-       (title
-	(file-name-nondirectory (file-name-sans-extension track-path))
+       (format
+	"[[mpd:(\"%s\")::00:00:00][[music] %s]]"
+	track-path
+	title
 	)
        )
-    (format
-     "[[mpd:(\"%s\")::00:00:00][[music] %s]]"
-     track-path
-     title
-     )
     )
   )
 
 ;; ---------------------------------- pdf link
 (org-add-link-type "pdf" 'org-pdf-open nil)
-;; (setq my/open-pdf-link-other-frame nil)
+;; (setq linkin-org-open-pdf-link-other-frame nil)
 ;; (org-link-set-parameters "pdf" (:follow 'org-pdf-open))
 
 (defun org-pdf-open (link)
@@ -642,7 +667,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
                ;; On initialise le temps le plus récent avec la temps de la première fenêtre de la liste
                (temps-le-plus-recent (window-use-time fenetre-finale))
 
-	       (not my/open-org-link-other-frame)
+	       (not linkin-org-open-org-link-other-frame)
 	       )
 	       ;; (pdf-buffer (get-file-buffer pdf-file))
 	       ;; ;; check if the buffer is visible
@@ -715,7 +740,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	  (find-file pdf-file)
 	  (pdf-view-goto-page page)
 	  )
-	;; (if my/open-pdf-link-other-frame
+	;; (if linkin-org-open-pdf-link-other-frame
 	;; 	  (progn
 	;; 	    (find-file-other-frame pdf-file)
 	;; 	    (pdf-view-goto-page page)
@@ -727,7 +752,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 ;; pour copier un lien vers le fichier pdf courant
-(defun my/lien-court ()
+(defun linkin-org-pdf-get-link ()
   (interactive)
   (other-window 1)
   (pdf-tools-assert-pdf-buffer)
@@ -735,7 +760,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	 (page (number-to-string (pdf-view-current-page)))
          (file (abbreviate-file-name (pdf-view-buffer-file-name)))
 	 (file-name (file-name-nondirectory file))
-	 (file-name-sans-id (my/remove-id-from-file-name file-name))
+	 (file-name-sans-id (linkin-org-remove-id-from-file-name file-name))
 	 (file-name-sans-ext (file-name-sans-extension file-name-sans-id))
 	 (file-name-extension (file-name-extension file-name-sans-id))
 	 (nom-fichier-tronque (if (> (length file-name-sans-ext) 70)
@@ -797,7 +822,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 ;; ---------------------------------- video link
 (org-add-link-type "video" 'org-video-open nil)
 
-(defun my/is-url (string)
+(defun linkin-org-is-url (string)
   "Return non-nil if STRING is a valid URL."
   (string-match-p
    (rx string-start
@@ -831,12 +856,12 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
       ;; (message (concat "video address : " video-address))
       (cond
        ;; if it's a local file
-       ((my/is-link-path-correct video-address)
+       ((linkin-org-is-link-path-correct video-address)
 	(progn
 	  (message (format  "Playing %s at %s" video-address timestamp))
 	  (start-process "mpv" nil "mpv" (format "--start=%s" timestamp) video-address)))
        ;; if it's no file path, check if it's a url
-       ((my/is-url video-address)
+       ((linkin-org-is-url video-address)
 	(progn
 	  ;; print timestamp and video address
 	  ;; (message "hello")
@@ -876,7 +901,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     (cond
      ;; Si on est dans un pdf, copie un lien vers le pdf
      ((string= mode "pdf-view-mode")
-      (kill-new (my/lien-court))
+      (kill-new (linkin-org-pdf-get-link))
       )
      ;; Si du texte est sélectionné, copie simplement la sélection
      ((region-active-p)
@@ -884,7 +909,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
       )
      ;; Si on est dans un buffer Dired, copie le fichier
      ((string= mode "dired-mode")
-      (my/dired-lien-court)
+      (linkin-org-dired-get-link)
       )
      ;; Si on est dans un mail
      ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
@@ -892,27 +917,27 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
       )
      ;; Si on est dans mingus playlist
      ((string= mode "mingus-playlist-mode")
-      (kill-new (my/lien-mpd-mingus))
+      (kill-new (linkin-org-lien-mpd-mingus))
       )
      ;; Si on est simple mpc
      ((string= mode "simple-mpc-mode")
-      (kill-new (my/link-mpd-simple-mpc))
+      (kill-new (linkin-org-link-mpd-simple-mpc))
       )
 
 
      ;; Sinon, place un lien vers la ligne du fichier courant dans le registre
      (t
-      (kill-new (my/lien-fichier-et-ligne-du-curseur))
+      (kill-new (linkin-org-lien-fichier-et-ligne-du-curseur))
       )
 
      )
     )
   )
 
-(setq my/open-org-link-other-frame t)
-(setq my/open-org-link-in-dired t)
+(setq linkin-org-open-org-link-other-frame t)
+(setq linkin-org-open-org-link-in-dired t)
 
-(defun my/open-link-in-dired-other-frame ()
+(defun linkin-org-open-link-in-dired-other-frame ()
   (interactive)
   (if (region-active-p)
       ;; if a region is selected, then open all links in the region, in order
@@ -931,7 +956,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	    ;; if there is a link under point
 	    ;; (if (org--link-at-point)
 	    ;; 	;; open the link
-	    ;; 	(my/org-open-at-point)
+	    ;; 	(linkin-org-open-at-point)
 	    ;; 	)
 	    (let*
 		(
@@ -945,7 +970,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 		 )
 	      ;; go to the next link while current-point is different from next-point
 	      (while (not (= current-point next-point))
-		(my/org-open-at-point)
+		(linkin-org-open-at-point)
 		(setq current-point next-point)
 		(setq next-point (progn
 				   (org-next-link)
@@ -957,7 +982,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	  )
 	)
     ;; else open the link in the normal way
-    (my/org-open-at-point)
+    (linkin-org-open-at-point)
     )
 
   )
@@ -966,59 +991,53 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
 ;; to do an action on a file as if the point was on that file in dired
 (defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
-  (save-excursion
-    (let*
-	(
-	 ;; get the full path
-	 (file-path (expand-file-name file-path))
-	 ;; get the list of dired buffer that already visit the directory of the file
-	 (dired-buffers-visiting-path (dired-buffers-for-dir (file-name-directory file-path)))
-	 ;; create a dired buffer visiting the directory of the file (or get the name of it if it already exists)
-	 (dired-buffer (dired-noselect (file-name-directory file-path)))
-	 )
-      (with-current-buffer dired-buffer
-	(let
-	    (
-	     ;; create a clone of the dired buffer
-	     (cloned-dired-buffer (clone-buffer))
-	     )
-	  ;; switch to the cloned dired buffer
-	  (switch-to-buffer cloned-dired-buffer)
-	  ;; update the cloned dired buffer
-	  (revert-buffer)
-	  ;; place the point on the file
-	  (dired-goto-file file-path)
-	  ;; do the function
-	  (funcall function-to-perform)
-	  ;; kill the cloned dired buffer
-	  (kill-buffer cloned-dired-buffer)
-	  )
-	)
-      ;; close the dired buffer if it was open in the first place
-      (unless dired-buffers-visiting-path
-	(kill-buffer dired-buffer)
-	)
+  (let*
+      (
+       ;; get the full path
+       (file-path (expand-file-name file-path))
+       ;; get the list of dired buffer that already visit the directory of the file
+       (dired-buffers-visiting-path (dired-buffers-for-dir (file-name-directory file-path)))
+       ;; create a dired buffer visiting the directory of the file (or get the name of it if it already exists)
+       (dired-buffer (dired-noselect (file-name-directory file-path)))
+       ;; clone the dired buffer
+       (cloned-dired-buffer (with-current-buffer dired-buffer (clone-buffer)))
+       )
+    ;; switch to the cloned dired buffer
+    (switch-to-buffer cloned-dired-buffer)
+    ;; update the cloned dired buffer
+    (revert-buffer)
+    ;; place the point on the file
+    (dired-goto-file file-path)
+    ;; do the function
+    (funcall function-to-perform)
+    ;; kill the cloned dired buffer
+    (kill-buffer cloned-dired-buffer)
+    ;; close the dired buffer if it was open in the first place
+    (unless dired-buffers-visiting-path
+      (kill-buffer dired-buffer)
       )
     )
   )
+   
 
 ;; to open a file as if 
 (defun linkin-org-open-file-as-in-dired (file-path)
-  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+  ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+  (find-file file-path)
   )
 
 ;; code to yank the link of a given file
 (defun linkin-org-yank-link-of-file (file-path)
-  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'my/dired-lien-court)
+  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'linkin-org-dired-get-link)
   )
 
-(defun my/open-link-directly-other-frame ()
+(defun linkin-org-open-link-directly-other-frame ()
   (interactive)
-  (setq my/open-org-link-in-dired nil)
-  (setq my/open-org-link-other-frame nil)
-  (my/org-open-at-point)
-  (setq my/open-org-link-other-frame t)
-  (setq my/open-org-link-in-dired t)
+  (setq linkin-org-open-org-link-in-dired nil)
+  (setq linkin-org-open-org-link-other-frame nil)
+  (linkin-org-open-at-point)
+  (setq linkin-org-open-org-link-other-frame t)
+  (setq linkin-org-open-org-link-in-dired t)
   )
 
 
