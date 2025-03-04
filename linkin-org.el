@@ -125,12 +125,10 @@ Returns the file path as a string or nil if not found."
 	 (rg-command (format "(rg -g \"%s*\" --files %s & find \"%s\" -type d -name \"%s*\") | head -n 1" prefix dir dir prefix))
 	 file-path
 	 )
-    (message "rg-command: %s" rg-command)
     (with-temp-buffer
       (call-process-shell-command rg-command nil (current-buffer) nil)
       (unless (zerop (buffer-size))
-        ;; (setq file-path (car (string-lines (buffer-string))))
-        (setq file-path (buffer-string))
+        (setq file-path (car (string-lines (buffer-string))))
 	)
       )
     file-path
@@ -488,8 +486,6 @@ for internal and \"file\" links, or stored as a parameter in
 	 (line-number (cadr link-parts))
 	 (column-number (caddr link-parts))
 	 )
-    ;; (linkin-org-open-file-as-in-dired file-path)
-    ;; (find-file file-path)
     (if (file-exists-p file-path)
 	(progn
 	  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
@@ -569,8 +565,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 			)
 		      )
 	   )
-	(message "file-path: %s" file-path)
-	(message "file-name: %s" file-name)
 	file-name
 	)
       )
