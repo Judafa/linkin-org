@@ -47,6 +47,10 @@
    )
   )
 
+;; separator between the id and the original file name
+(defconst linkin-org-sep-pattern
+  "--"
+  )
 
 
 (defun split-string-at-double-colon (input)
@@ -77,7 +81,15 @@ the original string as the first part and nil as the second part."
   (interactive)
   (if (string-match linkin-org-id-pattern file-name)
       ;; this function returns a list of list of strings
-      (replace-regexp-in-string linkin-org-id-pattern "" file-name)
+      (let*
+	  (
+	   ;; remove the heading id
+	   (file-name-without-id (replace-regexp-in-string linkin-org-id-pattern "" file-name))
+	   ;; remove the heading sep -- if there is one
+	   (file-name-without-sep (replace-regexp-in-string (concat "^" linkin-org-sep-pattern) "" file-name-without-id))
+	   )
+	file-name-without-sep
+	)
     file-name
     )
   )
@@ -138,8 +150,6 @@ Returns the file path as a string or nil if not found."
 
 (defun linkin-org-is-link-path-correct (file-path)
   "returns the path to the file if it exists, use id utlimately to find the file"
-  ;; (message (concat "the file name : " file-path))
-  ;; (message (concat "the file name : " file-path))
   ;; if the file path exists, just return it
   (cond
    (
@@ -172,10 +182,6 @@ Returns the file path as a string or nil if not found."
 	   result
 	   )
 
-      ;; (message (concat "the file path : " file-path))
-      ;; (message (concat "the file dir : " file-dir))
-      ;; (message (concat "the file name : " file-name))
-      ;; (message (concat "the file id : " id-of-file-name))
       ;; try to find the lost file only if it has an id
       (if id-of-file-name (find-first-matching-file id-of-file-name file-dir)
 	  ;; ;; list all files in the file directory
