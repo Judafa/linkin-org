@@ -37,6 +37,7 @@
 
 (require 'pdf-tools)
 
+;;;; paterns
 ;; this is the pattern for the id of a file
 (defconst linkin-org-id-pattern
   (rx
@@ -52,7 +53,12 @@
   "--"
   )
 
+(defconst mon-dossier-fourre-tout
+  "~/Dropbox/FourreTout/"
+  )
 
+
+;;;; helper function
 (defun split-string-at-double-colon (input)
   "Split INPUT string into two parts at the first occurrence of '::'.
 The second part starts with '::'. If '::' is not in the string, return
@@ -113,10 +119,6 @@ the original string as the first part and nil as the second part."
     )
   )
 
-;; Example usage
-;; (unescape-special-characters "\\\\hello\[world\]")
-;; (unescape-special-characters "no\\escapes") ;; => "no\\escapes"
-
 (defun parse-org-link (link-string)
   "Parse LINK-STRING into an Org element and return the result."
   (with-temp-buffer
@@ -147,6 +149,27 @@ Returns the file path as a string or nil if not found."
     )
   )
 
+(defun linkin-org-link-escape (link-string)
+  (replace-regexp-in-string
+   (rx (seq (group (zero-or-more "\\")) (group (or string-end (any "[]")))))
+   (lambda (m)
+     (concat (match-string 1 m)
+	     (match-string 1 m)
+	     (and (/= (match-beginning 2) (match-end 2)) "\\")))
+   link-string nil t 1)
+  )
+
+
+;; just take a list of two strings and make a link
+(defun take-list-of-two-strings-and-make-link (l &optional description)
+  (if description
+      (format "[[%s][%s %s]]" (car l) description (cadr l))
+    (format "[[%s][%s]]" (car l) (cadr l))
+    )
+  )
+
+
+;;;; find the linked file
 
 (defun linkin-org-is-link-path-correct (file-path)
   "returns the path to the file if it exists, use id utlimately to find the file"
@@ -217,16 +240,6 @@ Returns the file path as a string or nil if not found."
    )
   )
 
-(defun linkin-org-link-escape (link-string)
-  (replace-regexp-in-string
-   (rx (seq (group (zero-or-more "\\")) (group (or string-end (any "[]")))))
-   (lambda (m)
-     (concat (match-string 1 m)
-	     (match-string 1 m)
-	     (and (/= (match-beginning 2) (match-end 2)) "\\")))
-   link-string nil t 1)
-  )
-
 (defun linkin-org-turn-link-into-correct-one (link-string)
   "take a link as a string and returns the same link but with a correct path"
 
@@ -258,22 +271,7 @@ Returns the file path as a string or nil if not found."
 	     (new-link-path (linkin-org-link-escape (concat new-link-path link-metadata)))
 	     ;; build a new link based on that path
 	     (new-link-string (concat "[[" link-type ":" new-link-path "]]"))
-
-	     ;; (new-link
-	     ;;  (if new-link-path
-	     ;; 	  (org-element-put-property link :path new-link-path)
-	     ;; 	link-string
-	     ;; 	)
-	     ;;  )
-	     ;; turn this new link into string
-	     ;; (new-link-string (org-element-interpret-data new-link))
 	     )
-	  ;; (message (concat "split path : " (car (split-string-at-double-colon link-raw-path))))
-	  ;; (message (concat "split path in code : " link-path))
-	  ;; (message (concat "metadatas : " (car (cdr (split-string-at-double-colon link-path)))))
-	  ;; (message (concat "metadatas in code : " link-metadata))
-	  ;; (message (concat "my HHHH new path : " new-link-path))
-	  ;; (message (concat "my new link : " new-link-string))
 	  new-link-string
 	  )
       ;; if it's a normal link
@@ -351,7 +349,7 @@ Returns the file path as a string or nil if not found."
   ;;   )
   )
 
-;; ---------------------------------- file link
+;;;; file link
 
 
 
@@ -507,7 +505,7 @@ for internal and \"file\" links, or stored as a parameter in
     )
   )
 
-;; ---------------------------------- music link
+;;;; music link
 (org-add-link-type "mpd" 'org-mpd-open nil)
 ;; ishould use this instead
 ;; (org-link-set-parameters TYPE &rest PARAMETERS)
@@ -657,7 +655,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
-;; ---------------------------------- pdf link
+;;;; pdf link
 (org-add-link-type "pdf" 'org-pdf-open nil)
 ;; (setq linkin-org-open-pdf-link-other-frame nil)
 ;; (org-link-set-parameters "pdf" (:follow 'org-pdf-open))
@@ -854,7 +852,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 
-;; ---------------------------------- video link
+;;;; video link
 (org-add-link-type "video" 'org-video-open nil)
 
 (defun linkin-org-is-url (string)
@@ -918,15 +916,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 ;; Fonction polymorphe (dépendante du mode majeur) pour copier la chose sous le curseur dans le presse-papier
 
 
-;; ---------------------------------- general purpose functions
-
-;; just take a list of two strings and make a link
-(defun take-list-of-two-strings-and-make-link (l &optional description)
-  (if description
-      (format "[[%s][%s %s]]" (car l) description (cadr l))
-    (format "[[%s][%s]]" (car l) (cadr l))
-    )
-  )
+;;;; general purpose functions
 
 
 (defun copie-dans-presse-papier ()
@@ -969,6 +959,8 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
+
+;;;; open link
 (setq linkin-org-open-org-link-other-frame t)
 (setq linkin-org-open-org-link-in-dired t)
 
@@ -1076,5 +1068,136 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 
+;;;; create link
+
+(defun linkin-org-create-id ()
+  "Return a string with the current year, month, day, hour, minute, second, and milliseconds."
+  (let*
+      (
+       ;; (five-random-numbers (cl-loop for i from 1 to 5 collect (random 10)))
+       (time-string (format-time-string "%Y%m%dT%H%M%S" (current-time)))
+       )
+    (concat time-string
+	    ;; "--"
+	    ;; (mapconcat 'number-to-string five-random-numbers )
+	    ;; "--"
+	    )
+    )
+  )
+
+
+;; Fonction pour renommer et copier le fichier ou dossier sous le curseur dans le Fourre-tout
+;; 
+(defun linkin-org-store (&optional yank-link?)
+  (interactive)
+  (let* (
+	 (chemin-fichier-ou-dossier (dired-file-name-at-point))
+	 (is-file-already-in-fourre-tout? (s-prefix?
+					   (expand-file-name mon-dossier-fourre-tout)
+					   (expand-file-name chemin-fichier-ou-dossier)
+					   )
+					  )
+	 )
+    ;; check wether it's a file or a directory
+    (if (file-directory-p chemin-fichier-ou-dossier)
+	;; if it's a directory
+	(progn
+	  (let
+	      (
+	       ;; ask for the directory new name
+	       ;; ~directory-file-name~ removes the trailing slash so that ~file-name-nondirectory~ returns the last part of the path
+	       (nouveau-nom (read-string "Nouveau nom : " (file-name-nondirectory (directory-file-name chemin-fichier-ou-dossier))))
+	       (id (concat (linkin-org-create-id) linkin-org-sep-pattern))
+	       )
+	    (if is-file-already-in-fourre-tout?
+		(rename-file chemin-fichier-ou-dossier (concat mon-dossier-fourre-tout id nouveau-nom))
+	      (copy-directory chemin-fichier-ou-dossier (concat mon-dossier-fourre-tout id nouveau-nom))
+	      )
+	    )
+	  )
+      ;; if it's a file
+      (progn
+	(let*
+	    ;; ask for the file new name
+	    (
+	     (nouveau-nom (read-string "Nouveau nom : " (file-name-nondirectory chemin-fichier-ou-dossier)))
+	     (id (concat (linkin-org-create-id) linkin-org-sep-pattern))
+	     (nouveau-nom (concat id nouveau-nom))
+	     (complete-file-path (concat mon-dossier-fourre-tout "/" nouveau-nom))
+	     )
+	  (if is-file-already-in-fourre-tout?
+	      (rename-file chemin-fichier-ou-dossier complete-file-path)
+	    (copy-file chemin-fichier-ou-dossier complete-file-path)
+	    )
+	  (linkin-org-yank-link-of-file complete-file-path)
+	  )
+	
+	)
+      )
+    )
+  )
+
+;; To leave an id in a writeable text file
+
+;; classic comment-line function with a few convenience changes
+(defun linkin-org-comment-line ()
+  (interactive "p")
+  (let ((range
+         (list (line-beginning-position)
+               (goto-char (line-end-position 1))
+	       )))
+    (comment-or-uncomment-region
+     (apply #'min range)
+     (apply #'max range)))
+  (end-of-line)
+  )
+
+;; to leave an id in an editable line
+(defun linkin-org-leave-text-id (&optional yank-link?)
+    (interactive)
+    (let (
+	  (id (linkin-org-create-id))
+	  (range
+           (list (line-beginning-position)
+		 (goto-char (line-end-position 1))
+		 )
+	   )
+	  )
+      ;; make sure the line is not commented
+    (when (comment-only-p (apply #'min range) (apply #'max range))
+      (comment-or-uncomment-region
+       (apply #'min range)
+       (apply #'max range))
+      )
+    ;; go to the beginning of the line and insert an id
+    (back-to-indentation)
+    (insert (concat "[" id "] "))
+
+    ;; [20250311T224321] comment the line
+    (let
+	(
+	 (range (list (line-beginning-position)
+		      (goto-char (line-end-position 1))
+		      )
+		)
+	 )
+      (comment-or-uncomment-region
+       (apply #'min range)
+       (apply #'max range)
+       )
+      )
+    ;; go to the end of line
+    (end-of-line)
+
+    ;; if we want to yank the link
+    (let*
+	(
+	 (file-path (buffer-file-name))
+	 (file-name (file-name-nondirectory file-path))
+	 )
+      (kill-new (format "[[file:%s::%s][[file] %s]]" file-path id file-name))
+      )
+    )
+    )
 
 (provide 'linkin-org)
