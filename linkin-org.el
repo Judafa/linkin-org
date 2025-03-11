@@ -351,8 +351,6 @@ Returns the file path as a string or nil if not found."
 
 ;;;; file link
 
-
-
 ;; pour copier un lien vers le fichier texte courant
 (defun linkin-org-lien-fichier-et-ligne-du-curseur ()
   (interactive)
@@ -487,17 +485,36 @@ for internal and \"file\" links, or stored as a parameter in
   (let* (
 	 (link-parts (split-string link "::"))
 	 (file-path (car link-parts))
-	 (line-number (cadr link-parts))
+	 (line-number-or-id (cadr link-parts))
 	 (column-number (caddr link-parts))
 	 )
     (if (file-exists-p file-path)
 	(progn
 	  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
-	  (when line-number
-	    (goto-line (string-to-number line-number))
-	    )
-	  (when column-number
-	    (move-to-column (string-to-number column-number))
+	  (when line-number-or-id
+	    ;; if line-number-or-id matches an id, search for that id in the buffer
+	    (let
+		(
+		 id-position
+
+		 )
+	      (if (string-match linkin-org-id-pattern line-number-or-id)
+		 (progn
+		   (save-excursion (progn
+				     (beginning-of-buffer)
+				     (setq id-position (if (re-search-forward line-number-or-id nil t 1) (point) nil))
+				     )
+				   )
+		   (when id-position
+		    (goto-char id-position)
+		    )
+		   )
+	       (goto-line (string-to-number line-number-or-id))
+	       )
+	     )
+	    (when column-number
+	      (move-to-column (string-to-number column-number))
+	      )
 	    )
 	  )
       (message "Neither the file nor the id could be found")
