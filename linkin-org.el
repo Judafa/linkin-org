@@ -737,51 +737,57 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
                        )
                      )
 
-		;; switch to the frame
-		;; (select-frame-set-input-focus (window-frame pdf-window))
-		(select-frame (window-frame pdf-window))
-		;; switch to the window
-		(select-window pdf-window)
+		   (let (
+			 (initial-window (selected-window))
+			 )
+		     ;; switch to the frame
+		     ;; (select-frame-set-input-focus (window-frame pdf-window) t)
+		    ;; (select-frame (window-frame pdf-window))
+		    ;; switch to the window
+		    (select-window pdf-window)
 
-		;; (if edges-list
-		;;     ;; if the place to highlight is provided, then make sure that place is visible (ie, pdf is scrolled so that one can see it)
-		;;     (let
-		;; 	;; idk then do the same here
-		;; 	;; [[file:~/.config/emacs/straight/repos/pdf-tools/lisp/pdf-occur.el::290][[file] pdf-occur.el_at_290]]
-		;; 	(
-		;; 	 (pdf-isearch-batch-mode t)
-		;; 	 (pixel-match (pdf-util-scale-relative-to-pixel edges-list))
-		;; 	 )
-		;;       (pdf-isearch-focus-match-batch pixel-match)
-		;;     
-		;;       (pdf-isearch-hl-matches pixel-match nil t)
-		;;       )
-		;;   ;; else, just go to the page
-		;;   (unless (not page) 
-		;;     (pdf-view-goto-page page)
-		;;     )
-		;;   )
+		    ;; (if edges-list
+		    ;;     ;; if the place to highlight is provided, then make sure that place is visible (ie, pdf is scrolled so that one can see it)
+		    ;;     (let
+		    ;; 	;; idk then do the same here
+		    ;; 	;; [[file:~/.config/emacs/straight/repos/pdf-tools/lisp/pdf-occur.el::290][[file] pdf-occur.el_at_290]]
+		    ;; 	(
+		    ;; 	 (pdf-isearch-batch-mode t)
+		    ;; 	 (pixel-match (pdf-util-scale-relative-to-pixel edges-list))
+		    ;; 	 )
+		    ;;       (pdf-isearch-focus-match-batch pixel-match)
+		    ;;     
+		    ;;       (pdf-isearch-hl-matches pixel-match nil t)
+		    ;;       )
+		    ;;   ;; else, just go to the page
+		    ;;   (unless (not page) 
+		    ;;     (pdf-view-goto-page page)
+		    ;;     )
+		    ;;   )
 
 
-		;; go to the page
-		(unless (not page) 
-		 (pdf-view-goto-page page)
-		 )
-		;; ;; hightlight the edges
-		(unless (not edges-list)
-		 (let
-		     ;; idk then do the same here
-		     ;; [[file:~/.config/emacs/straight/repos/pdf-tools/lisp/pdf-occur.el::290][[file] pdf-occur.el_at_290]]
-		     (
-		      (pdf-isearch-batch-mode t)
-		      (pixel-match (pdf-util-scale-relative-to-pixel edges-list))
+		    ;; go to the page
+		    (unless (not page) 
+		      (pdf-view-goto-page page)
 		      )
-		   (pdf-isearch-focus-match-batch pixel-match)
-		   ;; dont forget to scale the edges to the current display!
-		   (pdf-isearch-hl-matches pixel-match nil t)
+		    ;; ;; hightlight the edges
+		    (unless (not edges-list)
+		      (let
+			  ;; idk then do the same here
+			  ;; [[file:~/.config/emacs/straight/repos/pdf-tools/lisp/pdf-occur.el::290][[file] pdf-occur.el_at_290]]
+			  (
+			   (pdf-isearch-batch-mode t)
+			   (pixel-match (pdf-util-scale-relative-to-pixel edges-list))
+			   )
+			(pdf-isearch-focus-match-batch pixel-match)
+			;; dont forget to scale the edges to the current display!
+			(pdf-isearch-hl-matches pixel-match nil t)
+			)
+		      )
+		    ;; switch back to the initial buffer
+		    (select-window initial-window)
+		    )
 		   )
-		 )
-		)
 	;; if the pdf file is not visible, open a new frame
 	;; or if I specifically asked to open a new frame for the pdf file
 	(progn
