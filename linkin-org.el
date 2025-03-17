@@ -779,9 +779,9 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 			   (pdf-isearch-batch-mode t)
 			   (pixel-match (pdf-util-scale-relative-to-pixel edges-list))
 			   )
-			(pdf-isearch-focus-match-batch pixel-match)
 			;; dont forget to scale the edges to the current display!
 			(pdf-isearch-hl-matches pixel-match nil t)
+			(pdf-isearch-focus-match-batch pixel-match)
 			)
 		      )
 		    ;; switch back to the initial buffer
@@ -1210,7 +1210,11 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     ;;    )
     ;;   )
 
-    (if (comment-only-p (apply #'min range) (apply #'max range))
+      ;; quick fix for org-mode
+      (if (and
+	   (not (eq major-mode 'org-mode))
+	   (comment-only-p (apply #'min range) (apply #'max range))
+	   )
 	(progn
 	  ;; go to the beginning of the commented text
 	  (comment-beginning)
