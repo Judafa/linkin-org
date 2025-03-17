@@ -43,6 +43,7 @@
   (rx
    (or
     (seq (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit))
+    (seq (= 4 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit))
     (seq (= 4 digit) "-" (= 2 digit) "-" (= 2 digit) "--" (= 2 digit) ":" (= 2 digit) ":" (= 2 digit) (or (seq) (seq "--" (= 5 digit))))
     )
    )
@@ -50,7 +51,7 @@
 
 ;; separator between the id and the original file name
 (defconst linkin-org-sep-pattern
-  "--"
+  (rx (or "--" "-"))
   )
 
 (defconst mon-dossier-fourre-tout
