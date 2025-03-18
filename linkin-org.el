@@ -38,8 +38,8 @@
 (require 'pdf-tools)
 
 ;;;; paterns
-;; this is the pattern for the id of a file
-(defconst linkin-org-id-pattern
+;; regexp recognizing the id of a file
+(defconst linkin-org-id-regexp
   (rx
    (or
     (seq (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit))
@@ -49,10 +49,16 @@
    )
   )
 
-;; separator between the id and the original file name
-(defconst linkin-org-sep-pattern
+;; regexp recognizing a separator between id and original filename
+(defconst linkin-org-sep-regexp
   (rx (or "--" "-"))
   )
+
+;; separator between the id and the original file name
+(defconst linkin-org-sep
+  "--"
+  )
+
 
 (defconst mon-dossier-fourre-tout
   "~/Dropbox/FourreTout/"
@@ -76,9 +82,9 @@ the original string as the first part and nil as the second part."
 (defun linkin-org-get-file-name-id (file-name)
   "tell if a file name has an id, returns the id string if yes, nil otherwise"
   (interactive)
-  (if (string-match linkin-org-id-pattern file-name)
+  (if (string-match linkin-org-id-regexp file-name)
       ;; this function returns a list of list of strings
-      (car (car (s-match-strings-all linkin-org-id-pattern file-name)))
+      (car (car (s-match-strings-all linkin-org-id-regexp file-name)))
     nil
     )
   )
@@ -86,14 +92,14 @@ the original string as the first part and nil as the second part."
 (defun linkin-org-remove-id-from-file-name (file-name)
   "take a file name and strip off the id part"
   (interactive)
-  (if (string-match linkin-org-id-pattern file-name)
+  (if (string-match linkin-org-id-regexp file-name)
       ;; this function returns a list of list of strings
       (let*
 	  (
 	   ;; remove the heading id
-	   (file-name-without-id (replace-regexp-in-string linkin-org-id-pattern "" file-name))
+	   (file-name-without-id (replace-regexp-in-string linkin-org-id-regexp "" file-name))
 	   ;; remove the heading sep -- if there is one
-	   (file-name-without-sep (replace-regexp-in-string (concat "^" linkin-org-sep-pattern) "" file-name-without-id))
+	   (file-name-without-sep (replace-regexp-in-string (concat "^" linkin-org-sep-regexp) "" file-name-without-id))
 	   )
 	file-name-without-sep
 	)
@@ -499,7 +505,7 @@ for internal and \"file\" links, or stored as a parameter in
 		 id-position
 
 		 )
-	      (if (string-match linkin-org-id-pattern line-number-or-id)
+	      (if (string-match linkin-org-id-regexp line-number-or-id)
 		 (progn
 		   (save-excursion (progn
 				     (beginning-of-buffer)
@@ -837,12 +843,14 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 			  nil
 			  )
 			)
-	 ;; truncate the selected text
-	 (selected-text-tronque (if (and selected-text (> (length selected-text) 15))
-				     (concat (substring selected-text 0 15) "...")
-				   selected-text
-				   )
-				 )
+
+	 ;; ;; truncate the selected text
+	 ;; (selected-text (if (and selected-text (> (length selected-text) 15))
+	 ;; 			     (concat (substring selected-text 0 15) "...")
+	 ;; 			   selected-text
+	 ;; 			   )
+	 ;; 			 )
+
 	 ;; for the edges
 	 (edges (if (pdf-view-active-region-p)
 		    (pdf-view-active-region)
@@ -866,7 +874,10 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	      ;; concat the edges with |
 	      (string-edges (mapconcat #'prin1-to-string edges ";"))
 	      )
-	   (format "[[pdf:%s::%s::%s][[pdf] %s _ p%s _ \"%s\"]]" file page string-edges nom-fichier-tronque page selected-text-tronque)
+
+	   ;; (format "[[pdf:%s::%s::%s][[pdf] %s _ p%s _ \"%s\"]]" file page string-edges nom-fichier-tronque page selected-text)
+	   ;; without the pdf name
+	   (format "[[pdf:%s::%s::%s][[pdf] \"%s\" _ p%s]]" file page string-edges selected-text page)
 	   )
 	 )
       ;; else, no selected text, just care about the path and page
@@ -1131,7 +1142,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	       ;; ask for the directory new name
 	       ;; ~directory-file-name~ removes the trailing slash so that ~file-name-nondirectory~ returns the last part of the path
 	       (nouveau-nom (read-string "Nouveau nom : " (file-name-nondirectory (directory-file-name chemin-fichier-ou-dossier))))
-	       (id (concat (linkin-org-create-id) linkin-org-sep-pattern))
+	       (id (concat (linkin-org-create-id) linkin-org-sep))
 	       )
 	    (if is-file-already-in-fourre-tout?
 		(rename-file chemin-fichier-ou-dossier (concat mon-dossier-fourre-tout id nouveau-nom))
@@ -1145,7 +1156,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	    ;; ask for the file new name
 	    (
 	     (nouveau-nom (read-string "Nouveau nom : " (file-name-nondirectory chemin-fichier-ou-dossier)))
-	     (id (concat (linkin-org-create-id) linkin-org-sep-pattern))
+	     (id (concat (linkin-org-create-id) linkin-org-sep))
 	     (nouveau-nom (concat id nouveau-nom))
 	     (complete-file-path (concat mon-dossier-fourre-tout "/" nouveau-nom))
 	     )
