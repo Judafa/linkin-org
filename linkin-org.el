@@ -897,7 +897,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
     (if (and selected-text edges)
 	(progn
-      (message "theeeeere")
 	 (let*
 	     (
 	      ;; edges are actually outputed as a list of list of Lists-trees
@@ -905,8 +904,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	      ;; concat the edges with |
 	      (string-edges (mapconcat #'prin1-to-string edges ";"))
 	      )
-       (message (concat "aaaaaaaaaaaaa" (prin1-to-string edges)))
-       (message (concat "hhhhhhhhhhhheho" string-edges))
 
 	   ;; (format "[[pdf:%s::%s::%s][[pdf] %s _ p%s _ \"%s\"]]" file page string-edges nom-fichier-tronque page selected-text)
 	   ;; without the pdf name
