@@ -59,6 +59,9 @@
   "--"
   )
 
+(defconst linkin-org-link-types-to-check-for-id
+  '("mpd" "pdf" "video")
+  )
 
 (defconst mon-dossier-fourre-tout
   "~/Dropbox/FourreTout/"
@@ -261,7 +264,7 @@ Returns the file path as a string or nil if not found."
     
     ;; if it's one of my home made links
     (if (and link-type
-	     (member link-type '("mpd" "pdf" "video"))
+	     (member link-type linkin-org-link-types-to-check-for-id)
 	     )
         (let*
 	    (
@@ -328,8 +331,20 @@ Returns the file path as a string or nil if not found."
   (if-let (
 	   ;; get the link under point in string form
 	   (link-string (linkin-org-get-org-link-string-under-point))
+
+	   ;; get the link's type
+	   ;; turn the string link into an org element
+	   (link (parse-org-link link-string))
+	   ;; get the path of the link
+	   (link-type (org-element-property :type link))
+
 	   ;; change the string link into a correct link (with correct path, following id)
-	   (new-link-string (linkin-org-turn-link-into-correct-one link-string))
+	   (new-link-string (if
+				(member link-type linkin-org-link-types-to-check-for-id)
+				(linkin-org-turn-link-into-correct-one link-string)
+			      link-string
+			     )
+			    )
 	   )
       (progn
 	(with-temp-buffer
@@ -509,7 +524,7 @@ for internal and \"file\" links, or stored as a parameter in
 		 (progn
 		   (save-excursion (progn
 				     (beginning-of-buffer)
-				     (setq id-position (if (re-search-forward line-number-or-id nil t 1) (point) nil))
+				     (setq id-position (if (re-search-forward (concat "id:" line-number-or-id) nil t 1) (point) nil))
 				     )
 				   )
 		   (when id-position
@@ -853,10 +868,25 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
 	 ;; for the edges
 	 (edges (if (pdf-view-active-region-p)
-		    (pdf-view-active-region)
-		  nil
-		  )
-		)
+                ;; the edges that were really hovered by the mouse.
+                ;; not necessarily the visual highlightings, that are wordwise by default
+                ;; (pdf-info-getselection
+                ;;  (string-to-number page)
+                ;;  pdf-view-active-region
+                ;;  pdf-view-selection-style
+                ;;  )
+              
+                (mapcar
+                 (lambda (edges)
+                   (pdf-info-getselection
+                    (string-to-number page)
+                    edges
+                    pdf-view-selection-style)
+                   )
+                 pdf-view-active-region)
+		      nil
+		      )
+	        )
 	 )
     (other-window 1)
 
@@ -867,17 +897,20 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
     (if (and selected-text edges)
 	(progn
+      (message "theeeeere")
 	 (let*
 	     (
-	      ;; edges are actually outputed as a list of Lists-trees
-	      (edges (car edges))
+	      ;; edges are actually outputed as a list of list of Lists-trees
+	      (edges (car (car edges)))
 	      ;; concat the edges with |
 	      (string-edges (mapconcat #'prin1-to-string edges ";"))
 	      )
+       (message (concat "aaaaaaaaaaaaa" (prin1-to-string edges)))
+       (message (concat "hhhhhhhhhhhheho" string-edges))
 
 	   ;; (format "[[pdf:%s::%s::%s][[pdf] %s _ p%s _ \"%s\"]]" file page string-edges nom-fichier-tronque page selected-text)
 	   ;; without the pdf name
-	   (format "[[pdf:%s::%s::%s][[pdf] \"%s\" _ p%s]]" file page string-edges selected-text page)
+	   (format "[[pdf:%s::%s::%s][[pdf] p%s _ \"%s\"]]" file page string-edges page selected-text)
 	   )
 	 )
       ;; else, no selected text, just care about the path and page
@@ -1230,12 +1263,12 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	(progn
 	  ;; go to the beginning of the commented text
 	  (comment-beginning)
-	  (insert (concat "[" id "] "))
+	  (insert (concat "[id:" id "] "))
 	  )
       ;; else, insert at the beginning of line and comment the line
       (progn
        (back-to-indentation)
-       (insert (concat "[" id "] "))
+       (insert (concat "[id:" id "] "))
        (comment-region (line-beginning-position) (line-end-position))
        ;; (comment-or-uncomment-region
        ;; 	(apply #'min range)
