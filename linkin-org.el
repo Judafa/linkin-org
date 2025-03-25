@@ -60,7 +60,7 @@
   )
 
 (defconst linkin-org-link-types-to-check-for-id
-  '("mpd" "pdf" "video")
+  '("mpd" "pdf" "video" "file")
   )
 
 (defconst mon-dossier-fourre-tout
@@ -966,7 +966,8 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	  ;; (message (concat "video address : " ))
 	  ;; (message timestamp)
 	  ;; (message (format  "Playing from YOUTUBE %s at %s" video-address timestamp))
-	  (start-process "mpv" nil "mpv" "--ytdl=no" (format "--start=%s" timestamp) video-address)
+	  ;; (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" (format "--start=%s" timestamp) video-address)
+	  (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" video-address)
 	  )
 	)
        (t
@@ -1175,7 +1176,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	       (id (concat (linkin-org-create-id) linkin-org-sep))
 	       )
 	    (if is-file-already-in-fourre-tout?
-		(rename-file chemin-fichier-ou-dossier (concat mon-dossier-fourre-tout id nouveau-nom))
+		(rename-file chemin-fichier-ou-dossier (concat (file-name-directory (expand-file-name (directory-file-name chemin-fichier-ou-dossier))) id nouveau-nom))
 	      (copy-directory chemin-fichier-ou-dossier (concat mon-dossier-fourre-tout id nouveau-nom))
 	      )
 	    )
@@ -1188,12 +1189,18 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	     (nouveau-nom (read-string "Nouveau nom : " (file-name-nondirectory chemin-fichier-ou-dossier)))
 	     (id (concat (linkin-org-create-id) linkin-org-sep))
 	     (nouveau-nom (concat id nouveau-nom))
-	     (complete-file-path (concat mon-dossier-fourre-tout "/" nouveau-nom))
+	     (complete-file-path (if is-file-already-in-fourre-tout?
+                                 (concat (file-name-directory (expand-file-name chemin-fichier-ou-dossier)) nouveau-nom)
+                               (concat mon-dossier-fourre-tout "/" nouveau-nom)
+                               )
+                             )
 	     )
-	  (if is-file-already-in-fourre-tout?
-	      (rename-file chemin-fichier-ou-dossier complete-file-path)
-	    (copy-file chemin-fichier-ou-dossier complete-file-path)
-	    )
+      (rename-file chemin-fichier-ou-dossier complete-file-path)
+	  ;; (if is-file-already-in-fourre-tout?
+	  ;;     ;; (rename-file chemin-fichier-ou-dossier complete-file-path)
+	  ;;     (rename-file chemin-fichier-ou-dossier (concat (file-name-directory (expand-file-name (directory-file-name chemin-fichier-ou-dossier))) id nouveau-nom))
+	    ;; (copy-file chemin-fichier-ou-dossier complete-file-path)
+	  ;;   )
 	  (linkin-org-yank-link-of-file complete-file-path)
 	  )
 	
