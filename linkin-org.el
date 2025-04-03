@@ -65,7 +65,7 @@
 
 
 ;; define the store directory as the user's directory by default
-(defcustom linkin-org-store-directory (expand-file-name "~/"))
+(defcustom linkin-org-store-directory (expand-file-name "~/") "the directory to store your files or directories with linkin-org")
 
 
 ;;;; ------------------------------------------- helper function
