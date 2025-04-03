@@ -4,18 +4,22 @@ An emacs workflow with fast, reliable links.
 
 ** Store and retrieve information at the speed of light
 - *Just downloaded some file?*
+
   Hit ~M-x linkin-org-store~ in dired to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
   Doing so, you just copied a link: paste that link in a .org file and hit ~M-x linkin-org-open-link~ with your cursor on the link to retrieve your file.
   Also, you just added an id at the beginning of your file name: your link will still work if you rename or move the file (needs to stay inside ~linkin-org-store-directory~ though).
 - *You just wrote something you'd like to go back to later?*
+
   Hit ~M-x linkin-org-store~ one line above to insert an id there.
   Doing so, you also just copied a link: paste it in a .org file and follow the link with ~M-x linkin-org-open-link~ to go back to that important place.
   Following the link will always get you exactly at the right location.
 - *Reading something interesting in a pdf?*
+
   (using the pdf-tools package)? Select the excerpt with your mouse and hit ~M-x linkin-org-store~.
   You just copied a link to the exact words you were reading.
   Follow the link (~M-x linkin-org-open-link~) to  go the right page and highlight what you selected.
 - *and more*
+
    store and replay precise moments of a videos (with mpv), launch musics with links (with mpd, organically turn your org notes into playlists)
 
 
