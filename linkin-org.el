@@ -1029,7 +1029,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 (setq linkin-org-open-org-link-other-frame t)
 (setq linkin-org-open-org-link-in-dired t)
 
-(defun linkin-org-open-link-in-dired-other-frame ()
+(defun linkin-org-open-link ()
   (interactive)
   (if (region-active-p)
       ;; if a region is selected, then open all links in the region, in order
