@@ -1225,15 +1225,22 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
 ;; classic comment-line function with a few convenience changes
 (defun linkin-org-comment-line ()
-  (interactive "p")
-  (let ((range
+  (interactive)
+  (let* (
+        (range
          (list (line-beginning-position)
                (goto-char (line-end-position 1))
-	       )))
-    (comment-or-uncomment-region
-     (apply #'min range)
-     (apply #'max range)))
-  (end-of-line)
+	           )
+         )
+        (beg-line (apply #'min range))
+        (end-line (apply #'max range))
+        )
+    (if (comment-only-p beg-line end-line)
+        (uncomment-region beg-line end-line)
+      (comment-region beg-line end-line)
+        )
+    (end-of-line)
+    )
   )
 
 ;; to leave an id in an editable line
@@ -1243,9 +1250,9 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	  (id (linkin-org-create-id))
 	  (range
            (list (line-beginning-position)
-		 (goto-char (line-end-position 1))
-		 )
-	   )
+		         (goto-char (line-end-position 1))
+		         )
+	       )
 	  )
     ;;   ;; make sure the line is not commented
     ;; (when (comment-only-p (apply #'min range) (apply #'max range))
