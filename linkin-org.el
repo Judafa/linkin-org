@@ -1,4 +1,4 @@
-;;; linkin-org.el --- Use fast and robust links in org mode
+;;; linkin-org.el --- An emacs workflow with fast, reliable links
 
 ;; Author: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org

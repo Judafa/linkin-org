@@ -1,7 +1,8 @@
 * linkin-org
 
-An emacs package for a fast, reliable workflow with links.
+An emacs workflow with fast, reliable links.
 
+** What is linkin-org
 linkin-org enables that kind of workflow:
 - Just downloaded some file? Hit `M-x linkin-org-store` in dired to move the file in your store directory (whatever the variable `linkin-org-store-directory` equals to).
   Doing so, you just copied a link to the file: paste the link in a .org file and hit `M-x linkin-org-open-link` to retrieve your file.
@@ -15,6 +16,8 @@ linkin-org enables that kind of workflow:
 - Many other things: store and replay precise moments of a videos (with mpv), launch musics with links (with mpd, organically turn your org notes into playlists)
 
 
+** Installation
+with straight
 #+begin_src emacs-lisp
 (use-package linkin-org
   :straight (linkin-org
