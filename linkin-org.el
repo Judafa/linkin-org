@@ -37,7 +37,7 @@
 
 (require 'pdf-tools)
 
-;;;; paterns
+;;;; -------------------------------------------- paterns
 ;; regexp recognizing the id of a file
 (defconst linkin-org-id-regexp
   (rx
@@ -63,12 +63,12 @@
   '("mpd" "pdf" "video" "file")
   )
 
-(defconst mon-dossier-fourre-tout
-  "~/Dropbox/FourreTout/"
-  )
+
+;; define the store directory as the user's directory by default
+(defcustom linkin-org-store-directory (expand-file-name "~/"))
 
 
-;;;; helper function
+;;;; ------------------------------------------- helper function
 (defun split-string-at-double-colon (input)
   "Split INPUT string into two parts at the first occurrence of '::'.
 The second part starts with '::'. If '::' is not in the string, return
@@ -153,7 +153,7 @@ Returns the file path as a string or nil if not found."
       (call-process-shell-command rg-command nil (current-buffer) nil)
       (unless (zerop (buffer-size))
         (setq file-path (car (string-lines (buffer-string))))
-	)
+	    )
       )
     file-path
     )
@@ -179,7 +179,7 @@ Returns the file path as a string or nil if not found."
   )
 
 
-;;;; find the linked file
+;;;; ------------------------------------------- find the linked file
 
 (defun linkin-org-is-link-path-correct (file-path)
   "returns the path to the file if it exists, use id utlimately to find the file"
@@ -258,7 +258,7 @@ Returns the file path as a string or nil if not found."
       (
        ;;turn the string link into an org element
        (link (parse-org-link link-string))
-       ;; get the path of the link
+       ;; get the type of the link
        (link-type (org-element-property :type link))
        )
     
@@ -269,10 +269,11 @@ Returns the file path as a string or nil if not found."
         (let*
 	    (
 	     ;; get the path of the link
-	     (link-raw-path (org-element-property :path link))
+	     (link-raw-link (org-element-property :raw-link link))
+	     ;; (link-raw-path (org-element-property :path link))
 	     ;; strip of the metadata from the path
-	     (link-path (car (split-string-at-double-colon link-raw-path)))
-	     (link-metadata (car (cdr (split-string-at-double-colon link-raw-path))))
+	     (link-path (org-element-property :path link))
+	     (link-metadata (car (cdr (split-string-at-double-colon link-raw-link))))
 	     ;; if the link has a path, then change it to the correct path
 	     (new-link-path (if link-path
 				(linkin-org-is-link-path-correct link-path))
@@ -335,7 +336,7 @@ Returns the file path as a string or nil if not found."
 	   ;; get the link's type
 	   ;; turn the string link into an org element
 	   (link (parse-org-link link-string))
-	   ;; get the path of the link
+	   ;; get the type of the link
 	   (link-type (org-element-property :type link))
 
 	   ;; change the string link into a correct link (with correct path, following id)
@@ -350,7 +351,6 @@ Returns the file path as a string or nil if not found."
 	(with-temp-buffer
 	;; (with-current-buffer (create-file-buffer "/home/juliend/test")
 	  (let ((org-inhibit-startup nil))
-	    ;; (message (concat "mon LINK: " new-link-string))
 	    (insert new-link-string)
 	    (org-mode)
 	    (goto-char (point-min))
@@ -371,7 +371,7 @@ Returns the file path as a string or nil if not found."
   ;;   )
   )
 
-;;;; file link
+;;;; ------------------------------------------- file link
 
 ;; pour copier un lien vers le fichier texte courant
 (defun linkin-org-lien-fichier-et-ligne-du-curseur ()
@@ -511,40 +511,39 @@ for internal and \"file\" links, or stored as a parameter in
 	 (column-number (caddr link-parts))
 	 )
     (if (file-exists-p file-path)
-	(progn
-	  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
-	  (when line-number-or-id
-	    ;; if line-number-or-id matches an id, search for that id in the buffer
-	    (let
-		(
-		 id-position
-
-		 )
-	      (if (string-match linkin-org-id-regexp line-number-or-id)
-		 (progn
-		   (save-excursion (progn
-				     (beginning-of-buffer)
-				     (setq id-position (if (re-search-forward (concat "id:" line-number-or-id) nil t 1) (point) nil))
-				     )
-				   )
-		   (when id-position
-		    (goto-char id-position)
-		    )
-		   )
-	       (goto-line (string-to-number line-number-or-id))
-	       )
-	     )
-	    (when column-number
-	      (move-to-column (string-to-number column-number))
+	    (progn
+	      (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+	      (when line-number-or-id
+	        ;; if line-number-or-id matches an id, search for that id in the buffer
+	        (let
+		        (
+		         id-position
+		         )
+	          (if (string-match linkin-org-id-regexp line-number-or-id)
+		          (progn
+		            (save-excursion (progn
+				                      (beginning-of-buffer)
+				                      (setq id-position (if (re-search-forward (concat "id:" line-number-or-id) nil t 1) (point) nil))
+				                      )
+				                    )
+		            (when id-position
+		              (goto-char id-position)
+		              )
+		            )
+	            (goto-line (string-to-number line-number-or-id))
+	            )
+	          )
+	        (when column-number
+	          (move-to-column (string-to-number column-number))
+	          )
+	        )
 	      )
-	    )
-	  )
       (message "Neither the file nor the id could be found")
       )
     )
   )
 
-;;;; music link
+;;;; ------------------------------------------- music link
 (org-add-link-type "mpd" 'org-mpd-open nil)
 ;; ishould use this instead
 ;; (org-link-set-parameters TYPE &rest PARAMETERS)
@@ -694,7 +693,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
-;;;; pdf link
+;;;; ------------------------------------------- pdf link
 (org-add-link-type "pdf" 'org-pdf-open nil)
 ;; (setq linkin-org-open-pdf-link-other-frame nil)
 ;; (org-link-set-parameters "pdf" (:follow 'org-pdf-open))
@@ -917,7 +916,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 
-;;;; video link
+;;;; ------------------------------------------- video link
 (org-add-link-type "video" 'org-video-open nil)
 
 (defun linkin-org-is-url (string)
@@ -982,7 +981,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 ;; Fonction polymorphe (dépendante du mode majeur) pour copier la chose sous le curseur dans le presse-papier
 
 
-;;;; general purpose functions
+;;;; ------------------------------------------- general purpose functions
 
 
 (defun copie-dans-presse-papier ()
@@ -1026,7 +1025,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 
-;;;; open link
+;;;; ------------------------------------------- open link
 (setq linkin-org-open-org-link-other-frame t)
 (setq linkin-org-open-org-link-in-dired t)
 
@@ -1134,7 +1133,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 
-;;;; create link
+;;;; ------------------------------------------- create link
 
 (defun linkin-org-create-id ()
   "Return a string with the current year, month, day, hour, minute, second, and milliseconds."
@@ -1154,12 +1153,12 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
 ;; Fonction pour renommer et copier le fichier ou dossier sous le curseur dans le Fourre-tout
 ;; 
-(defun linkin-org-store (&optional yank-link?)
+(defun linkin-org-store (&optional yank-link? ask-for-name-confirmation?)
   (interactive)
   (let* (
 	 (chemin-fichier-ou-dossier (dired-file-name-at-point))
 	 (is-file-already-in-fourre-tout? (s-prefix?
-					   (expand-file-name mon-dossier-fourre-tout)
+					   (expand-file-name linkin-org-store-directory)
 					   (expand-file-name chemin-fichier-ou-dossier)
 					   )
 					  )
@@ -1172,12 +1171,17 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	      (
 	       ;; ask for the directory new name
 	       ;; ~directory-file-name~ removes the trailing slash so that ~file-name-nondirectory~ returns the last part of the path
-	       (nouveau-nom (read-string "Nouveau nom : " (file-name-nondirectory (directory-file-name chemin-fichier-ou-dossier))))
+	       (nouveau-nom
+            (if ask-for-name-confirmation?
+                (read-string "New name: " (file-name-nondirectory (directory-file-name chemin-fichier-ou-dossier)))
+             (file-name-nondirectory (directory-file-name chemin-fichier-ou-dossier))
+             )
+            )
 	       (id (concat (linkin-org-create-id) linkin-org-sep))
 	       )
 	    (if is-file-already-in-fourre-tout?
 		(rename-file chemin-fichier-ou-dossier (concat (file-name-directory (expand-file-name (directory-file-name chemin-fichier-ou-dossier))) id nouveau-nom))
-	      (copy-directory chemin-fichier-ou-dossier (concat mon-dossier-fourre-tout id nouveau-nom))
+	      (copy-directory chemin-fichier-ou-dossier (concat linkin-org-store-directory id nouveau-nom))
 	      )
 	    )
 	  )
@@ -1186,12 +1190,17 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	(let*
 	    ;; ask for the file new name
 	    (
-	     (nouveau-nom (read-string "Nouveau nom : " (file-name-nondirectory chemin-fichier-ou-dossier)))
+	     (nouveau-nom
+          (if ask-for-name-confirmation?
+              (read-string "New name: " (file-name-nondirectory chemin-fichier-ou-dossier))
+            (file-name-nondirectory chemin-fichier-ou-dossier)
+           )
+          )
 	     (id (concat (linkin-org-create-id) linkin-org-sep))
 	     (nouveau-nom (concat id nouveau-nom))
 	     (complete-file-path (if is-file-already-in-fourre-tout?
                                  (concat (file-name-directory (expand-file-name chemin-fichier-ou-dossier)) nouveau-nom)
-                               (concat mon-dossier-fourre-tout "/" nouveau-nom)
+                               (concat linkin-org-store-directory "/" nouveau-nom)
                                )
                              )
 	     )
@@ -1202,6 +1211,9 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	    ;; (copy-file chemin-fichier-ou-dossier complete-file-path)
 	  ;;   )
 	  (linkin-org-yank-link-of-file complete-file-path)
+
+      ;; update the dired buffer
+      (revert-buffer)
 	  )
 	
 	)
