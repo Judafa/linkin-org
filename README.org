@@ -15,7 +15,7 @@ An emacs workflow with fast, reliable links.
   Following the link will always get you exactly at the right location.
 - *Reading something interesting in a pdf?*
 
-  (using the pdf-tools package)? Select the excerpt with your mouse and run ~linkin-org-store~.
+  Select the excerpt with your mouse and run ~linkin-org-store~ (need to use pdf-tool).
   You just copied a link to the exact words you were reading.
   Follow the link (~linkin-org-open-link~) to  go the right page and highlight what you selected.
 - *and more*

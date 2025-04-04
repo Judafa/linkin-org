@@ -1254,76 +1254,53 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 		         )
 	       )
 	  )
-    ;;   ;; make sure the line is not commented
-    ;; (when (comment-only-p (apply #'min range) (apply #'max range))
-    ;;   (comment-or-uncomment-region
-    ;;    (apply #'min range)
-    ;;    (apply #'max range))
-    ;;   )
-    ;; ;; go to the beginning of the line and insert an id
-    ;; (back-to-indentation)
-    ;; (insert (concat "[" id "] "))
-
-    ;; ;; [20250311T224321] comment the line
-    ;; (let
-    ;; 	(
-    ;; 	 (range (list (line-beginning-position)
-    ;; 		      (goto-char (line-end-position 1))
-    ;; 		      )
-    ;; 		)
-    ;; 	 )
-    ;;   (comment-or-uncomment-region
-    ;;    (apply #'min range)
-    ;;    (apply #'max range)
-    ;;    )
-    ;;   )
 
       ;; quick fix for org-mode
       (if (and
 	   (not (eq major-mode 'org-mode))
 	   (comment-only-p (apply #'min range) (apply #'max range))
 	   )
-	(progn
-	  ;; go to the beginning of the commented text
-	  (comment-beginning)
-	  (insert (concat "[id:" id "] "))
-	  )
-      ;; else, insert at the beginning of line and comment the line
-      (progn
-       (back-to-indentation)
-       (insert (concat "[id:" id "] "))
-       (comment-region (line-beginning-position) (line-end-position))
-       ;; (comment-or-uncomment-region
-       ;; 	(apply #'min range)
-       ;; 	(apply #'max range)
-       ;; 	)
-       )
-      )
-    ;; go to the end of line
-    (end-of-line)
+	      (progn
+	        ;; go to the beginning of the commented text
+	        (comment-beginning)
+	        (insert (concat "[id:" id "] "))
+	        )
+        ;; else, insert at the beginning of line and comment the line
+        (progn
+          (back-to-indentation)
+          (insert (concat "[id:" id "] "))
+          (comment-region (line-beginning-position) (line-end-position))
+          ;; (comment-or-uncomment-region
+          ;; 	(apply #'min range)
+          ;; 	(apply #'max range)
+          ;; 	)
+          )
+        )
+      ;; go to the end of line
+      (end-of-line)
 
-    ;; if we want to yank the link
-    (let*
-	(
-	 (file-path (buffer-file-name))
-	 (file-name (when file-path
-		     (file-name-nondirectory file-path)
-		     )
-		    )
-	 )
-      ;; kill a link only if the current buffer has a valid file path
-      (if file-path
-       (kill-new (format
-		  "[[file:%s::%s][[file] %s]]"
-		  file-path
-		  id
-		  (linkin-org-remove-id-from-file-name file-name)
-		  )
-		 )
-       (message "Current buffer is not attached to a file, no link was created.")
-       )
+      ;; if we want to yank the link
+      (let*
+	      (
+	       (file-path (buffer-file-name))
+	       (file-name (when file-path
+		                (file-name-nondirectory file-path)
+		                )
+		              )
+	       )
+        ;; kill a link only if the current buffer has a valid file path
+        (if file-path
+            (kill-new (format
+		               "[[file:%s::%s][[file] %s]]"
+		               file-path
+		               id
+		               (linkin-org-remove-id-from-file-name file-name)
+		               )
+		              )
+          (message "Current buffer is not attached to a file, no link was created.")
+          )
+        )
       )
-    )
     )
 
 (provide 'linkin-org)
