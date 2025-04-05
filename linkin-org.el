@@ -42,8 +42,18 @@
 (defconst linkin-org-id-regexp
   (rx
    (or
-    (seq (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit))
+    ;; denote style
+    (seq
+     ;; the timestamp
+     (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit)
+     ;; the signature
+     (? (seq "==" (* alnum)))
+     )
+
+    ;; org-roam style
     (seq (= 4 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit))
+
+    ;; some stuff I tried at the beginning
     (seq (= 4 digit) "-" (= 2 digit) "-" (= 2 digit) "--" (= 2 digit) ":" (= 2 digit) ":" (= 2 digit) (or (seq) (seq "--" (= 5 digit))))
     )
    )
