@@ -183,7 +183,6 @@ Returns the file path as a string or nil if not found."
 
 
 
-
 ;;;; ------------------------------------------- find the linked file
 
 (defun linkin-org-is-link-path-correct (file-path)
@@ -365,15 +364,6 @@ Returns the file path as a string or nil if not found."
 	t
 	)
     )
-  )
-
-;; tries to open the link under point, otherwise fallback to org-open-at-point-global
-(defun linkin-org-open-at-point ()
-  (interactive)
-  (linkin-org-open-link-at-point)
-  ;; (unless (linkin-org-open-link-at-point)
-  ;;   (org-open-at-point-global)
-  ;;   )
   )
 
 ;;;; ------------------------------------------- file link
@@ -1062,7 +1052,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	    ;; if there is a link under point
 	    ;; (if (org--link-at-point)
 	    ;; 	;; open the link
-	    ;; 	(linkin-org-open-at-point)
+	    ;; 	(linkin-org-open-link-at-point)
 	    ;; 	)
 	    (let*
 		(
@@ -1076,7 +1066,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 		 )
 	      ;; go to the next link while current-point is different from next-point
 	      (while (not (= current-point next-point))
-		(linkin-org-open-at-point)
+		(linkin-org-open-link-at-point)
 		(setq current-point next-point)
 		(setq next-point (progn
 				   (org-next-link)
@@ -1088,7 +1078,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	  )
 	)
     ;; else open the link in the normal way
-    (linkin-org-open-at-point)
+    (linkin-org-open-link-at-point)
     )
 
   )
@@ -1141,7 +1131,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   (interactive)
   (setq linkin-org-open-org-link-in-dired nil)
   (setq linkin-org-open-org-link-other-frame nil)
-  (linkin-org-open-at-point)
+  (linkin-org-open-link-at-point)
   (setq linkin-org-open-org-link-other-frame t)
   (setq linkin-org-open-org-link-in-dired t)
   )
