@@ -183,14 +183,6 @@ Returns the file path as a string or nil if not found."
 
 
 
-;; just take a list of two strings and make a link
-(defun take-list-of-two-strings-and-make-link (l &optional description)
-  (if description
-      (format "[[%s][%s %s]]" (car l) description (cadr l))
-    (format "[[%s][%s]]" (car l) (cadr l))
-    )
-  )
-
 
 ;;;; ------------------------------------------- find the linked file
 
