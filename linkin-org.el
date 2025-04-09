@@ -46,7 +46,7 @@
     (seq
      ;; the timestamp
      (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit)
-     ;; the signature
+     ;; the signature, if there is one
      (? (seq "==" (* alnum)))
      )
 
@@ -79,19 +79,9 @@
 
 
 ;;;; ------------------------------------------- helper function
-(defun split-string-at-double-colon (input)
-  "Split INPUT string into two parts at the first occurrence of '::'.
-The second part starts with '::'. If '::' is not in the string, return
-the original string as the first part and nil as the second part."
-  (let
-      (
-       (index (string-match "::" input))
-       )
-    (if index
-        (list (substring input 0 index) (substring input index))
-      (list input nil))))
 
 
+;; [id:20250408T202132] 
 (defun linkin-org-get-file-name-id (file-name)
   "tell if a file name has an id, returns the id string if yes, nil otherwise"
   (interactive)
@@ -102,6 +92,7 @@ the original string as the first part and nil as the second part."
     )
   )
 
+;; [id:20250408T202356] 
 (defun linkin-org-remove-id-from-file-name (file-name)
   "take a file name and strip off the id part"
   (interactive)
@@ -120,6 +111,7 @@ the original string as the first part and nil as the second part."
     )
   )
 
+;; [id:20250408T202457] 
 (defun linkin-org-transform-square-brackets (str)
   "Unescape occurrences of '\\\\', '\\[', and '\\]' in INPUT string."
   (let
@@ -139,6 +131,7 @@ the original string as the first part and nil as the second part."
     )
   )
 
+;; [id:20250408T202607] 
 (defun parse-org-link (link-string)
   "Parse LINK-STRING into an Org element and return the result."
   (with-temp-buffer
@@ -151,6 +144,7 @@ the original string as the first part and nil as the second part."
   )
 
 
+;; [id:20250408T202649] 
 (defun find-first-matching-file (prefix dir)
   "Use ripgrep (rg) to find the first file matching PREFIX in DIR recursively.
 Returns the file path as a string or nil if not found."
@@ -191,6 +185,7 @@ Returns the file path as a string or nil if not found."
 
 ;;;; ------------------------------------------- find the linked file
 
+;; [id:20250408T201911] 
 (defun linkin-org-is-link-path-correct (file-path)
   "returns the path to the file if it exists, use id utlimately to find the file"
   ;; if the file path exists, just return it
@@ -283,7 +278,18 @@ Returns the file path as a string or nil if not found."
 	     ;; (link-raw-path (org-element-property :path link))
 	     ;; strip of the metadata from the path
 	     (link-path (org-element-property :path link))
-	     (link-metadata (car (cdr (split-string-at-double-colon link-raw-link))))
+	     (link-metadata (car (cdr (
+                                   (let
+                                       (
+                                        (index (string-match "::" link-raw-link))
+                                        )
+                                     (if index
+                                         (list (substring link-raw-link 0 index) (substring link-raw-link index))
+                                       (list link-raw-link nil)))
+                                   )
+                                  )
+                             )
+                        )
 	     ;; if the link has a path, then change it to the correct path
 	     (new-link-path (if link-path
 				(linkin-org-is-link-path-correct link-path))
@@ -999,27 +1005,27 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   (let*
       ((mode (symbol-name major-mode)))
     (cond
-     ;; Si on est dans un pdf, copie un lien vers le pdf
+     ;; If in pdf-view mode, copy a link to the pdf
      ((string= mode "pdf-view-mode")
       (kill-new (linkin-org-pdf-get-link))
       )
-     ;; Si du texte est sélectionné, copie simplement la sélection
+     ;; if text is selected, just copy the selection
      ((region-active-p)
       (kill-ring-save (region-beginning) (region-end))
       )
-     ;; Si on est dans un buffer Dired, copie le fichier
+     ;; if in a dired buffer, get a link towards the file
      ((string= mode "dired-mode")
       (linkin-org-dired-get-link)
       )
-     ;; Si on est dans un mail
+     ;; If view a mail in mu4e
      ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
       (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
       )
-     ;; Si on est dans mingus playlist
+     ;; If view a playlist in mingus mode
      ((string= mode "mingus-playlist-mode")
       (kill-new (linkin-org-lien-mpd-mingus))
       )
-     ;; Si on est simple mpc
+     ;; if in simple-mpc buffer
      ((string= mode "simple-mpc-mode")
       (kill-new (linkin-org-link-mpd-simple-mpc))
       )
@@ -1044,45 +1050,45 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   (if (region-active-p)
       ;; if a region is selected, then open all links in the region, in order
       (let (
-	    (beg (region-beginning))
-	    (end (region-end))
-	    (text-to-investigate (buffer-substring-no-properties (region-beginning) (region-end)))
-	    )
-	(save-excursion
-	  (with-temp-buffer
-	    ;; insert the text to investigate
-	    (insert "\n")
-	    (insert text-to-investigate)
-	    ;; go to the beginning of the buffer
-	    (goto-char (point-min))
-	    ;; if there is a link under point
-	    ;; (if (org--link-at-point)
-	    ;; 	;; open the link
-	    ;; 	(linkin-org-open-at-point)
-	    ;; 	)
-	    (let*
-		(
-		 ;;remember the current point
-		 (current-point (point))
-		 ;; go to the next link and remember the point
-		 (next-point (progn
-			       (org-next-link)
-			       (point))
-			     )
-		 )
-	      ;; go to the next link while current-point is different from next-point
-	      (while (not (= current-point next-point))
-		(linkin-org-open-at-point)
-		(setq current-point next-point)
-		(setq next-point (progn
-				   (org-next-link)
-				   (point))
-		      )
-		)
+	        (beg (region-beginning))
+	        (end (region-end))
+	        (text-to-investigate (buffer-substring-no-properties (region-beginning) (region-end)))
+	        )
+	    (save-excursion
+	      (with-temp-buffer
+	        ;; insert the text to investigate
+	        (insert "\n")
+	        (insert text-to-investigate)
+	        ;; go to the beginning of the buffer
+	        (goto-char (point-min))
+	        ;; if there is a link under point
+	        ;; (if (org--link-at-point)
+	        ;; 	;; open the link
+	        ;; 	(linkin-org-open-at-point)
+	        ;; 	)
+	        (let*
+		        (
+		         ;;remember the current point
+		         (current-point (point))
+		         ;; go to the next link and remember the point
+		         (next-point (progn
+			                   (org-next-link)
+			                   (point))
+			                 )
+		         )
+	          ;; go to the next link while current-point is different from next-point
+	          (while (not (= current-point next-point))
+		        (linkin-org-open-at-point)
+		        (setq current-point next-point)
+		        (setq next-point (progn
+				                   (org-next-link)
+				                   (point))
+		              )
+		        )
+	          )
+	        )
 	      )
 	    )
-	  )
-	)
     ;; else open the link in the normal way
     (linkin-org-open-at-point)
     )
