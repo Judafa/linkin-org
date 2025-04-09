@@ -121,7 +121,7 @@ the original string as the first part and nil as the second part."
   )
 
 (defun linkin-org-transform-square-brackets (str)
-  "Unescape occurrences of '\\\\', '\\[', and '\\]' in INPUT string."
+  "Escape occurrences of '\\\\', '\\[', and '\\]' in INPUT string."
   (let
       ((new-string
 	(replace-regexp-in-string
@@ -139,7 +139,19 @@ the original string as the first part and nil as the second part."
     )
   )
 
-(defun parse-org-link (link-string)
+
+(defun linkin-org-link-escape (link-string)
+  (replace-regexp-in-string
+   (rx (seq (group (zero-or-more "\\")) (group (or string-end (any "[]")))))
+   (lambda (m)
+     (concat (match-string 1 m)
+	     (match-string 1 m)
+	     (and (/= (match-beginning 2) (match-end 2)) "\\")))
+   link-string nil t 1)
+  )
+
+;; [id:20250408T202607] 
+(defun linkin-org-parse-org-link (link-string)
   "Parse LINK-STRING into an Org element and return the result."
   (with-temp-buffer
    (let ((org-inhibit-startup nil))
@@ -169,15 +181,6 @@ Returns the file path as a string or nil if not found."
     )
   )
 
-(defun linkin-org-link-escape (link-string)
-  (replace-regexp-in-string
-   (rx (seq (group (zero-or-more "\\")) (group (or string-end (any "[]")))))
-   (lambda (m)
-     (concat (match-string 1 m)
-	     (match-string 1 m)
-	     (and (/= (match-beginning 2) (match-end 2)) "\\")))
-   link-string nil t 1)
-  )
 
 
 ;; just take a list of two strings and make a link
@@ -267,7 +270,7 @@ Returns the file path as a string or nil if not found."
   (let*
       (
        ;;turn the string link into an org element
-       (link (parse-org-link link-string))
+       (link (linkin-org-parse-org-link link-string))
        ;; get the type of the link
        (link-type (org-element-property :type link))
        )
@@ -345,7 +348,7 @@ Returns the file path as a string or nil if not found."
 
 	   ;; get the link's type
 	   ;; turn the string link into an org element
-	   (link (parse-org-link link-string))
+	   (link (linkin-org-parse-org-link link-string))
 	   ;; get the type of the link
 	   (link-type (org-element-property :type link))
 
@@ -1013,7 +1016,16 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
       )
      ;; Si on est dans un mail
      ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
-      (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
+      ;; (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
+      (kill-new (let
+                 ((l (call-interactively 'org-store-link)))
+                 (format "[[%s][%s %s]]"
+                        (car l)
+                        "[mail]"
+                        (cadr l)
+                        )
+                 )
+                )
       )
      ;; Si on est dans mingus playlist
      ((string= mode "mingus-playlist-mode")
