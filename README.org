@@ -1,7 +1,7 @@
 
 linkin-org --- an emacs workflow with fast, reliable links.
 
-* linkin-org: typical workflows
+* Introducing linking-org
 
 *** Just downloaded some file?
   In dired, store the file (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
