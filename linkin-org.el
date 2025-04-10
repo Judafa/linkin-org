@@ -163,22 +163,67 @@ the original string as the first part and nil as the second part."
   )
 
 
+
+(defun linkin-org-package-installed-p (pkg-name)
+  "Return t if a Linux package named PKG-NAME appears to be installed."
+  (let (
+        (cmd
+         (format "%s --version" pkg-name)
+         )
+        )
+    (eq (call-process-shell-command cmd) 0)
+    )
+  )
+
 (defun find-first-matching-file (prefix dir)
   "Use ripgrep (rg) to find the first file matching PREFIX in DIR recursively.
 Returns the file path as a string or nil if not found."
-  (let* (
-	 (dir (expand-file-name dir))
-	 (rg-command (format "(rg -g \"%s*\" --files %s & find \"%s\" -type d -name \"%s*\") | head -n 1" prefix dir dir prefix))
-	 file-path
-	 )
-    (with-temp-buffer
-      (call-process-shell-command rg-command nil (current-buffer) nil)
-      (unless (zerop (buffer-size))
-        (setq file-path (car (string-lines (buffer-string))))
-	    )
+  (cond
+   (
+    (linkin-org-package-installed-p "ripgrep")
+    (let* (
+	       (dir (expand-file-name dir))
+	       (rg-command (format "(rg -g \"%s*\" --files %s & find \"%s\" -type d -name \"%s*\") | head -n 1" prefix dir dir prefix))
+	       file-path
+	       )
+      (with-temp-buffer
+        (call-process-shell-command rg-command nil (current-buffer) nil)
+        (unless (zerop (buffer-size))
+          (setq file-path (car (string-lines (buffer-string))))
+	      )
+        )
+      file-path
       )
-    file-path
     )
+   (
+    t
+    
+    ;; list all files in the file directory
+	(dolist
+	    ;; third t in directory-files-recursively is to include directories
+	    (tmp-file (directory-files-recursively file-dir ".*" t t) result)
+	  ;; Ensure the file or directory exists
+	  (let
+		  (
+		   (tmp-file-name
+		    (if (equal (file-name-directory tmp-file) tmp-file)
+		        ;; if the file path is a directory
+		        (file-name-nondirectory (directory-file-name tmp-file))
+		      ;; else if the file path is a file
+		      (file-name-nondirectory tmp-file)
+		      )
+		    )
+		   )
+	    (when (and (file-exists-p tmp-file)
+			       (string-prefix-p id-of-file-name tmp-file-name)
+			       )
+          (setq result tmp-file)
+	      )
+	    )
+	  )
+    )
+   
+   )
   )
 
 
@@ -221,30 +266,7 @@ Returns the file path as a string or nil if not found."
 
       ;; try to find the lost file only if it has an id
       (if id-of-file-name (find-first-matching-file id-of-file-name file-dir)
-	  ;; ;; list all files in the file directory
-	  ;; (dolist
-	  ;;     ;; third t in directory-files-recursively is to include directories
-	  ;;     (tmp-file (directory-files-recursively file-dir ".*" t t) result)
-	  ;;   ;; Ensure the file or directory exists
-	  ;;   (let
-	  ;; 	(
-	  ;; 	 (tmp-file-name
-	  ;; 	  (if (equal (file-name-directory tmp-file) tmp-file)
-	  ;; 	      ;; if the file path is a directory
-	  ;; 	      (file-name-nondirectory (directory-file-name tmp-file))
-	  ;; 	    ;; else if the file path is a file
-	  ;; 	    (file-name-nondirectory tmp-file)
-	  ;; 	    )
-	  ;; 	  )
-	  ;; 	 )
-	  ;;    (when (and (file-exists-p tmp-file)
-	  ;; 		(string-prefix-p id-of-file-name tmp-file-name)
-	  ;; 		)
-          ;;      (setq result tmp-file)
-	  ;;      )
-	  ;;    )
-	  ;;   )
-	)
+	    )
       )
     )
    ;; if the id search failed, just return the file path
