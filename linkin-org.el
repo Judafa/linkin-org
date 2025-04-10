@@ -175,15 +175,34 @@ the original string as the first part and nil as the second part."
     )
   )
 
-(defun find-first-matching-file (prefix dir)
-  "Use ripgrep (rg) to find the first file matching PREFIX in DIR recursively.
+(defun find-first-matching-file (id dir)
+  "Use the best available searching software to look for id file matching PREFIX in DIR recursively.
 Returns the file path as a string or nil if not found."
   (cond
+   ;; try with the fd command, the fastest
    (
-    (linkin-org-package-installed-p "ripgrep")
+    (linkin-org-package-installed-p "fd")
     (let* (
 	       (dir (expand-file-name dir))
-	       (rg-command (format "(rg -g \"%s*\" --files %s & find \"%s\" -type d -name \"%s*\") | head -n 1" prefix dir dir prefix))
+	       (fd-command (format "(fd %s) | head -n 1" id dir dir id))
+	       file-path
+	       )
+      
+      (with-temp-buffer
+        (call-process-shell-command fd-command nil (current-buffer) nil)
+        (unless (zerop (buffer-size))
+          (setq file-path (car (string-lines (buffer-string))))
+	      )
+        )
+      file-path
+      )
+    )
+   (
+    ;; else, try with a mix of ripgrep and find
+    (linkin-org-package-installed-p "rg")
+    (let* (
+           (dir (expand-file-name dir))
+	       (rg-command (format "(rg -g \"%s*\" --files %s & find \"%s\" -type d -name \"%s*\") | head -n 1" id dir dir id))
 	       file-path
 	       )
       (with-temp-buffer
@@ -197,9 +216,9 @@ Returns the file path as a string or nil if not found."
     )
    (
     t
-    
+   
     ;; list all files in the file directory
-	(dolist
+    (dolist
 	    ;; third t in directory-files-recursively is to include directories
 	    (tmp-file (directory-files-recursively file-dir ".*" t t) result)
 	  ;; Ensure the file or directory exists
@@ -215,14 +234,13 @@ Returns the file path as a string or nil if not found."
 		    )
 		   )
 	    (when (and (file-exists-p tmp-file)
-			       (string-prefix-p id-of-file-name tmp-file-name)
+			       (string-match id-of-file-name tmp-file-name)
 			       )
           (setq result tmp-file)
 	      )
 	    )
 	  )
     )
-   
    )
   )
 
