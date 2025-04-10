@@ -16,7 +16,7 @@ An emacs workflow with fast, reliable links.
 *** Reading something interesting in a pdf?
   Select the text with your mouse and store the pdf location (~linkin-org-store~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tool]]).
   Following the copied link (~linkin-org-open-link~) gets you to the right page and highlight the words you were reading.
-  If the pdf file has an id then your link will always work: perfect for fast, reliable note taking.
+  If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
 *** and more
    Store and replay precise moments of a videos (with mpv), launch musics with links (with mpd, organically turn your org notes into playlists), save selected text or feeds with one key press.
