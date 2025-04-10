@@ -1,5 +1,5 @@
 
-linkin-org: an emacs workflow with fast, reliable links.
+linkin-org --- an emacs workflow with fast, reliable links.
 
 * linkin-org: typical workflows
 
