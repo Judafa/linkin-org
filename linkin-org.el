@@ -176,7 +176,7 @@ the original string as the first part and nil as the second part."
   )
 
 (defun find-first-matching-file (id dir)
-  "Use the best available searching software to look for id file matching PREFIX in DIR recursively.
+  "Use the best available searching software to look for id file matching ID in DIR recursively.
 Returns the file path as a string or nil if not found."
   (cond
    ;; try with the fd command, the fastest
@@ -215,9 +215,8 @@ Returns the file path as a string or nil if not found."
       )
     )
    (
+    ;; else as a last resort, list all files in the file directory with list. quite slow
     t
-   
-    ;; list all files in the file directory
     (dolist
 	    ;; third t in directory-files-recursively is to include directories
 	    (tmp-file (directory-files-recursively file-dir ".*" t t) result)
