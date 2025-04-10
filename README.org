@@ -2,7 +2,6 @@
 
 An emacs workflow with fast, reliable links.
 
-** Store and retrieve information at the speed of light
 *** Just downloaded some file?
   In dired, store the file (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
   This just copied a link: paste it in a .org file and follow the link (~linkin-org-open-link~) with your cursor on it to retrieve your file.
@@ -22,7 +21,7 @@ An emacs workflow with fast, reliable links.
    Store and replay precise moments of a videos (with mpv), launch musics with links (with mpd, organically turn your org notes into playlists), save selected text or feeds with one key press.
 
 
-** installing linkin-org
+* Installing linkin-org
 with straight
 #+begin_src emacs-lisp
 (use-package linkin-org
