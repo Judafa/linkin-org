@@ -3,23 +3,37 @@ linkin-org --- an emacs workflow with fast, reliable links.
 
 * Introducing linkin-org
 
+I find it easier to retrieve data with context.
+Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "tickets" folder, others will search for keywords hoping they used to name the ticket file right.
+For my part, I go to my org note "spain travel" and follow the ticket link that I pasted there.
+It took me seconds, and I could do the whole storing-retrieving process without even thinking about it.
+I found it so smooth and powerful a workflow, I made a package out of it.
+
+# Having all the relevant thoughts and data about a given subject quickly available there.
+
+
+
+linkin-org proposes to help you organise your life with org links.
+
 *** Just downloaded some file?
-  In dired, store the file (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
-  This just copied a link: paste it in a .org file and follow the link (~linkin-org-open-link~) with your cursor on it to retrieve your file.
-  While storing the file, linkin-org added an id at the beginning of your file name: your link will still work if you rename or move the file around (needs to stay inside ~linkin-org-store-directory~ though).
+In dired, store the file (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
+This just copied a link: paste it in a .org file and follow the link (~linkin-org-open-link~) with your cursor on it to retrieve your file.
+While storing the file, linkin-org added an id at the beginning of your file name: your link will still work if you rename or move the file around (needs to stay inside ~linkin-org-store-directory~ though).
 
 *** Just wrote something you'd like to go back to later?
-  Go one line above and store that line (~linkin-org-store~) to insert an id there.
-  This just copied a link: paste it in a .org file and follow the link (~linkin-org-open-link~) to go back exactly where you were.
-  That link will always get you exactly at the right location.
+Go one line above and store that line (~linkin-org-store~) to insert an id there.
+This just copied a link: paste it in a .org file and follow the link (~linkin-org-open-link~) to go back exactly where you were.
+That link will always get you exactly at the right location.
 
 *** Reading something interesting in a pdf?
-  Select the text with your mouse and store the pdf location (~linkin-org-store~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tool]]).
-  Following the copied link (~linkin-org-open-link~) gets you to the right page and highlight the words you were reading.
-  If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
+Select the text with your mouse and store the pdf location (~linkin-org-store~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tool]]).
+Following the copied link (~linkin-org-open-link~) gets you to the right page and highlight the words you were reading.
+If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
-*** and more
-   Store and replay precise moments of a videos (with mpv), launch musics with links (with mpd, organically turn your org notes into playlists), save selected text or feeds with one key press.
+*** And more
+Define new link types: define a video link type to store and replay precise moments of a videos (youtube or stored locally, with [[https://github.com/mpv-player/mpv][mpv]]), define a music link type to launch musics with links (organically turn your org notes into playlists with links, with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]), 
+save selected text or feeds with one key press.
+You can reliably go back to precise locations and execute arbitrary code: possibilities are 
 
 
 * Installing linkin-org
@@ -35,9 +49,9 @@ with straight
   (setq linkin-org-store-directory "~/")
 
   ;; workflow tips (warning: I'm an evil user)
-  (define-key global-map (kbd "C-l") 'linkin-org-open-link)
-  (define-key global-map (kbd "C-n") 'org-next-link)
-  (define-key global-map (kbd "C-p") 'org-previous-link)
+  ;; (define-key global-map (kbd "C-l") 'linkin-org-open-link)
+  ;; (define-key global-map (kbd "C-n") 'org-next-link)
+  ;; (define-key global-map (kbd "C-p") 'org-previous-link)
 
   
   (nvmap :keymaps 'override :prefix "SPC"
@@ -50,4 +64,8 @@ with straight
 )
 #+end_src
 
+
+* Dependencies
+linkin-org has no dependencies and works out of the box.
+It is however recommended to have [[https://github.com/sharkdp/fd][fd]] or [[https://github.com/BurntSushi/ripgrep][ripgrep]] installed for faster link recovery.
 
