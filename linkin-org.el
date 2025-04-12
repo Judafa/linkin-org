@@ -37,8 +37,24 @@
 
 (require 'pdf-tools)
 
-;;;; -------------------------------------------- paterns
-;; regexp recognizing the id of a file
+;;;; -------------------------------------------- main variables
+
+;; define the store directory as the user's directory by default
+(defcustom linkin-org-store-directory (expand-file-name "~/") "the directory to store your files or directories with linkin-org")
+
+
+;; list of link types such that, when following the link, the id should be checked if the link does not work
+(defcustom linkin-org-link-types-to-check-for-id
+  '("mpd" "pdf" "video" "file")
+  "list of link type such that, when following the link, the id should be checked if the link does not work"
+  )
+
+
+
+;;;; -------------------------------------------- patterns
+
+
+;; regexp recognizing an id
 (defconst linkin-org-id-regexp
   (rx
    (or
@@ -59,6 +75,18 @@
    )
   )
 
+
+
+(defun linkin-org-create-id ()
+  "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second, and milliseconds."
+  (let*
+      (
+       (time-string (format-time-string "%Y%m%dT%H%M%S" (current-time)))
+       )
+    time-string
+    )
+  )
+
 ;; regexp recognizing a separator between id and original filename
 (defconst linkin-org-sep-regexp
   (rx (or "--" "-"))
@@ -69,13 +97,6 @@
   "--"
   )
 
-(defconst linkin-org-link-types-to-check-for-id
-  '("mpd" "pdf" "video" "file")
-  )
-
-
-;; define the store directory as the user's directory by default
-(defcustom linkin-org-store-directory (expand-file-name "~/") "the directory to store your files or directories with linkin-org")
 
 
 ;;;; ------------------------------------------- helper function
@@ -1177,21 +1198,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
 
 ;;;; ------------------------------------------- create link
-
-(defun linkin-org-create-id ()
-  "Return a string with the current year, month, day, hour, minute, second, and milliseconds."
-  (let*
-      (
-       ;; (five-random-numbers (cl-loop for i from 1 to 5 collect (random 10)))
-       (time-string (format-time-string "%Y%m%dT%H%M%S" (current-time)))
-       )
-    (concat time-string
-	    ;; "--"
-	    ;; (mapconcat 'number-to-string five-random-numbers )
-	    ;; "--"
-	    )
-    )
-  )
 
 
 ;; Fonction pour renommer et copier le fichier ou dossier sous le curseur dans le Fourre-tout
