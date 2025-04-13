@@ -183,41 +183,67 @@
     )
   )
 
-(defun linkin-org-find-matching-file (id dir &optional search-depth search-type)
-  "Use the best installed searching software to look for a file matching ID in DIR.
+(defun linkin-org-find-matching-file (id dirs &optional search-depth search-type)
+  "Use the best installed searching software to look for a file matching ID in the directories in DIR.
+DIRS is a list of directories paths, it will try to find the file it each directories in DIRS in order, stops when one match is found.
 Search for search-depth levels in dir, search in all directories recursively if search-depth is nil.
 If search-type is 'file then only matches files, if search-type is 'directory then only matches directories, if search-type is nil then matches both files and directories.
 Returns the file path as a string or nil if not found."
-  (cond
-   (
-    ;; try with the fd command, the fastest
-    (linkin-org-package-installed-p "fd")
-    (let* (
-	       (dir (expand-file-name dir))
-           (search-depth-flag (if (integerp search-depth)
-                                  (format "--base-directory=%s" search-depth)
-                                ""
-                                )
-                              )
-           (search-type-flag (cond
-                              ((eq search-type 'file) "--type=file")
-                              ((eq search-type 'directory) "--type=directory")
-                              (t "")
-                              )
-                             )
-	       (fd-command ((format "(fd %s %s --base-directory=%s %s) | head -n 1" search-depth-flag search-type-flag dir id)))
-	       file-path
-           )
+    (cond
+     (
+      ;; try first with the fd command if installed on the local machine
+      (linkin-org-package-installed-p "fd")
       
-      (with-temp-buffer
-        (call-process-shell-command fd-command nil (current-buffer) nil)
-        (unless (zerop (buffer-size))
-          (setq file-path (car (string-lines (buffer-string))))
-	      )
+      (let (
+            (tmp-dirs dirs)
+            (file-found-p 'search-in-progress)
+            resolved-file-name
+            )
+        ;; try for each dir in dirs
+        (while (eq file-found-p 'search-in-progress)
+          (let* (
+	             (dir (expand-file-name (car tmp-dirs)))
+                 (search-depth-flag (if (integerp search-depth)
+                                        (format "--base-directory=%s" search-depth)
+                                      ""
+                                      )
+                                    )
+                 (search-type-flag (cond
+                                    ((eq search-type 'file) "--type=file")
+                                    ((eq search-type 'directory) "--type=directory")
+                                    (t "")
+                                    )
+                                   )
+	             (fd-command (format "(fd %s %s --base-directory=%s %s) | head -n 1" search-depth-flag search-type-flag dir id))
+	             ;; file-path
+                 )
+            ;; consumes the first element of tmp-dirs
+            (setq tmp-dirs (cdr tmp-dirs))
+      
+            ;; call to fd
+            (with-temp-buffer
+              (call-process-shell-command fd-command nil (current-buffer) nil)
+              (unless (zerop (buffer-size))
+                ;; (setq file-path (car (string-lines (buffer-string))))
+                (setq resolved-file-name (car (string-lines (buffer-string))))
+	            )
+              )
+            ;; if we found the file
+            (if resolved-file-name
+                (setq file-found-p 'found)
+                )
+
+            ;; if we tried all directories in dirs, stop the while loop
+            (if (eq tmp-dirs nil)
+                (setq file-found-p 'not-found)
+              )
+            (message (prin1-to-string tmp-dirs))
+            
+            )
+          )
+        ;; return the resolved file name, nil if not found
+        resolved-file-name
         )
-      file-path
-      )
-    )
    ;; (
    ;;  ;; else, try with a mix of ripgrep and find
    ;;  (linkin-org-package-installed-p "rg")
@@ -235,31 +261,33 @@ Returns the file path as a string or nil if not found."
    ;;    file-path
    ;;    )
    ;;  )
-   (
+      )
+     (
     ;; else as a last resort, list all files in the file directory with list. quite slow
     t
-    (dolist
-	    ;; third t in directory-files-recursively is to include directories
-	    (tmp-file (directory-files-recursively file-dir ".*" t t) result)
-	  ;; Ensure the file or directory exists
-	  (let
-		  (
-		   (tmp-file-name
-		    (if (equal (file-name-directory tmp-file) tmp-file)
-		        ;; if the file path is a directory
-		        (file-name-nondirectory (directory-file-name tmp-file))
-		      ;; else if the file path is a file
-		      (file-name-nondirectory tmp-file)
-		      )
-		    )
-		   )
-	    (when (and (file-exists-p tmp-file)
-			       (string-match id-of-file-name tmp-file-name)
-			       )
-          (setq result tmp-file)
-	      )
-	    )
-	  )
+    (message "install fd!")
+    ;; (dolist
+	;;     ;; third t in directory-files-recursively is to include directories
+	;;     (tmp-file (directory-files-recursively file-dir ".*" t t) result)
+	;;   ;; Ensure the file or directory exists
+	;;   (let
+	;; 	  (
+	;; 	   (tmp-file-name
+	;; 	    (if (equal (file-name-directory tmp-file) tmp-file)
+	;; 	        ;; if the file path is a directory
+	;; 	        (file-name-nondirectory (directory-file-name tmp-file))
+	;; 	      ;; else if the file path is a file
+	;; 	      (file-name-nondirectory tmp-file)
+	;; 	      )
+	;; 	    )
+	;; 	   )
+	;;     (when (and (file-exists-p tmp-file)
+	;; 		       (string-match id-of-file-name tmp-file-name)
+	;; 		       )
+    ;;       (setq result tmp-file)
+	;;       )
+	;;     )
+	;;   )
     )
    )
   )
@@ -269,43 +297,41 @@ Returns the file path as a string or nil if not found."
   "returns the path to the file if it exists, use id ultimately to find the file
 Use this function if you already checked that the file path is not valid.
 "
-  (cond
-   ;; else, use id if the file has an id
-   (
-    (let* (
-	   ;; get the directory of file-path
-	   (file-dir
-	    (if (equal (file-name-directory file-path) file-path)
-		;; if the file path is a directory
-		(file-name-directory (directory-file-name file-path))
-	      ;; else if the file path is a file
-	      (file-name-directory file-path)
+  (let* (
+	     ;; get the directory of file-path
+	     (file-dir
+	      (if (equal (file-name-directory file-path) file-path)
+		      ;; if the file path is a directory
+		      (file-name-directory (directory-file-name file-path))
+	        ;; else if the file path is a file
+	        (file-name-directory file-path)
+	        )
 	      )
-	    )
-	   ;; get the file name
-	   (file-name
-	    (if (equal (file-name-directory file-path) file-path)
-		;; if the file path is a directory
-		(file-name-nondirectory (directory-file-name file-path))
-	      ;; else if the file path is a file
-	      (file-name-nondirectory file-path)
+	     ;; get the file name
+	     (file-name
+	      (if (equal (file-name-directory file-path) file-path)
+		      ;; if the file path is a directory
+		      (file-name-nondirectory (directory-file-name file-path))
+	        ;; else if the file path is a file
+	        (file-name-nondirectory file-path)
+	        )
 	      )
-	    )
-	   ;; get the id of the file, if it has one
-	   (id-of-file-name (linkin-org-get-file-name-id file-name))
-	   result
-	   )
-
-      ;; try to find the lost file only if it has an id
-      (if id-of-file-name (find-first-matching-file id-of-file-name file-dir)
-	    )
+	     ;; get the id of the file, if it has one
+	     (id-of-file-name (linkin-org-get-file-name-id file-name))
+         resolved-file-path
+	     )
+    
+    ;; try to find the lost file only if it has an id
+    (when id-of-file-name
+      (setq resolved-file-path (linkin-org-find-matching-file id-of-file-name file-dir))
+	  )
+    (if resolved-file-path
+        ;; return the resolved file path if the search succeeded
+        resolved-file-path
+      ;; if the id search failed or if the file has no id, just return the file path
+      file-path
       )
     )
-   ;; if the id search failed, just return the file path
-   (t
-    file-path
-    )
-   )
   )
 
 
