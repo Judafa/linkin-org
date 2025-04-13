@@ -44,6 +44,7 @@
 
 
 ;; list of link types such that, when following the link, the id should be checked if the link does not work
+
 (defcustom linkin-org-link-types-to-check-for-id
   '("mpd" "pdf" "video" "file")
   "list of link type such that, when following the link, the id should be checked if the link does not work"
