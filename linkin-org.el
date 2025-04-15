@@ -64,7 +64,7 @@
     (seq
      ;; the timestamp
      (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit)
-     ;; the signature
+     ;; the signature, if there is one
      (? (seq "==" (* alnum)))
      )
 
@@ -114,6 +114,15 @@
 (defun linkin-org-get-id (s id-regexp)
   "if the given string contains an id then returns it, nil otherwise"
   (if (string-match id-regexp s)
+
+;;;; ------------------------------------------- helper function
+
+
+;; [id:20250408T202132] 
+(defun linkin-org-get-file-name-id (file-name)
+  "tell if a file name has an id, returns the id string if yes, nil otherwise"
+  (interactive)
+  (if (string-match linkin-org-id-regexp file-name)
       ;; this function returns a list of list of strings
       (car (car (s-match-strings-all id-regexp s)))
     nil
@@ -121,6 +130,8 @@
   )
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
+;; [id:20250408T202356] 
+(defun linkin-org-remove-id-from-file-name (file-name)
   "take a file name and strip off the id part"
   (let*
       (
@@ -141,6 +152,7 @@
     )
   )
 
+;; [id:20250408T202457] 
 (defun linkin-org-transform-square-brackets (str)
   "Escape occurrences of '\\\\', '\\[', and '\\]' in INPUT string."
   (let
@@ -160,6 +172,37 @@
     )
   )
 
+;; [id:20250408T202607] 
+(defun parse-org-link (link-string)
+  "Parse LINK-STRING into an Org element and return the result."
+  (with-temp-buffer
+   (let ((org-inhibit-startup nil))
+     (insert link-string)
+     (org-mode)
+     (goto-char (point-min))
+     (org-element-link-parser))
+   )
+  )
+
+
+;; [id:20250408T202649] 
+(defun find-first-matching-file (prefix dir)
+  "Use ripgrep (rg) to find the first file matching PREFIX in DIR recursively.
+Returns the file path as a string or nil if not found."
+  (let* (
+	 (dir (expand-file-name dir))
+	 (rg-command (format "(rg -g \"%s*\" --files %s & find \"%s\" -type d -name \"%s*\") | head -n 1" prefix dir dir prefix))
+	 file-path
+	 )
+    (with-temp-buffer
+      (call-process-shell-command rg-command nil (current-buffer) nil)
+      (unless (zerop (buffer-size))
+        (setq file-path (car (string-lines (buffer-string))))
+	    )
+      )
+    file-path
+    )
+  )
 
 (defun linkin-org-link-escape (link-string)
   (replace-regexp-in-string
@@ -179,6 +222,85 @@
      (org-mode)
      (goto-char (point-min))
      (org-element-link-parser))
+
+;; just take a list of two strings and make a link
+(defun take-list-of-two-strings-and-make-link (l &optional description)
+  (if description
+      (format "[[%s][%s %s]]" (car l) description (cadr l))
+    (format "[[%s][%s]]" (car l) (cadr l))
+    )
+  )
+
+
+;;;; ------------------------------------------- find the linked file
+
+;; [id:20250408T201911] 
+(defun linkin-org-is-link-path-correct (file-path)
+  "returns the path to the file if it exists, use id utlimately to find the file"
+  ;; if the file path exists, just return it
+  (cond
+   (
+    (file-exists-p file-path)
+    file-path
+    )
+   ;; else, use id if the file has an id
+   (
+    (let* (
+	   ;; get the directory of file-path
+	   (file-dir
+	    (if (equal (file-name-directory file-path) file-path)
+		;; if the file path is a directory
+		(file-name-directory (directory-file-name file-path))
+	      ;; else if the file path is a file
+	      (file-name-directory file-path)
+	      )
+	    )
+	   ;; get the file name
+	   (file-name
+	    (if (equal (file-name-directory file-path) file-path)
+		;; if the file path is a directory
+		(file-name-nondirectory (directory-file-name file-path))
+	      ;; else if the file path is a file
+	      (file-name-nondirectory file-path)
+	      )
+	    )
+	   ;; get the id of the file, if it has one
+	   (id-of-file-name (linkin-org-get-file-name-id file-name))
+	   result
+	   )
+
+      ;; try to find the lost file only if it has an id
+      (if id-of-file-name (find-first-matching-file id-of-file-name file-dir)
+	  ;; ;; list all files in the file directory
+	  ;; (dolist
+	  ;;     ;; third t in directory-files-recursively is to include directories
+	  ;;     (tmp-file (directory-files-recursively file-dir ".*" t t) result)
+	  ;;   ;; Ensure the file or directory exists
+	  ;;   (let
+	  ;; 	(
+	  ;; 	 (tmp-file-name
+	  ;; 	  (if (equal (file-name-directory tmp-file) tmp-file)
+	  ;; 	      ;; if the file path is a directory
+	  ;; 	      (file-name-nondirectory (directory-file-name tmp-file))
+	  ;; 	    ;; else if the file path is a file
+	  ;; 	    (file-name-nondirectory tmp-file)
+	  ;; 	    )
+	  ;; 	  )
+	  ;; 	 )
+	  ;;    (when (and (file-exists-p tmp-file)
+	  ;; 		(string-prefix-p id-of-file-name tmp-file-name)
+	  ;; 		)
+          ;;      (setq result tmp-file)
+	  ;;      )
+	  ;;    )
+	  ;;   )
+	)
+      )
+    )
+   ;; if the id search failed, just return the file path
+   (t
+    file-path
+    )
    )
   )
 
@@ -278,6 +400,64 @@
                  )
                )
               )
+  ;; get the link's type
+  (let*
+      (
+       ;;turn the string link into an org element
+       (link (parse-org-link link-string))
+       ;; get the type of the link
+       (link-type (org-element-property :type link))
+       )
+    
+    ;; if it's one of my home made links
+    (if (and link-type
+	     (member link-type linkin-org-link-types-to-check-for-id)
+	     )
+        (let*
+	    (
+	     ;; get the path of the link
+	     (link-raw-link (org-element-property :raw-link link))
+	     ;; (link-raw-path (org-element-property :path link))
+	     ;; strip of the metadata from the path
+	     (link-path (org-element-property :path link))
+	     (link-metadata (car (cdr (
+                                   (let
+                                       (
+                                        (index (string-match "::" link-raw-link))
+                                        )
+                                     (if index
+                                         (list (substring link-raw-link 0 index) (substring link-raw-link index))
+                                       (list link-raw-link nil)))
+                                   )
+                                  )
+                             )
+                        )
+	     ;; if the link has a path, then change it to the correct path
+	     (new-link-path (if link-path
+				(linkin-org-is-link-path-correct link-path))
+			    )
+	     ;; rebuild the link's correct path and metadata
+	     (new-link-path (linkin-org-link-escape (concat new-link-path link-metadata)))
+	     ;; build a new link based on that path
+	     (new-link-string (concat "[[" link-type ":" new-link-path "]]"))
+	     )
+	  new-link-string
+	  )
+      ;; if it's a normal link
+      (let*
+	  (
+	   ;; get the path of the link
+	   (link-raw-path (org-element-property :path link))
+	   ;; if the link has a path, then change it to the correct path
+	   (new-link-path (if link-raw-path
+			      (linkin-org-is-link-path-correct link-raw-path))
+			  )
+	   ;; build a new link based on that path
+	   (new-link
+	    (if new-link-path
+		(org-element-put-property link :path new-link-path)
+	      link-string
+	      )
 	    )
       ;; make sure to return a complete path
       (if (file-directory-p resolved-file-name)
@@ -1512,5 +1692,324 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 
 
 
+
+(defun copie-dans-presse-papier ()
+  (interactive)
+  (let*
+      ((mode (symbol-name major-mode)))
+    (cond
+     ;; If in pdf-view mode, copy a link to the pdf
+     ((string= mode "pdf-view-mode")
+      (kill-new (linkin-org-pdf-get-link))
+      )
+     ;; if text is selected, just copy the selection
+     ((region-active-p)
+      (kill-ring-save (region-beginning) (region-end))
+      )
+     ;; if in a dired buffer, get a link towards the file
+     ((string= mode "dired-mode")
+      (linkin-org-dired-get-link)
+      )
+     ;; If view a mail in mu4e
+     ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
+      (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
+      )
+     ;; If view a playlist in mingus mode
+     ((string= mode "mingus-playlist-mode")
+      (kill-new (linkin-org-lien-mpd-mingus))
+      )
+     ;; if in simple-mpc buffer
+     ((string= mode "simple-mpc-mode")
+      (kill-new (linkin-org-link-mpd-simple-mpc))
+      )
+
+
+     ;; Sinon, place un lien vers la ligne du fichier courant dans le registre
+     (t
+      (kill-new (linkin-org-lien-fichier-et-ligne-du-curseur))
+      )
+
+     )
+    )
+  )
+
+
+;;;; ------------------------------------------- open link
+(setq linkin-org-open-org-link-other-frame t)
+(setq linkin-org-open-org-link-in-dired t)
+
+(defun linkin-org-open-link ()
+  (interactive)
+  (if (region-active-p)
+      ;; if a region is selected, then open all links in the region, in order
+      (let (
+	        (beg (region-beginning))
+	        (end (region-end))
+	        (text-to-investigate (buffer-substring-no-properties (region-beginning) (region-end)))
+	        )
+	    (save-excursion
+	      (with-temp-buffer
+	        ;; insert the text to investigate
+	        (insert "\n")
+	        (insert text-to-investigate)
+	        ;; go to the beginning of the buffer
+	        (goto-char (point-min))
+	        ;; if there is a link under point
+	        ;; (if (org--link-at-point)
+	        ;; 	;; open the link
+	        ;; 	(linkin-org-open-at-point)
+	        ;; 	)
+	        (let*
+		        (
+		         ;;remember the current point
+		         (current-point (point))
+		         ;; go to the next link and remember the point
+		         (next-point (progn
+			                   (org-next-link)
+			                   (point))
+			                 )
+		         )
+	          ;; go to the next link while current-point is different from next-point
+	          (while (not (= current-point next-point))
+		        (linkin-org-open-at-point)
+		        (setq current-point next-point)
+		        (setq next-point (progn
+				                   (org-next-link)
+				                   (point))
+		              )
+		        )
+	          )
+	        )
+	      )
+	    )
+    ;; else open the link in the normal way
+    (linkin-org-open-at-point)
+    )
+
+  )
+
+
+
+;; to do an action on a file as if the point was on that file in dired
+(defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
+  (let*
+      (
+       ;; get the full path
+       (file-path (expand-file-name file-path))
+       ;; get the list of dired buffer that already visit the directory of the file
+       (dired-buffers-visiting-path (dired-buffers-for-dir (file-name-directory file-path)))
+       ;; create a dired buffer visiting the directory of the file (or get the name of it if it already exists)
+       (dired-buffer (dired-noselect (file-name-directory file-path)))
+       ;; clone the dired buffer
+       (cloned-dired-buffer (with-current-buffer dired-buffer (clone-buffer)))
+       )
+    ;; switch to the cloned dired buffer
+    (switch-to-buffer cloned-dired-buffer)
+    ;; update the cloned dired buffer
+    (revert-buffer)
+    ;; place the point on the file
+    (dired-goto-file file-path)
+    ;; do the function
+    (funcall function-to-perform)
+    ;; kill the cloned dired buffer
+    (kill-buffer cloned-dired-buffer)
+    ;; close the dired buffer if it was open in the first place
+    (unless dired-buffers-visiting-path
+      (kill-buffer dired-buffer)
+      )
+    )
+  )
+   
+
+;; to open a file as if 
+(defun linkin-org-open-file-as-in-dired (file-path)
+  ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+  (find-file file-path)
+  )
+
+;; code to yank the link of a given file
+(defun linkin-org-yank-link-of-file (file-path)
+  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'linkin-org-dired-get-link)
+  )
+
+(defun linkin-org-open-link-directly-other-frame ()
+  (interactive)
+  (setq linkin-org-open-org-link-in-dired nil)
+  (setq linkin-org-open-org-link-other-frame nil)
+  (linkin-org-open-at-point)
+  (setq linkin-org-open-org-link-other-frame t)
+  (setq linkin-org-open-org-link-in-dired t)
+  )
+
+
+;;;; ------------------------------------------- create link
+
+(defun linkin-org-create-id ()
+  "Return a string with the current year, month, day, hour, minute, second, and milliseconds."
+  (let*
+      (
+       ;; (five-random-numbers (cl-loop for i from 1 to 5 collect (random 10)))
+       (time-string (format-time-string "%Y%m%dT%H%M%S" (current-time)))
+       )
+    (concat time-string
+	    ;; "--"
+	    ;; (mapconcat 'number-to-string five-random-numbers )
+	    ;; "--"
+	    )
+    )
+  )
+
+
+;; Fonction pour renommer et copier le fichier ou dossier sous le curseur dans le Fourre-tout
+;; 
+(defun linkin-org-store (&optional yank-link? ask-for-name-confirmation?)
+  (interactive)
+  (let* (
+	 (chemin-fichier-ou-dossier (dired-file-name-at-point))
+	 (is-file-already-in-fourre-tout? (s-prefix?
+					   (expand-file-name linkin-org-store-directory)
+					   (expand-file-name chemin-fichier-ou-dossier)
+					   )
+					  )
+	 )
+    ;; check wether it's a file or a directory
+    (if (file-directory-p chemin-fichier-ou-dossier)
+	;; if it's a directory
+	(progn
+	  (let
+	      (
+	       ;; ask for the directory new name
+	       ;; ~directory-file-name~ removes the trailing slash so that ~file-name-nondirectory~ returns the last part of the path
+	       (nouveau-nom
+            (if ask-for-name-confirmation?
+                (read-string "New name: " (file-name-nondirectory (directory-file-name chemin-fichier-ou-dossier)))
+             (file-name-nondirectory (directory-file-name chemin-fichier-ou-dossier))
+             )
+            )
+	       (id (concat (linkin-org-create-id) linkin-org-sep))
+	       )
+	    (if is-file-already-in-fourre-tout?
+		(rename-file chemin-fichier-ou-dossier (concat (file-name-directory (expand-file-name (directory-file-name chemin-fichier-ou-dossier))) id nouveau-nom))
+	      (copy-directory chemin-fichier-ou-dossier (concat linkin-org-store-directory id nouveau-nom))
+	      )
+	    )
+	  )
+      ;; if it's a file
+      (progn
+	(let*
+	    ;; ask for the file new name
+	    (
+	     (nouveau-nom
+          (if ask-for-name-confirmation?
+              (read-string "New name: " (file-name-nondirectory chemin-fichier-ou-dossier))
+            (file-name-nondirectory chemin-fichier-ou-dossier)
+           )
+          )
+	     (id (concat (linkin-org-create-id) linkin-org-sep))
+	     (nouveau-nom (concat id nouveau-nom))
+	     (complete-file-path (if is-file-already-in-fourre-tout?
+                                 (concat (file-name-directory (expand-file-name chemin-fichier-ou-dossier)) nouveau-nom)
+                               (concat linkin-org-store-directory "/" nouveau-nom)
+                               )
+                             )
+	     )
+      (rename-file chemin-fichier-ou-dossier complete-file-path)
+	  ;; (if is-file-already-in-fourre-tout?
+	  ;;     ;; (rename-file chemin-fichier-ou-dossier complete-file-path)
+	  ;;     (rename-file chemin-fichier-ou-dossier (concat (file-name-directory (expand-file-name (directory-file-name chemin-fichier-ou-dossier))) id nouveau-nom))
+	    ;; (copy-file chemin-fichier-ou-dossier complete-file-path)
+	  ;;   )
+	  (linkin-org-yank-link-of-file complete-file-path)
+
+      ;; update the dired buffer
+      (revert-buffer)
+	  )
+	
+	)
+      )
+    )
+  )
+
+;; To leave an id in a writeable text file
+
+;; classic comment-line function with a few convenience changes
+(defun linkin-org-comment-line ()
+  (interactive)
+  (let* (
+        (range
+         (list (line-beginning-position)
+               (goto-char (line-end-position 1))
+	           )
+         )
+        (beg-line (apply #'min range))
+        (end-line (apply #'max range))
+        )
+    (if (comment-only-p beg-line end-line)
+        (uncomment-region beg-line end-line)
+      (comment-region beg-line end-line)
+        )
+    (end-of-line)
+    )
+  )
+
+;; to leave an id in an editable line
+(defun linkin-org-leave-text-id (&optional yank-link?)
+    (interactive)
+    (let (
+	  (id (linkin-org-create-id))
+	  (range
+           (list (line-beginning-position)
+		         (goto-char (line-end-position 1))
+		         )
+	       )
+	  )
+
+      ;; quick fix for org-mode
+      (if (and
+	   (not (eq major-mode 'org-mode))
+	   (comment-only-p (apply #'min range) (apply #'max range))
+	   )
+	      (progn
+	        ;; go to the beginning of the commented text
+	        (comment-beginning)
+	        (insert (concat "[id:" id "] "))
+	        )
+        ;; else, insert at the beginning of line and comment the line
+        (progn
+          (back-to-indentation)
+          (insert (concat "[id:" id "] "))
+          (comment-region (line-beginning-position) (line-end-position))
+          ;; (comment-or-uncomment-region
+          ;; 	(apply #'min range)
+          ;; 	(apply #'max range)
+          ;; 	)
+          )
+        )
+      ;; go to the end of line
+      (end-of-line)
+
+      ;; if we want to yank the link
+      (let*
+	      (
+	       (file-path (buffer-file-name))
+	       (file-name (when file-path
+		                (file-name-nondirectory file-path)
+		                )
+		              )
+	       )
+        ;; kill a link only if the current buffer has a valid file path
+        (if file-path
+            (kill-new (format
+		               "[[file:%s::%s][[file] %s]]"
+		               file-path
+		               id
+		               (linkin-org-remove-id-from-file-name file-name)
+		               )
+		              )
+          (message "Current buffer is not attached to a file, no link was created.")
+          )
+        )
+      )
+    )
 
 (provide 'linkin-org)
