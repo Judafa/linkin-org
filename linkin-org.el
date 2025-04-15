@@ -38,17 +38,17 @@
 
 ;;;; -------------------------------------------- main variables
 
-;; define the store directory as the user's directory by default
-(defcustom linkin-org-store-directory (expand-file-name "~/") "the directory to store your files or directories with linkin-org")
+;; define the directory where linkin-org-store stores the files/directories by default
+(defcustom linkin-org-store-directory (expand-file-name "~/") "The directory where linkin-org-store stores data by default.")
 
 ;; define the directories where to search when a link is broken
-(defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "the list of directories to search into when links are broken")
+(defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search into when a link is broken")
 
 
 ;; list of link types such that, when following the link, the id should be checked if the link does not work
 (defcustom linkin-org-link-types-to-check-for-id
   '("mpd" "pdf" "video" "file")
-  "list of link types such that, if the link is broken, the id in the link should be used to resolve the link"
+  "List of link types such that, if the link is broken, the id in the link should be used to resolve the link"
   )
 
 
@@ -78,6 +78,14 @@
   )
 
 
+;; regexp recognizing an inline id.
+;; inline ids are ids written directly in the file.
+;; their id must be distinctive from file id since we dont want links to be identified as inline ids; just add "id:" in front of it.
+(defconst linkin-org-inline-id-regexp
+  (concat "id:" linkin-org-id-regexp)
+  )
+
+
 
 (defun linkin-org-create-id ()
   "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second, and milliseconds."
@@ -103,11 +111,11 @@
 
 ;;;; ------------------------------------------- basic functions
 
-(defun linkin-org-get-id (s)
+(defun linkin-org-get-id (s id-regexp)
   "if the given string contains an id then returns it, nil otherwise"
-  (if (string-match linkin-org-id-regexp s)
+  (if (string-match id-regexp s)
       ;; this function returns a list of list of strings
-      (car (car (s-match-strings-all linkin-org-id-regexp s)))
+      (car (car (s-match-strings-all id-regexp s)))
     nil
     )
   )
@@ -116,7 +124,7 @@
   "take a file name and strip off the id part"
   (let*
       (
-       (id (linkin-org-get-id file-name))
+       (id (linkin-org-get-id file-name linkin-org-id-regexp))
        )
     (if id
         (let*
@@ -187,6 +195,99 @@
     )
   )
 
+(defun linkin-org-find-matching-file-with-fd (id dir &optional search-depth search-type)
+  (with-temp-buffer
+    (let*
+        (
+         resolved-file-name
+         (dir (expand-file-name dir))
+         ;; (found? (call-process-shell-command fd-command nil (current-buffer) nil))
+         ;; (found? (apply 'call-process "fd"
+         ;;                nil (current-buffer) nil
+         ;;                (-filter (lambda (e) e)
+         ;;                 '(search-depth-flag
+         ;;                   search-type-flag
+         ;;                   base-directory-flag
+         ;;                   id
+         ;;                   )
+         ;;                 )
+         ;;                )
+         ;;         )
+         
+         (search-depth-flag (if (integerp search-depth)
+                                (format "--max-depth=%s" search-depth)
+                              nil
+                              )
+                            )
+         (search-type-flag (cond
+                            ((eq search-type 'file) "--type=file")
+                            ((eq search-type 'directory) "--type=directory")
+                            (t nil)
+                            )
+                           )
+         (base-directory-flag (format "--base-directory=%s" dir))
+
+         (found?
+          (cond
+           (
+            (and search-depth-flag search-type-flag)
+            (call-process "fd" nil (current-buffer) nil
+                          base-directory-flag
+                          id
+                          )
+            )
+           (
+            (and (not search-depth-flag) search-type-flag)
+            (call-process "fd" nil (current-buffer) nil
+                          search-type-flag
+                          base-directory-flag
+                          id
+                          )
+            )
+           (
+            (and search-depth-flag (not search-type-flag))
+            (call-process "fd" nil (current-buffer) nil
+                          search-depth-flag
+                          base-directory-flag
+                          id
+                          )
+            )
+           (
+            (and (not search-depth-flag) (not search-type-flag))
+            (call-process "fd" nil (current-buffer) nil
+                          base-directory-flag
+                          id
+                          )
+            )
+           )
+          )
+         )
+      (when (and (eq found? 0) (not (zerop (buffer-size))))
+        ;; (setq file-path (car (string-lines (buffer-string))))
+        ;; (setq resolved-file-name (car (string-lines (buffer-string))))
+        (setq resolved-file-name
+              (car (string-lines (buffer-string)))
+              )
+        
+        ;; set the resolved file name with the right heading directories
+        (setq resolved-file-name
+              (expand-file-name
+               (if (equal (file-name-directory dir) dir)
+                   (concat dir resolved-file-name)
+                 (concat dir "/" resolved-file-name)
+                 )
+               )
+              )
+	    )
+      ;; make sure to return a complete path
+      (if (file-directory-p resolved-file-name)
+          resolved-file-name
+        (conct dir "/" resolved-file-name)
+          )
+      )
+    )
+  )
+
 (defun linkin-org-find-matching-file (id dirs &optional search-depth search-type)
   "Use the best installed searching software to look for a file matching ID in the directories in DIR.
 DIRS is a list of directories paths, it will try to find the file it each directories in DIRS in order, stops when one match is found.
@@ -211,96 +312,64 @@ Returns the file path as a string or nil if not found."
         (while (eq file-found-p 'search-in-progress)
           (let* (
 	             (dir (expand-file-name (car tmp-dirs)))
-                 (search-depth-flag (if (integerp search-depth)
-                                        (format "--max-depth=%s" search-depth)
-                                      nil
-                                      )
-                                    )
-                 (search-type-flag (cond
-                                    ((eq search-type 'file) "--type=file")
-                                    ((eq search-type 'directory) "--type=directory")
-                                    (t nil)
-                                    )
-                                   )
-                 (base-directory-flag (format "--base-directory=%s" dir))
 	             ;; (fd-command (format "(fd %s %s --base-directory=%s %s) | head -n 1" search-depth-flag search-type-flag dir id))
 	             ;; file-path
                  )
-            ;; consumes the first element of tmp-dirs
+            ;; consumes the head directory in tmp-dirs
             (setq tmp-dirs (cdr tmp-dirs))
 
-
-            ;; call to fd
-            (with-temp-buffer
-              (let
-                  (
-                   ;; (found? (call-process-shell-command fd-command nil (current-buffer) nil))
-                   ;; (found? (apply 'call-process "fd"
-                   ;;                nil (current-buffer) nil
-                   ;;                (-filter (lambda (e) e)
-                   ;;                 '(search-depth-flag
-                   ;;                   search-type-flag
-                   ;;                   base-directory-flag
-                   ;;                   id
-                   ;;                   )
-                   ;;                 )
-                   ;;                )
-                   ;;         )
-                   (found?
-                    (cond
-                     (
-                      (and search-depth-flag search-type-flag)
-                      (call-process "fd" nil (current-buffer) nil
-                                    base-directory-flag
-                                    id
-                                    )
-                      )
-                     (
-                      (and (not search-depth-flag) search-type-flag)
-                      (call-process "fd" nil (current-buffer) nil
-                                    search-type-flag
-                                    base-directory-flag
-                                    id
-                                    )
-                      )
-                     (
-                      (and search-depth-flag (not search-type-flag))
-                      (call-process "fd" nil (current-buffer) nil
-                                    search-depth-flag
-                                    base-directory-flag
-                                    id
-                                    )
-                      )
-                     (
-                      (and (not search-depth-flag) (not search-type-flag))
-                      (call-process "fd" nil (current-buffer) nil
-                                    base-directory-flag
-                                    id
-                                    )
-                      )
+            ;; if dir is not a valid directory and if there is an id into dir, go over the whole considered path dir, to resolve ids in case a directory with id was renamed
+            (if (and
+                 (not (file-directory-p dir))
+                 (linkin-org-get-id dir linkin-org-id-regexp)
+                 )
+                (let*
+                    (
+                     ;; the directory in construction
+                     (building-dir "")
+                     ;; split the dir into all its intermediary directories
+                     (split-path (split-string dir "/") )
+                     ;; remove empty strings ""
+                     (split-path (seq-remove
+                                 (lambda (e) (eq e ""))
+                                 split-path
+                                 )
+                                )
                      )
-                    )
-                   )
-                (when (and (eq found? 0) (not (zerop (buffer-size))))
-                  ;; (setq file-path (car (string-lines (buffer-string))))
-                  ;; (setq resolved-file-name (car (string-lines (buffer-string))))
-                  (message (concat "resolved file path : " dir))
-                  (setq resolved-file-name
-                        (car (string-lines (buffer-string)))
-                        )
-                  
-                  ;; set the resolved file name with the right heading directories
-                  (setq resolved-file-name
-                        (expand-file-name
-                         (if (equal (file-name-directory dir) dir)
-                             (concat dir resolved-file-name)
-                           (concat dir "/" resolved-file-name)
+                  (dolist (sub-dir split-path)
+                    ;; if the sub-dir contains an id, check that it's a valid sub directory
+                    ;; (setq building-dir (concat building-dir "/" sub-dir))
+                    (let
+                        ((test-building-dir (concat building-dir "/" sub-dir)))
+                      (if (and
+                           (file-directory-p building-dir)
+                           (not (file-directory-p test-building-dir))
+                           (linkin-org-get-id sub-dir linkin-org-id-regexp)
                            )
-                         )
+                          ;; try to find back the sub directory based on its id
+                          (let*
+                              (
+                               (id (linkin-org-get-id sub-dir linkin-org-id-regexp))
+                               (resolved-name (linkin-org-find-matching-file-with-fd id building-dir 1))
+                               )
+                            (if resolved-name
+                                ;; if we found a match then resolve it in our building-idr
+                                (setq building-dir resolved-name)
+                              ;; else just leave the wrong path unchanged
+                              (setq building-dir test-building-dir)
+                              )
+                            )
+                        ;; if the building dir is right or if there is no hope to resolve it, just leave dir unchanged
+                        (setq building-dir test-building-dir)
                         )
-	              )
-                )
+                      )
+                    )
+                  (setq resolved-file-name building-dir)
+                  )
+              ;; else just search for the id in the dir
+              (setq resolved-file-name (linkin-org-find-matching-file-with-fd id dir search-depth search-type))
               )
+            
             ;; if we found the file
             (if resolved-file-name
                 (setq file-found-p 'found)
@@ -399,7 +468,7 @@ Use this function if you already checked that the file path is not valid.
          ;; if the file has no id, let the file-name (without directory) be the id
 	     (id-of-file-name
           (let
-              ((id (linkin-org-get-id file-name)))
+              ((id (linkin-org-get-id file-name linkin-org-id-regexp)))
             (if id
                 id
               file-name
@@ -762,7 +831,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 	   )
 	  )
 	 ;; le nom du fichier sans l'id, si il y a id
-	 (nom-fichier (linkin-org-remove-id-from-file-name nom-fichier))
+	 (nom-fichier (linkin-org-strip-off-id-from-file-name nom-fichier))
 	 (nom-fichier-sans-ext (file-name-sans-extension nom-fichier))
 	 (extension (file-name-extension nom-fichier))
 	 ;; tronque le nom du fichier s'il est trop long
@@ -922,7 +991,7 @@ for internal and \"file\" links, or stored as a parameter in
                       )
                      )
        ;; get the id in the current line, if there is one
-       (inline-id (linkin-org-get-id current-line))
+       (inline-id (linkin-org-get-id current-line linkin-org-inline-id-regexp))
        (line-number (line-number-at-pos))
        )
     (if inline-id
@@ -992,7 +1061,7 @@ for internal and \"file\" links, or stored as a parameter in
 		               "[[file:%s::(:inline-id %s)][[file] %s]]"
 		               file-path
 		               id
-		               (linkin-org-remove-id-from-file-name file-name)
+		               (linkin-org-strip-off-id-from-file-name file-name)
 		               )
 		              )
           (message "Current buffer is not attached to a file, no link was created.")
@@ -1199,7 +1268,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
                ;; On initialise le temps le plus récent avec la temps de la première fenêtre de la liste
                (temps-le-plus-recent (window-use-time fenetre-finale))
 
-	       (not linkin-org-open-org-link-other-frame)
+	       ;; (not linkin-org-open-org-link-other-frame)
 	       )
 	       ;; (pdf-buffer (get-file-buffer pdf-file))
 	       ;; ;; check if the buffer is visible
@@ -1298,7 +1367,7 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 	 (page (number-to-string (pdf-view-current-page)))
          (file (abbreviate-file-name (pdf-view-buffer-file-name)))
 	 (file-name (file-name-nondirectory file))
-	 (file-name-sans-id (linkin-org-remove-id-from-file-name file-name))
+	 (file-name-sans-id (linkin-org-strip-off-id-from-file-name file-name))
 	 (file-name-sans-ext (file-name-sans-extension file-name-sans-id))
 	 (file-name-extension (file-name-extension file-name-sans-id))
 	 (nom-fichier-tronque (if (> (length file-name-sans-ext) 70)
@@ -1440,7 +1509,6 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
   )
 
 ;; Fonction polymorphe (dépendante du mode majeur) pour copier la chose sous le curseur dans le presse-papier
-
 
 
 
