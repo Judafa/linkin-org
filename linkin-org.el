@@ -1102,7 +1102,11 @@ for internal and \"file\" links, or stored as a parameter in
 	   (edges-list
         (if (and (plistp metadata) (= 2 (length link-parts)))
             ;; if the link is with the new plist format
-            (plist-get metadata :edges)
+            (let*
+	            ((edges-list-str (split-string (plist-get metadata :edges) ";")))
+	          ;; convert from string to int, get a list of four floating points numbers, that's the edges
+	          (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str)))
+             )
           ;; else if the data is just separated by ::
 	      (let*
               (
@@ -1305,16 +1309,18 @@ for internal and \"file\" links, or stored as a parameter in
 	      ;; edges are actually outputed as a list of list of Lists-trees
 	      (edges (car (car edges)))
 	      ;; concat the edges with |
-	      (string-edges (mapconcat #'prin1-to-string edges ";"))
+	      (string-edges (concat "\"" (mapconcat #'prin1-to-string edges ";") "\"" ))
 	      )
 
 	   ;; (format "[[pdf:%s::%s::%s][[pdf] %s _ p%s _ \"%s\"]]" file page string-edges nom-fichier-tronque page selected-text)
 	   ;; without the pdf name
-	   (format "[[pdf:%s::%s::%s][[pdf] p%s _ \"%s\"]]" file page string-edges page selected-text)
+	   ;; (format "[[pdf:%s::%s::%s][[pdf] p%s _ \"%s\"]]" file page string-edges page selected-text)
+	   (format "[[pdf:%s::(:page %s :edges %s)][[pdf] p%s _ \"%s\"]]" file page string-edges page selected-text)
 	   )
 	 )
       ;; else, no selected text, just care about the path and page
-      (format "[[pdf:%s::%s][[pdf] %s _ p%s]]" file page nom-fichier-tronque page)
+      ;; (format "[[pdf:%s::%s][[pdf] %s _ p%s]]" file page nom-fichier-tronque page)
+      (format "[[pdf:%s::(:page %s)][[pdf] %s _ p%s]]" file page nom-fichier-tronque page)
       )
     )
   )
