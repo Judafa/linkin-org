@@ -64,7 +64,7 @@
     (seq
      ;; the timestamp
      (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit)
-     ;; the signature
+     ;; the signature, if there is one
      (? (seq "==" (* alnum)))
      )
 
@@ -141,6 +141,7 @@
     )
   )
 
+;; [id:20250408T202457] 
 (defun linkin-org-transform-square-brackets (str)
   "Escape occurrences of '\\\\', '\\[', and '\\]' in INPUT string."
   (let
@@ -269,21 +270,21 @@
               (car (string-lines (buffer-string)))
               )
         
-        ;; set the resolved file name with the right heading directories
-        (setq resolved-file-name
-              (expand-file-name
-               (if (equal (file-name-directory dir) dir)
-                   (concat dir resolved-file-name)
-                 (concat dir "/" resolved-file-name)
-                 )
-               )
-              )
+        ;; ;; set the resolved file name with the right heading directories
+        ;; (setq resolved-file-name
+        ;;       (expand-file-name
+        ;;        (if (equal (file-name-directory dir) dir)
+        ;;            (concat dir resolved-file-name)
+        ;;          (concat dir "/" resolved-file-name)
+        ;;          )
+        ;;        )
+        ;;       )
 	    )
       ;; make sure to return a complete path
       (if (file-directory-p resolved-file-name)
           resolved-file-name
-        (conct dir "/" resolved-file-name)
-          )
+        (concat dir "/" resolved-file-name)
+        )
       )
     )
   )
@@ -1071,157 +1072,6 @@ for internal and \"file\" links, or stored as a parameter in
     )
 
 
-
-;;;; ------------------------------------------- music link
-(org-add-link-type "mpd" 'org-mpd-open nil)
-;; ishould use this instead
-;; (org-link-set-parameters TYPE &rest PARAMETERS)
-
-
-(defun org-mpd-link-get-path (link)
-  (let* (
-         (link-parts (split-string link "::"))
-         ;; for the mpd file path
-         (mpd-file (car link-parts))
-         )
-    mpd-file
-    )
-  )
-  
-(defun org-mpd-open (link)
-  """
-  link is a string containing
-the paths to the song (an mp3 file or so, or a .cue file with a trailing /track<number>) as a lisp list, each song is a string element of the list
-then "::",
-then, a timestamp in format readable by mpd, for instance 1:23:45
-  """
-
-  (let* (
-	 ;; unescape the link
-	 ;; (link (unescape-special-characters link))
-	 (link-parts (split-string link "::"))
-	 ;; use the read function that parses a string as code
-	 (songs (read (car link-parts)))
-	 (timestamp (cadr link-parts))
-	 )
-    ;; (simple-mpc-call-mpc nil (cons "add" songs))
-    (apply 'call-process "mpc" nil nil nil (cons "add" songs))
-    )
-  )
-
-;; code that takes a mpd entry list (with file, title, etc) and returns the title
-(defun linkin-org-get-mpd-track-title (lst)
-  "Return the element after 'Title if present in LST, else the element after 'file."
-  (let ((title-pos (cl-position 'Title lst))
-        (file-pos (cl-position 'file lst)))
-    (cond
-     ;; if there is a 'Title elem in the list and if there is a value (a next elem after 'Title)
-     ((and title-pos (not (null (nth (1+ title-pos) lst))))
-      (nth (1+ title-pos) lst)) ;; Return the element after 'Title
-     ;; else, if there is a 'file elem in the list and if there is a value (a next elem after 'file)
-     ((and file-pos (not (null (nth (1+ file-pos) lst))))
-      (let*
-	  (
-	   (file-path (nth (1+ file-pos) lst))
-	   ;; Get the file name from the file path
-	   (file-name (file-name-nondirectory file-path))
-	   ;; get the file name without the extension
-	   (file-name (file-name-sans-extension file-name))
-	   ;; shorten the file name if it is too long
-	   (max-length 50)
-	   (file-name (if (> (length file-name) max-length)
-			  ;; If file-name is longer than 15 characters, truncate it
-			  (concat (substring file-name 0 max-length) "[___]")
-			file-name
-			)
-		      )
-	   )
-	file-name
-	)
-      )
-     ;; Return nil if neither found
-     (t nil)
-     )
-    )
-  )
-
-
-;; build the link
-(defun linkin-org-lien-mpd-mingus ()
-  (interactive)
-  (let* (
-	 (list-songs
-	  (mapcar
-	   (lambda (index)
-	     ;; the song normally is the second element
-	     (nth 1 (car (mpd-get-playlist-entry mpd-inter-conn index nil t)))
-	     )
-	   mingus-marked-list
-	   )
-	  )
-	 ;; remove any nil element
-	 (list-songs (remove nil list-songs))
-	 ;; reverse the list
-	 (list-songs (reverse list-songs))
-        )
-    ;; if there are marked songs
-    (if list-songs
-	(let
-	    (
-	     ;; get the file name of the first song
-	     (title (if list-songs
-			(linkin-org-get-mpd-track-title (car
-						 (mpd-get-playlist-entry
-						  mpd-inter-conn
-						  (car (last mingus-marked-list))
-						  nil
-						  t
-						  )
-						 )
-						))
-		    )
-	     )
-	 (format
-	  ;; "[[mpd:%s::00:00:00][[music] %s _ 00:00]]"
-	  "[[mpd:%s::00:00:00][[music] %s]]"
-	  (linkin-org-transform-square-brackets (prin1-to-string list-songs))
-	  title
-	  )
-	 )
-      ;; else
-      (let (
-	    (track-path (nth 1 (mingus-get-details)))
-	    (title (linkin-org-get-mpd-track-title (mingus-get-details)))
-	    )
-	;; (format "[[mpd:(\"%s\")::00:00:00][[music] %s _ 00:00]]" track-path title)
-	(format "[[mpd:(\"%s\")::00:00:00][[music] %s]]" (linkin-org-transform-square-brackets track-path) title)
-	)
-     )
-    )
-  )
-
-(defun linkin-org-link-mpd-simple-mpc ()
-  (interactive)
-  (let*
-      (
-       (track-path
-	(simple-mpc-query-get-%file%-for-result
-	 (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-	)
-	
-       ;; remove the folder part and the extension
-       (title
-	(file-name-nondirectory (file-name-sans-extension track-path))
-	)
-       )
-    (format
-     "[[mpd:(\"%s\")::00:00:00][[music] %s]]"
-     track-path
-     title
-     )
-    )
-  )
-
 ;;;; ------------------------------------------- pdf link
 
 (require 'pdf-tools)
@@ -1231,20 +1081,44 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
 (defun org-pdf-open (link)
   "Where page number is 105 and the positions to hightlight on the page are e1, e2, e3, e4, then the link should look like:
    [[pdf:/path/to/file.pdf::105::e1;e2;e3;e4][My description.]]"
-  (let* (
-	 (path+page+edges (split-string link "::"))
-	 ;; for the pdf file path
-         (pdf-file (car path+page+edges))
+  (let*
+      (
+	   (link-parts (split-string link "::"))
+	   (file-path (car link-parts))
+       (metadata (when (cadr link-parts)
+                   (read (cadr link-parts))
+                   )
+                 )
+       (pdf-file (car link-parts))
+	   (page
+        (if (and (plistp metadata) (= 2 (length link-parts)))
+            ;; if the link is with the new plist format
+            (plist-get metadata :page)
+          ;; else if the data is just separated by ::
+          (string-to-number (car (cdr link-parts)))
+          )
+        )
+       
+	   (edges-list
+        (if (and (plistp metadata) (= 2 (length link-parts)))
+            ;; if the link is with the new plist format
+            (plist-get metadata :edges)
+          ;; else if the data is just separated by ::
+	      (let*
+              (
+               (edges-str (car (cdr (cdr link-parts))))
+	           ;; separate the edges by |
+	           (edges-list-str (unless (not edges-str) (split-string edges-str "[;|]")))
+               )
+	        ;; convert from string to int, get a list of four floating points numbers, that's the edges
+	        (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str)))
+            )
+          )
+        )
+	   ;; (path+page+edges (split-string link "::"))
+	 ;; ;; for the pdf file path
+     ;;     (pdf-file (car path+page+edges))
 
-	 ;; for the page
-         (page (string-to-number (car (cdr path+page+edges))))
-
-	 ;; for the edges
-	 (edges-str (car (cdr (cdr path+page+edges))))
-	 ;; separate the edges by |
-	 (edges-list-str (unless (not edges-str) (split-string edges-str "[;|]")))
-	 ;; convert from string to int, get a list of four floating points numbers, that's the edges
-	 (edges-list (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str))))
 	 )
     ;; (start-process "view-pdf" nil "zathura" pdf-file (format "--page=%s" page))))
     (progn
@@ -1445,6 +1319,157 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
+
+
+;;;; ------------------------------------------- music link
+(org-add-link-type "mpd" 'org-mpd-open nil)
+;; ishould use this instead
+;; (org-link-set-parameters TYPE &rest PARAMETERS)
+
+
+(defun org-mpd-link-get-path (link)
+  (let* (
+         (link-parts (split-string link "::"))
+         ;; for the mpd file path
+         (mpd-file (car link-parts))
+         )
+    mpd-file
+    )
+  )
+  
+(defun org-mpd-open (link)
+  """
+  link is a string containing
+the paths to the song (an mp3 file or so, or a .cue file with a trailing /track<number>) as a lisp list, each song is a string element of the list
+then "::",
+then, a timestamp in format readable by mpd, for instance 1:23:45
+  """
+
+  (let* (
+	 ;; unescape the link
+	 ;; (link (unescape-special-characters link))
+	 (link-parts (split-string link "::"))
+	 ;; use the read function that parses a string as code
+	 (songs (read (car link-parts)))
+	 (timestamp (cadr link-parts))
+	 )
+    ;; (simple-mpc-call-mpc nil (cons "add" songs))
+    (apply 'call-process "mpc" nil nil nil (cons "add" songs))
+    )
+  )
+
+;; code that takes a mpd entry list (with file, title, etc) and returns the title
+(defun linkin-org-get-mpd-track-title (lst)
+  "Return the element after 'Title if present in LST, else the element after 'file."
+  (let ((title-pos (cl-position 'Title lst))
+        (file-pos (cl-position 'file lst)))
+    (cond
+     ;; if there is a 'Title elem in the list and if there is a value (a next elem after 'Title)
+     ((and title-pos (not (null (nth (1+ title-pos) lst))))
+      (nth (1+ title-pos) lst)) ;; Return the element after 'Title
+     ;; else, if there is a 'file elem in the list and if there is a value (a next elem after 'file)
+     ((and file-pos (not (null (nth (1+ file-pos) lst))))
+      (let*
+	  (
+	   (file-path (nth (1+ file-pos) lst))
+	   ;; Get the file name from the file path
+	   (file-name (file-name-nondirectory file-path))
+	   ;; get the file name without the extension
+	   (file-name (file-name-sans-extension file-name))
+	   ;; shorten the file name if it is too long
+	   (max-length 50)
+	   (file-name (if (> (length file-name) max-length)
+			  ;; If file-name is longer than 15 characters, truncate it
+			  (concat (substring file-name 0 max-length) "[___]")
+			file-name
+			)
+		      )
+	   )
+	file-name
+	)
+      )
+     ;; Return nil if neither found
+     (t nil)
+     )
+    )
+  )
+
+
+;; build the link
+(defun linkin-org-lien-mpd-mingus ()
+  (interactive)
+  (let* (
+	 (list-songs
+	  (mapcar
+	   (lambda (index)
+	     ;; the song normally is the second element
+	     (nth 1 (car (mpd-get-playlist-entry mpd-inter-conn index nil t)))
+	     )
+	   mingus-marked-list
+	   )
+	  )
+	 ;; remove any nil element
+	 (list-songs (remove nil list-songs))
+	 ;; reverse the list
+	 (list-songs (reverse list-songs))
+        )
+    ;; if there are marked songs
+    (if list-songs
+	(let
+	    (
+	     ;; get the file name of the first song
+	     (title (if list-songs
+			(linkin-org-get-mpd-track-title (car
+						 (mpd-get-playlist-entry
+						  mpd-inter-conn
+						  (car (last mingus-marked-list))
+						  nil
+						  t
+						  )
+						 )
+						))
+		    )
+	     )
+	 (format
+	  ;; "[[mpd:%s::00:00:00][[music] %s _ 00:00]]"
+	  "[[mpd:%s::00:00:00][[music] %s]]"
+	  (linkin-org-transform-square-brackets (prin1-to-string list-songs))
+	  title
+	  )
+	 )
+      ;; else
+      (let (
+	    (track-path (nth 1 (mingus-get-details)))
+	    (title (linkin-org-get-mpd-track-title (mingus-get-details)))
+	    )
+	;; (format "[[mpd:(\"%s\")::00:00:00][[music] %s _ 00:00]]" track-path title)
+	(format "[[mpd:(\"%s\")::00:00:00][[music] %s]]" (linkin-org-transform-square-brackets track-path) title)
+	)
+     )
+    )
+  )
+
+(defun linkin-org-link-mpd-simple-mpc ()
+  (interactive)
+  (let*
+      (
+       (track-path
+	(simple-mpc-query-get-%file%-for-result
+	 (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+	)
+	
+       ;; remove the folder part and the extension
+       (title
+	(file-name-nondirectory (file-name-sans-extension track-path))
+	)
+       )
+    (format
+     "[[mpd:(\"%s\")::00:00:00][[music] %s]]"
+     track-path
+     title
+     )
+    )
+  )
 
 ;;;; ------------------------------------------- video link
 (org-add-link-type "video" 'org-video-open nil)
