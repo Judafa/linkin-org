@@ -384,8 +384,22 @@ It is assumed you already checked that file-path is not valid.
     )
   )
 
+(defun linkin-org-resolve-file (file-path)
+  "Try different approaches to resolve the file path"
+  (cond
+   ;; if the path is already correct, do nothing
+   ((file-exists-p file-path) file-path)
+   ;; else, try resolving the file path with just ids
+   ((linkin-org-resolve-file-with-path file-path))
+   ;; else, try resolving the file path looking inside store directories
+   ((linkin-org-resolve-file-with-store-directory file-path))
+   ;; else, file could not be resolved
+   (t (message "Neither the file nor the id could be found"))
+   )
+  )
+
 (defun linkin-org-resolve-link (link-string)
-  "take a link in string form and returns the same link but with a correct path.
+  "Take a link in string form and returns the same link but with a correct path.
 only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 "
   
@@ -412,17 +426,8 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
                         )
                       )
 	   ;; if the link has a path, then change it to the correct path
-	   (new-link-path (if link-path
-                          (cond
-                           ;; if the path is already correct, do nothing
-                           ((file-exists-p link-path) link-path)
-                           ;; else, try resolving the file path with just ids
-                           ((linkin-org-resolve-file-with-path link-path))
-                           ;; else, try resolving the file path looking inside store directories
-                           ((linkin-org-resolve-file-with-store-directory link-path))
-                           ;; else, file could not be resolved
-                           (t (message "Neither the file nor the id could be found"))
-                           )
+	   (new-link-path (if link-path (linkin-org-resolve-file link-path)
+                          
 			            )
                       )
 	   ;; build a new link based on the correct path
@@ -433,8 +438,8 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
   )
 
 
-(defun linkin-org-get-org-link-string-under-point ()
-  "returns the string of an org link under point, returns nil if no link was found"
+(defun linkin-org-get-org-string-link-under-point ()
+  "Returns the string of an org link under point, returns nil if no link was found"
   (if (org-in-regexp
        org-link-any-re
        (let ((origin (point)))
@@ -453,6 +458,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 ;; to do an action on a file as if the point was on that file in dired
 (defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
+  "Do an action on a file as if the point was on that file in dired"
   (let*
       (
        ;; get the full path
@@ -484,12 +490,14 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 ;; to open a file as if in dired
 (defun linkin-org-open-file-as-in-dired (file-path)
+  "Open a file as if it were opened from dired"
   (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
   ;; (find-file file-path)
   )
 
 ;; to yank the link of a given file
 (defun linkin-org-yank-link-of-file (file-path)
+  "Yank the link of a given file, as if linkin-org-dired-get-link was called from dired"
   (linkin-org-perform-function-as-if-in-dired-buffer file-path 'linkin-org-dired-get-link)
   )
 
@@ -762,6 +770,9 @@ for internal and \"file\" links, or stored as a parameter in
 ;; to get a link towards the current line in an editale file.
 ;; if there is an id in the current line, use it. Otherwise use the line number.
 (defun linkin-org-line-get-link ()
+  "Returns a link towards the current line in an editable file.
+If there is an id in the current line, use it. Otherwise use the line number.
+"
   (let*
       (
        (current-file-path (abbreviate-file-name (buffer-file-name)))
@@ -794,7 +805,8 @@ for internal and \"file\" links, or stored as a parameter in
 
 
 ;; to leave an id in an editable line
-(defun linkin-org-store-inline-id (&optional yank-link?)
+(defun linkin-org-store-inline-id ()
+  "Leaves an id in an editable line and copy a link towards that id in the kill-ring"
     (let (
 	  (id (linkin-org-create-id))
 	  (range
@@ -860,8 +872,6 @@ for internal and \"file\" links, or stored as a parameter in
 (org-add-link-type "pdf" 'org-pdf-open nil)
 
 (defun org-pdf-open (link)
-  "Where page number is 105 and the positions to hightlight on the page are e1, e2, e3, e4, then the link should look like:
-   [[pdf:/path/to/file.pdf::105::e1;e2;e3;e4][My description.]]"
   (let*
       (
 	   (link-parts (split-string link "::"))
@@ -1318,6 +1328,8 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
     )
   )
 
+
+
 ;;;; ------------------------------------------- main commands
 
 (defun linkin-org-leave-id-to-file-in-dired ()
@@ -1366,7 +1378,40 @@ Do nothing if the file already has an id.
       )
     )
 
+(defun linkin-org-follow-string-link (string-link)
+  "Open the link STRING-LINK given in string form"
+  (if-let*
+      (
+	   ;; turn the string link into an org element
+	   (link (linkin-org-parse-org-link string-link))
+	   ;; get the type of the link
+	   (link-type (org-element-property :type link))
+	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
+	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
+				            (linkin-org-resolve-link string-link)
+			              string-link
+			              )
+			            )
+       )
+      (org-link-open (linkin-org-parse-org-link new-string-link))
+      ;; (progn
+	  ;;   (with-temp-buffer
+	  ;;     (let ((org-inhibit-startup t))
+	  ;;       (insert new-string-link)
+	  ;;       (org-mode)
+	  ;;       (goto-char (point-min))
+	  ;;       (org-open-at-point)
+	  ;;       )
+	  ;;     )
+	  ;;   t
+	  ;;   )
+    )
+  )
+
 (defun linkin-org-follow ()
+  "Open the link under point.
+If a region is selected, open all links in that region in order.
+"
   (interactive)
   ;; if a region is selected, then open all links in the region, in order
   (if (region-active-p)
@@ -1410,34 +1455,13 @@ Do nothing if the file already has an id.
 	        )
 	      )
 	    )
-    (if-let (
-	         ;; get the link under point in string form
-	         (link-string (linkin-org-get-org-link-string-under-point))
-             
-	         ;; turn the string link into an org element
-	         (link (linkin-org-parse-org-link link-string))
-	         ;; get the type of the link
-	         (link-type (org-element-property :type link))
-             
-	         ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
-	         (new-link-string (if (member link-type linkin-org-link-types-to-check-for-id)
-				                  (linkin-org-resolve-link link-string)
-			                    link-string
-			                    )
-			                  )
-	         )
-        (progn
-	      (with-temp-buffer
-	        ;; (with-current-buffer (create-file-buffer "/home/juliend/test")
-	        (let ((org-inhibit-startup nil))
-	          (insert new-link-string)
-	          (org-mode)
-	          (goto-char (point-min))
-	          (org-open-at-point)
-	          )
-	        )
-	      t
+    (let (
+	      ;; get the link under point in string form
+	      (string-link (linkin-org-get-org-string-link-under-point))
 	      )
+      ;; follow the string
+      (linkin-org-follow-string-link string-link)
+      
       )
     )
   )
@@ -1510,10 +1534,6 @@ Do nothing if the file already has an id.
      ((string= mode "dired-mode")
       (linkin-org-store-file t)
       )
-     ;; ;; If in elfeed
-     ;; ((string= mode "elfeed-search-mode")
-     ;;  (my/sauve-feed-rss-sous-curseur)
-     ;;  )
      ;; If in mu4e
      ((string= mode "mu4e-view-mode")
       (my/sauve-piece-jointe-dans-fourre-tout)
