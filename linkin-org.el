@@ -1539,8 +1539,213 @@ then, a timestamp in format readable by mpd, for instance 1:23:45
     )
   )
 
-;; Fonction polymorphe (dépendante du mode majeur) pour copier la chose sous le curseur dans le presse-papier
+;;;; ------------------------------------------- main commands
 
+(defun linkin-org-leave-id-to-file-in-dired ()
+  "add an id to the under point in dired.
+Do nothing if the file already has an id.
+"
+    (interactive)
+    (let* (
+	       (file-path (dired-file-name-at-point))
+           ;; t if file-path is a directory, nil if it's a file
+           (is-directory? (file-directory-p file-path))
+           ;; get the file-name, or directory name
+           (file-name
+            (if is-directory?
+                (file-name-nondirectory (directory-file-name file-path))
+              (file-name-nondirectory file-path)
+                )
+            )
+           ;; try to get an id in file-name
+           (id (linkin-org-get-id file-name linkin-org-id-regexp))
+           )
+      (unless id
+       ;; rename the file or directory with an id at the front
+       (if is-directory?
+           (rename-file
+            file-path
+            (concat
+             ;; (file-name-directory (expand-file-name (directory-file-name file-path)))
+             (linkin-org-create-id)
+             linkin-org-sep
+             file-name
+             )
+            )
+         (rename-file
+          file-path
+          (concat
+           ;; (file-name-directory (expand-file-name file-path))
+           (linkin-org-create-id)
+           linkin-org-sep
+           file-name
+           )
+          )
+	     )
+       )
+      (revert-buffer)
+      )
+    )
+
+(defun linkin-org-follow ()
+  (interactive)
+  ;; if a region is selected, then open all links in the region, in order
+  (if (region-active-p)
+      (let (
+	    (beg (region-beginning))
+	    (end (region-end))
+	    (text-to-investigate (buffer-substring-no-properties (region-beginning) (region-end)))
+	    )
+	    (save-excursion
+	      (with-temp-buffer
+	        ;; insert the text to investigate
+	        (insert "\n")
+	        (insert text-to-investigate)
+	        ;; go to the beginning of the buffer
+	        (goto-char (point-min))
+	        ;; if there is a link under point
+	        ;; (if (org--link-at-point)
+	        ;; 	;; open the link
+	        ;; 	(linkin-org-open-link-at-point)
+	        ;; 	)
+	        (let*
+		        (
+		         ;;remember the current point
+		         (current-point (point))
+		         ;; go to the next link and remember the point
+		         (next-point (progn
+			                   (org-next-link)
+			                   (point))
+			                 )
+		         )
+	          ;; go to the next link while current-point is different from next-point
+	          (while (not (= current-point next-point))
+		        (linkin-org-follow)
+		        (setq current-point next-point)
+		        (setq next-point (progn
+				                   (org-next-link)
+				                   (point))
+		              )
+		        )
+	          )
+	        )
+	      )
+	    )
+    (if-let (
+	         ;; get the link under point in string form
+	         (link-string (linkin-org-get-org-link-string-under-point))
+             
+	         ;; turn the string link into an org element
+	         (link (linkin-org-parse-org-link link-string))
+	         ;; get the type of the link
+	         (link-type (org-element-property :type link))
+             
+	         ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
+	         (new-link-string (if (member link-type linkin-org-link-types-to-check-for-id)
+				                  (linkin-org-turn-link-into-correct-one link-string)
+			                    link-string
+			                    )
+			                  )
+	         )
+        (progn
+	      (with-temp-buffer
+	        ;; (with-current-buffer (create-file-buffer "/home/juliend/test")
+	        (let ((org-inhibit-startup nil))
+	          (insert new-link-string)
+	          (org-mode)
+	          (goto-char (point-min))
+	          (org-open-at-point)
+	          )
+	        )
+	      t
+	      )
+      )
+    )
+  )
+
+
+
+(defun linkin-org-get ()
+  "kill a link to what is under point"
+  (interactive)
+  (let*
+      ((mode (symbol-name major-mode)))
+    (cond
+     ;; if in a pdf, kill a link towards the pdf
+     ((string= mode "pdf-view-mode")
+      (kill-new (linkin-org-pdf-get-link))
+      )
+     ;; if text is selected, just kill the that text
+     ((region-active-p)
+      (kill-ring-save (region-beginning) (region-end))
+      )
+     ;; if in a dired buffer, kill a link towards the file under point
+     ((string= mode "dired-mode")
+      (kill-new (linkin-org-dired-get-link))
+      )
+     ;; if viewing a mail in mu4e
+     ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
+      ;; (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
+      (kill-new (let
+                 ((l (call-interactively 'org-store-link)))
+                 (format "[[%s][%s %s]]"
+                        (car l)
+                        "[mail]"
+                        (cadr l)
+                        )
+                 )
+                )
+      )
+     ;; if in a mingus playlist buffer
+     ((string= mode "mingus-playlist-mode")
+      (kill-new (linkin-org-lien-mpd-mingus))
+      )
+     ;; if in a simple-mpc buffer
+     ((string= mode "simple-mpc-mode")
+      (kill-new (linkin-org-link-mpd-simple-mpc))
+      )
+
+
+     ;; Otherwise, kill a link towards the current line of the buffer
+     (t
+      (kill-new (linkin-org-line-get-link))
+      )
+
+     )
+    )
+  )
+
+
+
+(defun linkin-org-store ()
+  "Store what is under point and kill a link to it"
+  (interactive)
+  (let*
+      ((mode (symbol-name major-mode)))
+    (cond
+     ;; ;; If text is selected
+     ;; ((region-active-p)
+     ;;  (my/sauve-texte-selectionne-nimp-dans-fourretout)
+     ;;  )
+     ;; If in a dired buffer
+     ((string= mode "dired-mode")
+      (linkin-org-store-file t)
+      )
+     ;; ;; If in elfeed
+     ;; ((string= mode "elfeed-search-mode")
+     ;;  (my/sauve-feed-rss-sous-curseur)
+     ;;  )
+     ;; If in mu4e
+     ((string= mode "mu4e-view-mode")
+      (my/sauve-piece-jointe-dans-fourre-tout)
+      )
+     ;; If in an editable buffer
+     ((not buffer-read-only)
+      (linkin-org-store-inline-id)
+      )
+     )
+    )
+  )
 
 
 
