@@ -28,11 +28,8 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-;;; Code:
 
-;; (require 'async)
-;; (require 'cl-lib)
-;; (require 'org)
+
 
 
 
@@ -87,7 +84,7 @@
 
 
 (defun linkin-org-create-id ()
-  "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second, and milliseconds."
+  "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second"
   (let*
       (
        (time-string (format-time-string "%Y%m%dT%H%M%S" (current-time)))
@@ -199,7 +196,7 @@
 
 
 (defun linkin-org-resolve-file-with-path (file-path)
-  "Starting at the root directory, climb up the file name directory by directory; whenever the current subpath is not valid, resolves using id.
+  "Starting at the root directory, climb up the file-path directory by directory; whenever the current subpath is not valid, resolves using id.
 Returns the the  resolved file path, nil if it could not resolve it.
 This always finds your file back if you only renamed files and preserved the ids; it does not work if you changed the location of some directories in file-path.
 file-path can be the path of a file or a directory.
@@ -565,12 +562,45 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
     )
   )
 
+(defun linkin-org-follow-link-and-do-function (string-link function-to-perform)
+  "follow the link, apply the function, come back."
+  (let (
+        ;; remember the current buffer and the current position of poin
+        (init-buffer (current-buffer))
+        (init-point (point))
+        ;; save the current buffer list
+        (init-buffer-list (buffer-list))
+        new-buffer
+        )
+    (unwind-protect
+        (progn
+          ;; follow to the link
+          (linkin-org-follow-string-link link)
+          ;; call the function
+          (funcall function-to-perform)
+          ;; remember the buffer
+          (setq new-buffer (current-buffer))
+          ;; save the current buffer
+          (save-buffer)
+         )
+      ;; go back where we were
+      (switch-to-buffer init-buffer)
+      (goto-char init-point)
+      ;; save and kill the buffer where the link took us in case it was not open
+      (unless (memq new-buffer init-buffer-list)
+        (kill-buffer new-buffer)
+        )
+      )
+    )
+  )
+
 
 
 ;;;; ------------------------------------------- file link
 
 ;; To create a link towards the file under point in a dired buffer
 (defun linkin-org-dired-get-link ()
+  "Returns a link towards the file under point in dired"
   (let* (
          (chemin-fichier (abbreviate-file-name (dired-file-name-at-point)))
 	 ;; le nom du fichier sans le chemin
