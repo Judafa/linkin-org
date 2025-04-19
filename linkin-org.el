@@ -43,7 +43,7 @@
 
 ;; list of link types such that, when following the link, the id should be checked if the link does not work
 (defcustom linkin-org-link-types-to-check-for-id
-  '("pdf" "video" "file")
+  '("pdf" "file")
   "List of link types such that, if the link is broken, the id in the link should be used to resolve the link"
   )
 
@@ -505,9 +505,9 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 (defun linkin-org-store-file (&optional yank-link? ask-for-name-confirmation?)
   "Store the file under point in dired"
-  (interactive)
   (let* (
 	     (file-or-directory-path (dired-file-name-at-point))
+         ;; is the file already in the store directory
 	     (is-file-already-in-store-directory? (s-prefix?
 					                           (expand-file-name linkin-org-store-directory)
 					                           (expand-file-name file-or-directory-path)
@@ -586,18 +586,17 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
           (linkin-org-follow-string-link link)
           ;; call the function
           (funcall function-to-perform)
-          ;; remember the buffer
+          ;; remember the buffer we landed in by following the link
           (setq new-buffer (current-buffer))
-          ;; save the current buffer
-          (save-buffer)
          )
       ;; go back where we were
       (switch-to-buffer init-buffer)
       (goto-char init-point)
-      ;; save and kill the buffer where the link took us in case it was not open
-      (unless (memq new-buffer init-buffer-list)
-        (kill-buffer new-buffer)
-        )
+      ;; kill all buffers that were open
+      (mapcar
+       'killbuffer
+       (cl-set-difference (buffer-list) init-buffer-list)
+       )
       )
     )
   )
@@ -708,6 +707,7 @@ opening a \"file\" link.
 Functions responsible for opening the link are either hard-coded
 for internal and \"file\" links, or stored as a parameter in
 `org-link-parameters', which see."
+  
   (let ((type (org-element-property :type link))
 	(path (org-element-property :path link)))
     (pcase type
@@ -883,7 +883,7 @@ If there is an id in the current line, use it. Otherwise use the line number.
        (pdf-file (car link-parts))
 	   (page
         (if (and (plistp metadata) (= 2 (length link-parts)))
-            ;; if the link is with the new plist format
+            ;; if the link is with the plist format
             (plist-get metadata :page)
           ;; else if the data is just separated by ::
           (string-to-number (car (cdr link-parts)))
@@ -1302,26 +1302,21 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
     (progn
       ;; (message (concat "video address : " video-address))
       (cond
-       ;; if it's a local file
-       ((linkin-org-is-link-path-correct video-address)
-	(progn
-	  (message (format  "Playing %s at %s" video-address timestamp))
-	  (start-process "mpv" nil "mpv" (format "--start=%s" timestamp) video-address)))
-       ;; if it's no file path, check if it's a url
+       ;; if its an url
        ((linkin-org-is-url video-address)
-	(progn
-	  ;; print timestamp and video address
-	  ;; (message "hello")
-	  ;; (message (concat "video address : " ))
-	  ;; (message timestamp)
-	  ;; (message (format  "Playing from YOUTUBE %s at %s" video-address timestamp))
-	  ;; (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" (format "--start=%s" timestamp) video-address)
-	  (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" video-address)
-	  )
-	)
+	    (progn
+	      (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" video-address)
+	      )
+	    )
+       ;; if it's a local file
+       ;; ((linkin-org-is-link-path-correct video-address)
+       ((linkin-org-resolve-file video-address)
+	    (progn
+	      (message (format  "Playing %s at %s" video-address timestamp))
+	      (start-process "mpv" nil "mpv" (format "--start=%s" timestamp) video-address)))
        (t
-	(message "Not a valid video file or url")
-	)
+	    (message "Not a valid video file or url")
+	    )
        
        )
       )
@@ -1380,6 +1375,7 @@ Do nothing if the file already has an id.
 
 (defun linkin-org-follow-string-link (string-link)
   "Open the link STRING-LINK given in string form"
+  
   (if-let*
       (
 	   ;; turn the string link into an org element
@@ -1387,24 +1383,15 @@ Do nothing if the file already has an id.
 	   ;; get the type of the link
 	   (link-type (org-element-property :type link))
 	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
-	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
-				            (linkin-org-resolve-link string-link)
-			              string-link
+	   (new-string-link (when (member link-type linkin-org-link-types-to-check-for-id)
+				          (linkin-org-resolve-link string-link)
 			              )
 			            )
        )
+      ;; open the resolved link in the normal org way
       (org-link-open (linkin-org-parse-org-link new-string-link))
-      ;; (progn
-	  ;;   (with-temp-buffer
-	  ;;     (let ((org-inhibit-startup t))
-	  ;;       (insert new-string-link)
-	  ;;       (org-mode)
-	  ;;       (goto-char (point-min))
-	  ;;       (org-open-at-point)
-	  ;;       )
-	  ;;     )
-	  ;;   t
-	  ;;   )
+    ;; if the link could not be resolved, just open the link in the normal org way
+    (org-link-open string-link)
     )
   )
 
