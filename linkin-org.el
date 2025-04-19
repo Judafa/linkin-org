@@ -1124,29 +1124,30 @@ If there is an id in the current line, use it. Otherwise use the line number.
 ;; (org-link-set-parameters TYPE &rest PARAMETERS)
 
 
-(defun org-mpd-link-get-path (link)
-  (let* (
-         (link-parts (split-string link "::"))
-         ;; for the mpd file path
-         (mpd-file (car link-parts))
-         )
-    mpd-file
-    )
-  )
-  
-(defun org-mpd-open (link)
+(defun org-mpd-open (string-link)
   " link is a string containing
 the paths to the song (an mp3 file or so, or a .cue file with a trailing /track<number>) as a lisp list, each song is a string element of the list
 then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
-
   (let* (
-	 ;; unescape the link
-	 ;; (link (unescape-special-characters link))
-	 (link-parts (split-string link "::"))
-	 ;; use the read function that parses a string as code
-	 (songs (read (car link-parts)))
-	 (timestamp (cadr link-parts))
-	 )
+	     (link-parts (split-string string-link "::"))
+	     (songs (read (car link-parts)))
+         (metadata (when (cadr link-parts)
+                     (read (cadr link-parts))
+                     )
+                   )
+	     ;; unescape the link
+	     ;; (link (unescape-special-characters link))
+	     ;; use the read function that parses a string as code
+	     ;; (songs (read (car link-parts)))
+	     (timestamp
+          (if (and (plistp metadata) (= 2 (length link-parts)))
+              ;; if the metadata are in the plist format
+              (plist-get metadata :timestamp)
+            ;; else if the data is just separated by ::
+            (cadr link-parts)
+            )
+	      )
+         )
     ;; (message (concat "song:" (prin1-to-string songs)))
     ;; (simple-mpc-call-mpc nil (cons "add" songs))
     (apply 'call-process "mpc" nil nil nil (cons "add" songs))
@@ -1190,9 +1191,9 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
   )
 
 
-;; build the link
+;; returns a link in string format towards the mingus entry at point
 (defun linkin-org-lien-mpd-mingus ()
-  (interactive)
+  "Returns a link in string format towards the mingus entry at point"
   (let* (
 	 (list-songs
 	  (mapcar
@@ -1238,7 +1239,7 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
 	    (title (linkin-org-get-mpd-track-title (mingus-get-details)))
 	    )
 	;; (format "[[mpd:(\"%s\")::00:00:00][[music] %s _ 00:00]]" track-path title)
-	(format "[[mpd:(\"%s\")::00:00:00][[music] %s]]" (linkin-org-transform-square-brackets track-path) title)
+	(format "[[mpd:(\"%s\")::(:timestamp \"00:00:00\")][[music] %s]]" (linkin-org-transform-square-brackets track-path) title)
 	)
      )
     )
