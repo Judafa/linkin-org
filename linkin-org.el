@@ -140,6 +140,18 @@
     )
   )
 
+(defun linkin-org-give-id-to-file-name (file-name)
+  "Take a file name FILE-NAME (without path) and return a new file name with id.
+Does not add an id if FILE-NAME already has one.
+"
+  (if (linkin-org-get-id file-name)
+      ;; if the file already has an id, dont add one
+      file-name
+    ;; else add an id
+    (concat (linkin-org-create-id) linkin-org-sep file-name)
+      )
+    )
+
 ;; [id:20250408T202457] 
 (defun linkin-org-transform-square-brackets (str)
   "Escape occurrences of '\\\\', '\\[', and '\\]' in INPUT string."
@@ -209,6 +221,7 @@ It is assumed you already checked that file-path is not valid.
        ;; the directory in construction
        (building-dir "")
        ;; split the dir into all its intermediary directories
+       ;; doesnt work on windows!
        (split-path (split-string file-path "/") )
        ;; remove empty strings ""
        (split-path (seq-remove
@@ -222,7 +235,7 @@ It is assumed you already checked that file-path is not valid.
       (when building-dir
        (let
            (
-            (tmp-building-dir (concat (directory-file-name building-dir) "/" sub-dir))
+            (tmp-building-dir (concat (file-name-as-directory (directory-file-name building-dir)) sub-dir))
             resolved-dir
             )
          (if (file-exists-p tmp-building-dir)
@@ -267,7 +280,7 @@ It is assumed you already checked that file-path is not valid.
                            (if (file-exists-p resolved-dir)
                                ;; I do this since I'm never sure whether fd returns an absolute or relative path
                                resolved-dir
-                             (concat (directory-file-name building-dir) "/" resolved-dir)
+                             (concat (file-name-as-directory (directory-file-name building-dir)) resolved-dir)
                              )
                            )
                    ;; if we did not find a match, then we cannot resolve the file. set the buidling path to nil
@@ -367,7 +380,7 @@ It is assumed you already checked that file-path is not valid.
                 (setq resolved-file-path
                       (if (file-exists-p resolved-file-path)
                           resolved-file-path
-                        (concat (directory-file-name dir) "/" resolved-file-path)
+                        (concat (file-name-as-directory (directory-file-name dir)) resolved-file-path)
                         )
                       )
                 )
@@ -506,34 +519,53 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 (defun linkin-org-store-file (&optional yank-link? ask-for-name-confirmation?)
   "Store the file under point in dired"
   (let* (
-	     (file-or-directory-path (dired-file-name-at-point))
+	     (file-path (dired-file-name-at-point))
          ;; is the file already in the store directory
 	     (is-file-already-in-store-directory? (s-prefix?
 					                           (expand-file-name linkin-org-store-directory)
-					                           (expand-file-name file-or-directory-path)
+					                           (expand-file-name file-path)
 					                           )
 					                          )
 	     )
     ;; check wether it's a file or a directory
-    (if (file-directory-p file-or-directory-path)
+    (if (file-directory-p file-path)
 	    ;; if it's a directory
 	    (progn
-	      (let
+	      (let*
 	          (
 	           ;; ask for the directory new name
 	           ;; ~directory-file-name~ removes the trailing slash so that ~file-name-nondirectory~ returns the last part of the path
-	           (nouveau-nom
+	           (new-file-name
                 (if ask-for-name-confirmation?
-                    (read-string "New name: " (file-name-nondirectory (directory-file-name file-or-directory-path)))
-                  (file-name-nondirectory (directory-file-name file-or-directory-path))
+                    (read-string "New name: " (file-name-nondirectory (directory-file-name file-path)))
+                  (file-name-nondirectory (directory-file-name file-path))
                   )
                 )
-	           (id (concat (linkin-org-create-id) linkin-org-sep))
+               ;; give the file name an id
+               (new-file-name (linkin-org-give-id-to-file-name new-file-name))
 	           )
-	        (if is-file-already-in-store-directory?
-		        (rename-file file-or-directory-path (concat (file-name-directory (expand-file-name (directory-file-name file-or-directory-path))) id nouveau-nom))
-	          (copy-directory file-or-directory-path (concat linkin-org-store-directory id nouveau-nom))
-	          )
+		    (copy-directory
+             file-path
+             (if is-file-already-in-store-directory?
+                 ;; if the directory is already in the store directory, just rename it without moving it
+                 (concat
+                  ;; this just concats a "/" at the end of the directory (if there's none already)
+                  (file-name-as-directory
+                   (file-name-directory (expand-file-name (directory-file-name file-path)))
+                   )
+                  new-file-name
+                  )
+               ;; else, move the directory is no in the store directory, move it in there
+               ;; (copy-directory file-path (linkin-org-store-directory new-file-name))
+               (concat (file-name-as-directory
+                        (expand-file-name (directory-file-name linkin-org-store-directory))
+                        )
+                       new-file-name
+                       )
+               )
+             )
+            ;; update the dired buffer
+            (revert-buffer)
 	        )
 	      )
       ;; if it's a file
@@ -541,25 +573,25 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 	    (let*
 	        ;; ask for the file new name
 	        (
-	         (nouveau-nom
+	         (new-file-name
               (if ask-for-name-confirmation?
-                  (read-string "New name: " (file-name-nondirectory file-or-directory-path))
-                (file-name-nondirectory file-or-directory-path)
+                  (read-string "New name: " (file-name-nondirectory file-path))
+                (file-name-nondirectory file-path)
                 )
               )
-	         (id (concat (linkin-org-create-id) linkin-org-sep))
-	         (nouveau-nom (concat id nouveau-nom))
+             ;; give the file name an id
+	         (new-file-name (linkin-org-give-id-to-file-name new-file-name))
 	         (complete-file-path (if is-file-already-in-store-directory?
-                                     (concat (file-name-directory (expand-file-name file-or-directory-path)) nouveau-nom)
-                                   (concat linkin-org-store-directory "/" nouveau-nom)
+                                     (concat (file-name-directory (expand-file-name file-path)) new-file-name)
+                                   (concat (file-name-as-directory linkin-org-store-directory) new-file-name)
                                    )
                                  )
 	         )
-          (rename-file file-or-directory-path complete-file-path)
+          (copy-file file-path complete-file-path)
 	      ;; (if is-file-already-in-fourre-tout?
-	      ;;     ;; (rename-file file-or-directory-path complete-file-path)
-	      ;;     (rename-file file-or-directory-path (concat (file-name-directory (expand-file-name (directory-file-name file-or-directory-path))) id nouveau-nom))
-	      ;; (copy-file file-or-directory-path complete-file-path)
+	      ;;     ;; (rename-file file-path complete-file-path)
+	      ;;     (rename-file file-path (concat (file-name-directory (expand-file-name (directory-file-name file-path))) id new-file-name))
+	      ;; (copy-file file-path complete-file-path)
 	      ;;   )
 	      (linkin-org-yank-link-of-file complete-file-path)
           ;; update the dired buffer
@@ -1344,33 +1376,25 @@ Do nothing if the file already has an id.
               (file-name-nondirectory file-path)
                 )
             )
-           ;; try to get an id in file-name
-           (id (linkin-org-get-id file-name linkin-org-id-regexp))
-           )
-      (unless id
-       ;; rename the file or directory with an id at the front
-       (if is-directory?
-           (rename-file
-            file-path
-            (concat
-             ;; (file-name-directory (expand-file-name (directory-file-name file-path)))
-             (linkin-org-create-id)
-             linkin-org-sep
-             file-name
-             )
+           ;; get the file path without the name of the file
+           (file-path-sans-name
+            (if is-directory?
+                (file-name-directory (directory-file-name file-path))
+              (file-name-directory file-path)
+              )
             )
-         (rename-file
-          file-path
-          (concat
-           ;; (file-name-directory (expand-file-name file-path))
-           (linkin-org-create-id)
-           linkin-org-sep
-           file-name
            )
+      ;; if the file doesnt already has an id, rename the file or directory with an id at the front
+      (unless (linkin-org-get-id file-name)
+        (rename-file
+         file-path
+         (concat
+          file-path-sans-name
+          (linkin-org-give-id-to-file-name file-name)
           )
-	     )
-       )
-      (revert-buffer)
+         )
+        (revert-buffer)
+        )
       )
     )
 
@@ -1506,7 +1530,6 @@ If a region is selected, open all links in that region in order.
      )
     )
   )
-
 
 
 (defun linkin-org-store ()
