@@ -1383,8 +1383,9 @@ Do nothing if the file already has an id.
 	   ;; get the type of the link
 	   (link-type (org-element-property :type link))
 	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
-	   (new-string-link (when (member link-type linkin-org-link-types-to-check-for-id)
+	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
 				          (linkin-org-resolve-link string-link)
+                          string-link
 			              )
 			            )
        )
