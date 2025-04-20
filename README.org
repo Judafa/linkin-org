@@ -1,39 +1,60 @@
 
-linkin-org --- an emacs workflow with fast, reliable links.
+linkin-org --- an emacs workflow with simple, fast, and reliable links.
 
-* Introducing linkin-org
-
-I find it easier to retrieve data with context.
-Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "tickets" folder, others will search for keywords hoping they used to name the ticket file right.
-For my part, I go to my org note "spain travel" and follow the ticket link that I pasted there.
-It took me seconds, and I could do the whole storing-retrieving process without even thinking about it.
-I found it so smooth and powerful a workflow, I made a package out of it.
-
-# Having all the relevant thoughts and data about a given subject quickly available there.
+* Quick Overview
+linkin-org provides three commands:
+- ~linkin-org-store~
+- ~linkin-org-get~
+- ~linkin-org-follow~
 
 
+~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
+It works on a file (in a dired buffer), a line in an editable file (org, markdown, python, whatever), selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]), a mail attachment (in mu4e) ...
+It directly copies the link in your clipboard (a.k.a kill-ring) so you can paste it right away.
+The link is reliable thanks to an automatic id system: rename, move or modify the file, the link still works.
 
-linkin-org proposes to help you organise your life with org links.
+~linkin-org-get~ copies a link towards what you have at point in your clipboard; do not modify your data.
+This function is called by ~linkin-org-store~ at the end of its execution.
+The link may not be reliable.
+
+~linkin-org-follow~ opens the link at point.
+If the known path towards the data is no valid anymore, uses ids to retrieve it.
+
+
+
+
+
+* Meet linkin-org
+
+I find it easier to retrieve information with context.
+Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "Tickets" folder, others will search their files for keywords hoping they used to name the ticket file right.
+For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I follow the ticket link that I pasted there some time ago.
+It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
+That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
+If the information relates to multiple contexts, just paste the link multiple times in each corresponding note; the links are reliable with an automatic, non-intrusive id system;  ... I decently cannot list all the advantages here for brevity!
+
+
+linkin-org proposes to store precise locations with links.
+Here are some sample workflow examples with linkin-org.
 
 *** Just downloaded some file?
-In dired, store the file (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
-This just copied a link: paste it in a .org file and follow the link (~linkin-org-open-link~) with your cursor on it to retrieve your file.
-While storing the file, linkin-org added an id at the beginning of your file name: your link will still work if you rename or move the file around (needs to stay inside ~linkin-org-store-directory~ though).
+Put your cursor on the file in dired and store it (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
+By doing this, you copied a link: paste it in a .org file: following the link (~linkin-org-open-link~) retrieves your file.
+Also while storing the file, linkin-org added an id at the beginning of your file name: your link will still work if you rename or move the file around.
 
 *** Just wrote something you'd like to go back to later?
-Go one line above and store that line (~linkin-org-store~) to insert an id there.
-This just copied a link: paste it in a .org file and follow the link (~linkin-org-open-link~) to go back exactly where you were.
+Go one line above and store the current line (~linkin-org-store~) to insert an inline id.
+By doing this, you just copied a link: paste it in a .org file: following the link (~linkin-org-open-link~) goes back exactly where you were.
 That link will always get you exactly at the right location.
 
 *** Reading something interesting in a pdf?
-Select the text with your mouse and store the pdf location (~linkin-org-store~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tool]]).
+Select the text with your mouse and store the pdf location (~linkin-org-store~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
 Following the copied link (~linkin-org-open-link~) gets you to the right page and highlight the words you were reading.
 If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
 *** And more
-Define new link types: define a video link type to store and replay precise moments of a videos (youtube or stored locally, with [[https://github.com/mpv-player/mpv][mpv]]), define a music link type to launch musics with links (organically turn your org notes into playlists with links, with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]), 
-save selected text or feeds with one key press.
-You can reliably go back to precise locations and execute arbitrary code: possibilities are 
+Define new link types: define a video link type to store and replay precise moments of a videos (youtube or stored locally, with [[https://github.com/mpv-player/mpv][mpv]]), define a music link type to launch musics with links (organically turn your org notes into playlists, with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
+Also turn your notes into a web browser session manager, quickly save selected text or save elfeed entries.
 
 
 * Installing linkin-org
@@ -45,19 +66,27 @@ with straight
 	     :host github
 	     :repo "Judafa/linkin-org")
   :config
-  ;; change this to the directory you want to store your things into
+  ;; set this to the directory you want to store your things into
   (setq linkin-org-store-directory "~/")
+  ;; set this to the list of directories that are checked when a link is broken
+  ;; directories are checked in order; put the light ones first
+  (setq linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")))
 
   ;; workflow tips (warning: I'm an evil user)
-  ;; (define-key global-map (kbd "C-l") 'linkin-org-open-link)
+  ;; (define-key global-map (kbd "C-l") 'linkin-org-follow)
+  ;; (nvmap :keymaps 'override :prefix "SPC"
+  ;;   "f"   '(linkin-org-store :which-key "Store the thing at point.")
+  ;;   "y"   '(linkin-org-get :which-key "Yank a link towards the thing at point.")
+  ;;   )
   ;; (define-key global-map (kbd "C-n") 'org-next-link)
   ;; (define-key global-map (kbd "C-p") 'org-previous-link)
 
-  
-  (nvmap :keymaps 'override :prefix "SPC"
-    ;; "f"   '(range-dans-fourre-tout :which-key "Range la chose sous le curseur dans le Fourre-tout")
-    "f"   '(hydra-fourre-tout/body :which-key "Ouvre un menu hydra pour ranger dans le Fourre-tout")
-    )
+  ;; worflow tips (for (normal?) non-evil users)
+  ;; (define-key global-map (kbd "C-c l") 'linkin-org-follow)
+  ;; (define-key global-map (kbd "C-c f") 'linkin-org-store)
+  ;; (define-key global-map (kbd "C-c y") 'linkin-org-get)
+  ;; (define-key global-map (kbd "C-c C-n") 'org-next-link)
+  ;; (define-key global-map (kbd "C-c C-p") 'org-previous-link)
 
   
   
@@ -67,5 +96,95 @@ with straight
 
 * Dependencies
 linkin-org has no dependencies and works out of the box.
-It is however recommended to have [[https://github.com/sharkdp/fd][fd]] or [[https://github.com/BurntSushi/ripgrep][ripgrep]] installed for faster link recovery.
+It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installed for faster link recovery.
+
+* A few code examples
+** Save selected text
+This code saves some text ~text~ at the location where ~link~ points to.
+#+begin_src emacs-lisp
+(defun my-store-some-text (text link)
+  (linkin-org-follow-link-and-do-function link
+                                          (lambda ()
+                                                  (progn
+                                                    ;; follow to the link
+                                                    (linkin-org-follow-string-link link)
+                                                    ;; go to the end of the current line
+                                                    (end-of-line)
+                                                    ;; insert two line break
+                                                    (insert "\n")
+                                                    ;; create a section labeled with the current date
+                                                    (insert (format "** %s" (format-time-string "%Y-%m-%d %H:%M:%S saved text" (current-time))))
+                                                    (insert "\n")
+                                                    ;; insert the text
+                                                    (insert text)
+                                                    ;; save the buffer
+                                                    (save-buffer)
+                                                    )
+                                                  )
+                                          )
+  )
+#+end_src
+
+You should now redefine ~linkin-org-store~ by adding the following code in the ~cond~ environment.
+Replace <link> by a link towards the location where you want to save the text.
+To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
+#+begin_src emacs-lisp
+((region-active-p)
+ (progn
+  (my-store-some-text
+   (buffer-substring (region-beginning) (region-end))
+   "<put your link there>"
+   )
+  ;; unselect the region
+  (deactivate-mark)
+  )
+ )
+#+end_src
+
+** Save an elfeed entry
+This code saves the url and title of the elfeed entry at point at a location where ~link~ points towards.
+#+begin_src emacs-lisp
+(defun my-save-elfeed-entry (link)
+  ;; save the elfeed entry under point
+  (let (
+	(buffer (current-buffer))
+	(entries (elfeed-search-selected))
+	)
+    (cl-loop for entry in entries
+             do (let*
+		            (
+		             (title (elfeed-entry-title entry))
+		             (url (elfeed-entry-link entry))
+		             )
+                  (linkin-org-follow-link-and-do-function link
+                                                          (lambda ()
+                                                            (end-of-line)
+		                                                    ;; Insert header
+		                                                    (insert (concat "\n" "** " title))
+		                                                    ;; add today's date as a header property
+		                                                    (org-set-property "DATE" (format-time-string "[%Y-%m-%d %a %H:%M]"))
+		                                                    ;; Go to the end of the header's properties
+		                                                    (org-end-of-meta-data)
+		                                                    ;; insert the url
+		                                                    (insert url)
+		                                                    (insert "\n")
+                                                            )
+                                                          )
+
+		          )
+	         )
+    )
+  )
+#+end_src
+
+
+You should redefine ~linkin-org-store~ by adding the following code in the ~cond~ environment.
+Replace <your link> by a link towards the location where you want to save the text.
+To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
+#+begin_src emacs-lisp
+;; If in elfeed
+((string= mode "elfeed-search-mode")
+ (my-save-elfeed-entry "<put your link there>")
+ )
+#+end_src
 
