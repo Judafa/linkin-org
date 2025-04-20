@@ -1470,6 +1470,29 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
   )
 
 
+;;;; ------------------------------------------- saving mu4e attachment
+
+(defun linkin-org-store-mu4e-attachment ()
+  (let* (
+	 ;; get text at point
+	 (data (get-text-property (point) 'gnus-data))
+	 ;; get name of the attachment
+	 (filename-without-directory (or (mail-content-type-get
+					  (mm-handle-disposition data) 'filename)
+					 (mail-content-type-get
+					  (mm-handle-type data) 'name)))
+
+	 (nouveau-filename-without-directory (read-string "Nom : " (file-name-nondirectory filename-without-directory)))
+	 (id (linkin-org-create-id))
+	 (nouveau-filename-without-directory (concat id linkin-org-sep nouveau-filename-without-directory))
+	 (nouveau-filename (concat linkin-org-store-directory "/" nouveau-filename-without-directory))
+	 )
+    (mm-save-part-to-file data nouveau-filename)
+    ;; yank link to file
+    (linkin-org-yank-link-of-file nouveau-filename)
+    )
+  )
+
 
 ;;;; ------------------------------------------- main commands
 
@@ -1650,7 +1673,7 @@ If a region is selected, open all links in that region in order.
       )
      ;; If in mu4e
      ((string= mode "mu4e-view-mode")
-      (my/sauve-piece-jointe-dans-fourre-tout)
+      (linkin-org-store-mu4e-attachment)
       )
      ;; If in an editable buffer
      ((not buffer-read-only)
