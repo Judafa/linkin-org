@@ -9,11 +9,12 @@ linkin-org provides three commands:
 
 
 ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
-It works on a file (in a dired buffer), a line in an editable file (org, markdown, python, whatever), selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]), a mail attachment (in mu4e) ...
+It works on a file (in a dired buffer), a line in an editable file (org, markdown, python, whatever), a mail attachment (in mu4e).
 It directly copies the link in your clipboard (a.k.a kill-ring) so you can paste it right away.
 The link is reliable thanks to an automatic id system: rename, move or modify the file, the link still works.
 
 ~linkin-org-get~ copies a link towards what you have at point in your clipboard; do not modify your data.
+This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
 This function is called by ~linkin-org-store~ at the end of its execution.
 The link may not be reliable.
 
@@ -34,7 +35,7 @@ That's because it's so easy to retrieve information using context: everything th
 If the information relates to multiple contexts, just paste the link multiple times in each corresponding note; the links are reliable with an automatic, non-intrusive id system;  ... I decently cannot list all the advantages here for brevity!
 
 
-linkin-org proposes to store precise locations with links.
+linkin-org proposes to store precise locations with reliable links.
 Here are some sample workflow examples with linkin-org.
 
 *** Just downloaded some file?
@@ -53,7 +54,7 @@ Following the copied link (~linkin-org-open-link~) gets you to the right page an
 If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
 *** And more
-Define new link types: define a video link type to store and replay precise moments of a videos (youtube or stored locally, with [[https://github.com/mpv-player/mpv][mpv]]), define a music link type to launch musics with links (organically turn your org notes into playlists, with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
+Define new link types (builtin): define a video link type to store and replay precise moments of a videos (youtube or stored locally, with [[https://github.com/mpv-player/mpv][mpv]]), define a music link type to launch musics with links (organically turn your org notes into playlists, with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
 Also turn your notes into a web browser session manager, quickly save selected text or save elfeed entries.
 
 
@@ -65,6 +66,7 @@ with straight
 	     :type git
 	     :host github
 	     :repo "Judafa/linkin-org")
+
   :config
   ;; set this to the directory you want to store your things into
   (setq linkin-org-store-directory "~/")
@@ -72,7 +74,8 @@ with straight
   ;; directories are checked in order; put the light ones first
   (setq linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")))
 
-  ;; workflow tips (warning: I'm an evil user)
+
+  ;; workflow tips (warning: I'm an evil user, this also uses the general.el package)
   ;; (define-key global-map (kbd "C-l") 'linkin-org-follow)
   ;; (nvmap :keymaps 'override :prefix "SPC"
   ;;   "f"   '(linkin-org-store :which-key "Store the thing at point.")
@@ -87,9 +90,6 @@ with straight
   ;; (define-key global-map (kbd "C-c y") 'linkin-org-get)
   ;; (define-key global-map (kbd "C-c C-n") 'org-next-link)
   ;; (define-key global-map (kbd "C-c C-p") 'org-previous-link)
-
-  
-  
 )
 #+end_src
 
@@ -125,20 +125,42 @@ This code saves some text ~text~ at the location where ~link~ points to.
   )
 #+end_src
 
-You should now redefine ~linkin-org-store~ by adding the following code in the ~cond~ environment.
+You should now redefine ~linkin-org-store~ as follows.
 Replace <link> by a link towards the location where you want to save the text.
 To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
 #+begin_src emacs-lisp
-((region-active-p)
- (progn
-  (my-store-some-text
-   (buffer-substring (region-beginning) (region-end))
-   "<put your link there>"
-   )
-  ;; unselect the region
-  (deactivate-mark)
+(defun linkin-org-store ()
+  "Store what is under point and kill a link to it"
+  (interactive)
+  (let*
+      ((mode (symbol-name major-mode)))
+    (cond
+     ;; If text is selected
+     ((region-active-p)
+      (progn
+       (my-store-some-text
+        (buffer-substring (region-beginning) (region-end))
+        "<put your link there>"
+        )
+       ;; unselect the region
+       (deactivate-mark)
+       )
+      )
+     ;; If in a dired buffer
+     ((string= mode "dired-mode")
+      (linkin-org-store-file t)
+      )
+     ;; If in mu4e
+     ((string= mode "mu4e-view-mode")
+      (my/sauve-piece-jointe-dans-fourre-tout)
+      )
+     ;; If in an editable buffer
+     ((not buffer-read-only)
+      (linkin-org-store-inline-id)
+      )
+     )
+    )
   )
- )
 #+end_src
 
 ** Save an elfeed entry
@@ -178,13 +200,42 @@ This code saves the url and title of the elfeed entry at point at a location whe
 #+end_src
 
 
-You should redefine ~linkin-org-store~ by adding the following code in the ~cond~ environment.
+You should redefine ~linkin-org-store~ as follows.
 Replace <your link> by a link towards the location where you want to save the text.
 To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
 #+begin_src emacs-lisp
 ;; If in elfeed
-((string= mode "elfeed-search-mode")
- (my-save-elfeed-entry "<put your link there>")
- )
+(defun linkin-org-store ()
+  "Store what is under point and kill a link to it"
+  (interactive)
+  (let*
+      ((mode (symbol-name major-mode)))
+    (cond
+     ;; If text is selected
+     ((region-active-p)
+      (progn
+       (my-store-some-text
+        "<put your link there>"
+        (buffer-substring (region-beginning) (region-end))
+        )
+       ;; unselect the region
+       (deactivate-mark)
+       )
+      )
+     ;; If in a dired buffer
+     ((string= mode "dired-mode")
+      (linkin-org-store-file t)
+      )
+     ;; If in mu4e
+     ((string= mode "mu4e-view-mode")
+      (my/sauve-piece-jointe-dans-fourre-tout)
+      )
+     ;; If in an editable buffer
+     ((not buffer-read-only)
+      (linkin-org-store-inline-id)
+      )
+     )
+    )
+  )
 #+end_src
 

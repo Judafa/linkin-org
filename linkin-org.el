@@ -1,4 +1,4 @@
-;;; linkin-org.el --- An emacs workflow with fast, reliable links
+;; linkin-org.el --- An emacs workflow with fast, reliable links
 
 ;; Author: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org
@@ -701,10 +701,33 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
       (goto-char init-point)
       ;; kill all buffers that were open
       (mapcar
-       'killbuffer
+       '(progn (save-buffer) (kill-buffer))
        (cl-set-difference (buffer-list) init-buffer-list)
        )
       )
+    )
+  )
+
+
+(defun linkin-org-follow-string-link (string-link)
+  "Open the link STRING-LINK given in string form"
+  (if-let*
+      (
+	   ;; turn the string link into an org element
+	   (link (linkin-org-parse-org-link string-link))
+	   ;; get the type of the link
+	   (link-type (org-element-property :type link))
+	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
+	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
+				            (linkin-org-resolve-link string-link)
+                          string-link
+			              )
+			            )
+       )
+      ;; open the resolved link in the normal org way
+      (org-link-open (linkin-org-parse-org-link new-string-link))
+    ;; if the link could not be resolved, just open the link in the normal org way
+    (org-link-open string-link)
     )
   )
 
@@ -876,14 +899,14 @@ for internal and \"file\" links, or stored as a parameter in
 
 ;; to get a link towards the current line in an editale file.
 ;; if there is an id in the current line, use it. Otherwise use the line number.
-(defun linkin-org-line-get-link ()
+(defun linkin-org-get-inline ()
   "Returns a link towards the current line in an editable file.
-If there is an id in the current line, use it. Otherwise use the line number.
+If there is an inline id in the current line, use it. Otherwise use the line number.
 "
   (let*
       (
-       (current-file-path (abbreviate-file-name (buffer-file-name)))
-       (file-name (file-name-nondirectory current-file-path))
+       (current-file-path (when (buffer-file-name) (expand-file-name (buffer-file-name))))
+       (file-name (when current-file-path (file-name-nondirectory current-file-path)))
        ;; get the current line in string
        (current-line (buffer-substring-no-properties
                       (line-beginning-position)
@@ -892,42 +915,55 @@ If there is an id in the current line, use it. Otherwise use the line number.
                      )
        ;; get the id in the current line, if there is one
        (inline-id (linkin-org-get-id current-line linkin-org-inline-id-regexp))
+       ;; remove the leading id: part of the inline id
+       (inline-id (replace-regexp-in-string "id:" "" inline-id))
        (line-number (line-number-at-pos))
        )
-    (if inline-id
-        (format "[[file:%s::(:inline-id %s)][[file] %s]]"
-	            current-file-path
-                inline-id
-	            (linkin-org-strip-off-id-from-file-name file-name)
-                )
-      (format "[[file:%s::%d][[file] %s _ l%d]]"
-		      current-file-path
-		      line-number
-	          (linkin-org-strip-off-id-from-file-name file-name)
-		      line-number
-		      )
-      )
+    ;; get an id only if the file has a path
+    (if file-name
+     (if inline-id
+         (format "[[file:%s::(:inline-id %s)][[file] %s]]"
+	             current-file-path
+                 inline-id
+	             (linkin-org-strip-off-id-from-file-name file-name)
+                 )
+       (format "[[file:%s::%d][[file] %s _ l%d]]"
+		       current-file-path
+		       line-number
+	           (linkin-org-strip-off-id-from-file-name file-name)
+		       line-number
+		       )
+       )
+     ;; else if the file has no path, do nothing
+     (message "linkin-org: this file has no path, cannot get an id for it.")
+     )
     )
   )
 
 
 ;; to leave an id in an editable line
-(defun linkin-org-store-inline-id ()
+(defun linkin-org-store-inline ()
   "Leaves an id in an editable line and copy a link towards that id in the kill-ring"
-    (let (
-	  (id (linkin-org-create-id))
-	  (range
-           (list (line-beginning-position)
-		         (goto-char (line-end-position 1))
-		         )
-	       )
-	  )
-
+  (let (
+	    (id (linkin-org-create-id))
+	    (range
+         (list (line-beginning-position)
+		       (goto-char (line-end-position 1))
+		       )
+         )
+	    (current-line (buffer-substring-no-properties
+                       (line-beginning-position)
+                       (line-end-position)
+                       )
+                      )
+	    )
+    ;; insert an inline id only if there is none already
+    (when (not (linkin-org-get-id current-line))
       ;; quick fix for org-mode
       (if (and
-	   (not (eq major-mode 'org-mode))
-	   (comment-only-p (apply #'min range) (apply #'max range))
-	   )
+	       (not (eq major-mode 'org-mode))
+	       (comment-only-p (apply #'min range) (apply #'max range))
+	       )
 	      (progn
 	        ;; go to the beginning of the commented text
 	        (comment-beginning)
@@ -944,33 +980,33 @@ If there is an id in the current line, use it. Otherwise use the line number.
           ;; 	)
           )
         )
-      ;; go to the end of line
-      (end-of-line)
-
-      ;; if we want to yank the link
-      (let*
-	      (
-	       (file-path (buffer-file-name))
-	       (file-name (when file-path
-		                (file-name-nondirectory file-path)
-		                )
-		              )
-	       )
-        ;; kill a link only if the current buffer has a valid file path
-        (if file-path
-            (kill-new (format
-		               "[[file:%s::(:inline-id %s)][[file] %s]]"
-		               file-path
-		               id
-		               (linkin-org-strip-off-id-from-file-name file-name)
-		               )
-		              )
-          (message "Current buffer is not attached to a file, no link was created.")
-          )
-        )
       )
+    ;; copy the link
+    (linkin-org-get)
+    ;; (let*
+	;;     (
+	;;      (file-path (buffer-file-name))
+	;;      (file-name (when file-path
+	;;                   (file-name-nondirectory file-path)
+	;;                   )
+	;;                 )
+	;;      )
+    ;;   ;; kill a link only if the current buffer has a valid file path
+    ;;   (if file-path
+    ;;       (kill-new (format
+	;;                  "[[file:%s::(:inline-id %s)][[file] %s]]"
+	;;                  file-path
+	;;                  id
+	;;                  (linkin-org-strip-off-id-from-file-name file-name)
+	;;                  )
+	;;                 )
+    ;;     (message "Current buffer is not attached to a file, no link was created.")
+    ;;     )
+    ;;   )
+    ;; go to the end of line
+    (end-of-line)
     )
-
+  )
 
 ;;;; ------------------------------------------- pdf link
 
@@ -1473,28 +1509,6 @@ Do nothing if the file already has an id.
       )
     )
 
-(defun linkin-org-follow-string-link (string-link)
-  "Open the link STRING-LINK given in string form"
-  
-  (if-let*
-      (
-	   ;; turn the string link into an org element
-	   (link (linkin-org-parse-org-link string-link))
-	   ;; get the type of the link
-	   (link-type (org-element-property :type link))
-	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
-	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
-				            (linkin-org-resolve-link string-link)
-                          string-link
-			              )
-			            )
-       )
-      ;; open the resolved link in the normal org way
-      (org-link-open (linkin-org-parse-org-link new-string-link))
-    ;; if the link could not be resolved, just open the link in the normal org way
-    (org-link-open string-link)
-    )
-  )
 
 (defun linkin-org-follow ()
   "Open the link under point.
@@ -1599,7 +1613,7 @@ If a region is selected, open all links in that region in order.
 
      ;; Otherwise, kill a link towards the current line of the buffer
      (t
-      (kill-new (linkin-org-line-get-link))
+      (kill-new (linkin-org-get-inline))
       )
 
      )
@@ -1615,7 +1629,18 @@ If a region is selected, open all links in that region in order.
     (cond
      ;; ;; If text is selected
      ;; ((region-active-p)
-     ;;  (my/sauve-texte-selectionne-nimp-dans-fourretout)
+     ;;  (progn
+     ;;   (my-store-some-text
+     ;;    (buffer-substring (region-beginning) (region-end))
+     ;;    "[[file:/home/juliend/Dropbox/FourreTout/Notes/20240504T120559--fourretout-nimp-liens-todo__doc.org::(:inline-id 20250417T223553)]]"
+     ;;    )
+     ;;   ;; unselect the region
+     ;;   (deactivate-mark)
+     ;;   )
+     ;;  )
+     ;; ;; If in elfeed
+     ;; ((string= mode "elfeed-search-mode")
+     ;;  (my-save-elfeed-entry "[[file:/home/juliend/Dropbox/FourreTout/Notes/20240504T120559--fourretout-nimp-liens-todo__doc.org::(:inline-id 20250418T001752)][[file] fourretout-nimp-liens-todo__doc.org]]")
      ;;  )
      ;; If in a dired buffer
      ((string= mode "dired-mode")
@@ -1627,7 +1652,7 @@ If a region is selected, open all links in that region in order.
       )
      ;; If in an editable buffer
      ((not buffer-read-only)
-      (linkin-org-store-inline-id)
+      (linkin-org-store-inline)
       )
      )
     )
