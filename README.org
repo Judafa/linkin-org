@@ -123,7 +123,7 @@ This code saves some text ~text~ at the location where ~link~ points to.
 #+end_src
 
 You should now redefine ~linkin-org-store~ as follows.
-Replace <link> by a link towards the location where you want to save the text.
+Replace <put your link here> by a link towards the location where you want to save the text.
 To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
 #+begin_src emacs-lisp
 (defun linkin-org-store ()
@@ -198,7 +198,7 @@ This code saves the url and title of the elfeed entry at point at a location whe
 
 
 You should redefine ~linkin-org-store~ as follows.
-Replace <your link> by a link towards the location where you want to save the text.
+Replace <put your link here> by a link towards the location where you want to save the text.
 To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
 #+begin_src emacs-lisp
 ;; If in elfeed
