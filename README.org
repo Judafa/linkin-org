@@ -107,20 +107,18 @@ This code saves some text ~text~ at the location where ~link~ points to.
 (defun my-store-some-text (text link)
   (linkin-org-follow-link-and-do-function link
                                           (lambda ()
-                                                  (progn
-                                                    ;; follow the link
-                                                    (linkin-org-follow-string-link link)
-                                                    ;; go to the end of the current line
-                                                    (end-of-line)
-                                                    ;; insert a line break
-                                                    (insert "\n")
-                                                    ;; create a section labeled with the current date
-                                                    (insert (format "** %s" (format-time-string "%Y-%m-%d %H:%M:%S saved text" (current-time))))
-                                                    (insert "\n")
-                                                    ;; insert the text
-                                                    (insert text)
-                                                    )
-                                                  )
+                                            ;; follow the link
+                                            (linkin-org-follow-string-link link)
+                                            ;; go to the end of the current line
+                                            (end-of-line)
+                                            ;; insert a line break
+                                            (insert "\n")
+                                            ;; create a section labeled with the current date
+                                            (insert (format "** %s" (format-time-string "%Y-%m-%d %H:%M:%S saved text" (current-time))))
+                                            (insert "\n")
+                                            ;; insert the text
+                                            (insert text)
+                                            )
                                           )
   )
 #+end_src
