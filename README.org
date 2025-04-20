@@ -116,8 +116,6 @@ This code saves some text ~text~ at the location where ~link~ points to.
                                                     (insert "\n")
                                                     ;; insert the text
                                                     (insert text)
-                                                    ;; save the buffer
-                                                    (save-buffer)
                                                     )
                                                   )
                                           )
