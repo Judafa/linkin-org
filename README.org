@@ -15,7 +15,7 @@ The link is reliable thanks to an automatic id system: rename, move or modify th
 
 ~linkin-org-get~ copies a link towards what you have at point in your clipboard; does not modify your data.
 This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
-The link may not be reliable; it is reliable if you called ~linkin-org-store~ beforehand on the data.
+The link may not be reliable; it will be reliable if you called ~linkin-org-store~ beforehand on the data.
 
 ~linkin-org-follow~ opens the link at point.
 If the known path towards the data is no valid anymore, uses ids to retrieve it.
@@ -39,17 +39,17 @@ Here are some sample workflow examples with linkin-org.
 
 *** Just downloaded some file?
 Put your cursor on the file in dired and store it (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
-By doing this, you copied a link: paste it in a .org file: following the link (~linkin-org-open-link~) retrieves your file.
+By doing this, you copied a link: paste it in a .org file, following the link (~linkin-org-follow~) retrieves your file.
 Also while storing the file, linkin-org added an id at the beginning of your file name: your link will still work if you rename or move the file around.
 
 *** Just wrote something you'd like to go back to later?
 Go one line above and store the current line (~linkin-org-store~) to insert an inline id.
-By doing this, you just copied a link: paste it in a .org file: following the link (~linkin-org-open-link~) goes back exactly where you were.
+By doing this, you just copied a link: paste it in a .org file, following the link (~linkin-org-follow~) goes back exactly where you were.
 That link will always get you exactly at the right location.
 
 *** Reading something interesting in a pdf?
 Select the text with your mouse and store the pdf location (~linkin-org-store~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
-Following the copied link (~linkin-org-open-link~) gets you to the right page and highlight the words you were reading.
+Following the copied link (~linkin-org-follow~) gets you to the right page and highlight the words you were reading.
 If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
 *** And more

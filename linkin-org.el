@@ -713,6 +713,8 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
   "Open the link STRING-LINK given in string form"
   (if-let*
       (
+       ;; check that the string-link is not nil
+       string-link
 	   ;; turn the string link into an org element
 	   (link (linkin-org-parse-org-link string-link))
 	   ;; get the type of the link
