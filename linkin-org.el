@@ -434,11 +434,43 @@ It is assumed you already checked that file-path is not valid.
               (setq file-found-p 'not-found)
               )
             )
+           (t
+            ;; (let
+            ;;     (
+            ;;      (file-list-rec (directory-files-recursively dir id))
+            ;;      )
+            ;;     )
+            (setq resolved-file-path
+                  (car
+                   (-filter
+                    ;; get rid of the stupid "." and ".." files
+                    (lambda (s)
+                      (or
+                       (not (s-equals? s "."))
+                       (not (s-equals? s ".."))
+                       )
+                      )
+                    (directory-files-recursively dir id t)
+                    )
+                   )
+                  )
+            ;; if we found a match, the search is over
+            (when resolved-file-path
+              (setq file-found-p 'found)
+              )
+            ;; if we found no match and if we looked into all the dirs
+            (when (and (not resolved-file-path) (not tmp-dirs))
+              (setq file-found-p 'not-found)
+              )
+            )
            )
           )
         )
       )
-    resolved-file-path
+    ;; return the resolved path if it was found, else return nil
+    (unless (eq file-found-p 'not-found)
+      resolved-file-path
+     )
     )
   )
 
