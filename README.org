@@ -48,7 +48,7 @@ By doing this, you just copied a link: paste it in a .org file, following the li
 That link will always get you exactly at the right location.
 
 *** Reading something interesting in a pdf?
-Select the text with your mouse and store the pdf location (~linkin-org-store~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
+Select the text with your mouse and get a link towards the pdf location (~linkin-org-get~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
 Following the copied link (~linkin-org-follow~) gets you to the right page and highlight the words you were reading.
 If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
