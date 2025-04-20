@@ -15,8 +15,7 @@ The link is reliable thanks to an automatic id system: rename, move or modify th
 
 ~linkin-org-get~ copies a link towards what you have at point in your clipboard; does not modify your data.
 This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
-This function is called by ~linkin-org-store~ at the end of its execution.
-The link may not be reliable.
+The link may not be reliable; it is reliable if you called ~linkin-org-store~ beforehand on the data.
 
 ~linkin-org-follow~ opens the link at point.
 If the known path towards the data is no valid anymore, uses ids to retrieve it.
