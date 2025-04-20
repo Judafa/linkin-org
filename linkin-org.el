@@ -290,34 +290,47 @@ It is assumed you already checked that file-path is not valid.
                  )
                 (t
                  ;; else, just use emacs-lisp code to find a matching id. slowest option
-                 (let
-                     (
-                      (file-list (directory-files building-dir))
-                      matching-id-found
-                      current-file-to-investigate
-                      resolved-dir
-                      )
-                   ;; go over each file and check for id
-                   (while (and
-                           (not matching-id-found)
-                           file-list
-                           )
-                     ;; set the current file to investigate
-                     (setq current-file-to-investigate (car file-list))
-                     ;; remove that file from the list of files
-                     (setq file-list (cdr file-list))
-                     ;; stop the search if the file contains the id
-                     (when (string-match id current-file-to-investigate)
-                       (setq matching-id-found t)
-                       (setq resolved-dir current-file-to-investigate)
-                       )
-                     )
-                   (setq building-dir (concat
-                                       (file-name-as-directory (directory-file-name building-dir))
-                                       resolved-dir
-                                       )
+                 (setq building-dir
+                       (car
+                        (-filter
+                         (lambda (s)
+                                 (or
+                                  (not (s-equals? s "."))
+                                  (not (s-equals? s ".."))
+                                  )
+                                 )
+                         (directory-files building-dir t id t)
                          )
-                   )
+                        )
+                       )
+                 ;; (let
+                 ;;     (
+                 ;;      (file-list (directory-files building-dir))
+                 ;;      matching-id-found
+                 ;;      current-file-to-investigate
+                 ;;      resolved-dir
+                 ;;      )
+                 ;;   ;; go over each file and check for id
+                 ;;   (while (and
+                 ;;           (not matching-id-found)
+                 ;;           file-list
+                 ;;           )
+                 ;;     ;; set the current file to investigate
+                 ;;     (setq current-file-to-investigate (car file-list))
+                 ;;     ;; remove that file from the list of files
+                 ;;     (setq file-list (cdr file-list))
+                 ;;     ;; stop the search if the file contains the id
+                 ;;     (when (string-match id current-file-to-investigate)
+                 ;;       (setq matching-id-found t)
+                 ;;       (setq resolved-dir current-file-to-investigate)
+                 ;;       )
+                 ;;     )
+                 ;;   (setq building-dir (concat
+                 ;;                       (file-name-as-directory (directory-file-name building-dir))
+                 ;;                       resolved-dir
+                 ;;                       )
+                 ;;         )
+                 ;;   )
                  )
                 )
              ;; else if there is no id, then we cannot resolve the file. set the buidling path to nil
