@@ -172,21 +172,21 @@ Does not add an id if FILE-NAME already has one.
   )
 
 
-(defun linkin-org-link-escape (link-string)
+(defun linkin-org-link-escape (string-link)
   (replace-regexp-in-string
    (rx (seq (group (zero-or-more "\\")) (group (or string-end (any "[]")))))
    (lambda (m)
      (concat (match-string 1 m)
 	     (match-string 1 m)
 	     (and (/= (match-beginning 2) (match-end 2)) "\\")))
-   link-string nil t 1)
+   string-link nil t 1)
   )
 
-(defun linkin-org-parse-org-link (link-string)
-  "Parse LINK-STRING into an Org element and return the result."
+(defun linkin-org-parse-org-link (string-link)
+  "Parse STRING-LINK into an Org element and return the result."
   (with-temp-buffer
    (let ((org-inhibit-startup nil))
-     (insert link-string)
+     (insert string-link)
      (org-mode)
      (goto-char (point-min))
      (org-element-link-parser))
@@ -208,10 +208,11 @@ Does not add an id if FILE-NAME already has one.
 
 
 (defun linkin-org-resolve-file-with-path (file-path)
-  "Starting at the root directory, climb up the file-path directory by directory; whenever the current subpath is not valid, resolves using id.
-Returns the the  resolved file path, nil if it could not resolve it.
+  "Starting at the root directory, climb up the file-path directory by directory.
+Whenever the current subpath is not valid, resolves using id.
+FILE-PATH is the file path of a file or a directory.
+Returns the resolved file path, nil if it could not resolve it.
 This always finds your file back if you only renamed files and preserved the ids; it does not work if you changed the location of some directories in file-path.
-file-path can be the path of a file or a directory.
 It is assumed you already checked that file-path is not valid.
 "
   (let*
@@ -219,7 +220,7 @@ It is assumed you already checked that file-path is not valid.
        ;; expand file path
        (file-path (expand-file-name file-path))
        ;; the directory in construction
-       (building-dir "")
+       (building-dir "/")
        ;; split the dir into all its intermediary directories
        ;; doesnt work on windows!
        (split-path (split-string file-path "/") )
@@ -231,6 +232,7 @@ It is assumed you already checked that file-path is not valid.
                    )
        )
     (dolist (sub-dir split-path)
+      
       ;; building-dir is set of nil as soon as we know the path cannot be resolved.
       (when building-dir
        (let
@@ -247,7 +249,6 @@ It is assumed you already checked that file-path is not valid.
                (
                 (id (linkin-org-get-id sub-dir linkin-org-id-regexp))
                 )
-               
                ;; if the file has an id, try to resolve it
                (cond
                 (
@@ -287,6 +288,37 @@ It is assumed you already checked that file-path is not valid.
                    (setq building-dir nil)
                    )
                  )
+                (t
+                 ;; else, just use emacs-lisp code to find a matching id. slowest option
+                 (let
+                     (
+                      (file-list (directory-files building-dir))
+                      matching-id-found
+                      current-file-to-investigate
+                      resolved-dir
+                      )
+                   ;; go over each file and check for id
+                   (while (and
+                           (not matching-id-found)
+                           file-list
+                           )
+                     ;; set the current file to investigate
+                     (setq current-file-to-investigate (car file-list))
+                     ;; remove that file from the list of files
+                     (setq file-list (cdr file-list))
+                     ;; stop the search if the file contains the id
+                     (when (string-match id current-file-to-investigate)
+                       (setq matching-id-found t)
+                       (setq resolved-dir current-file-to-investigate)
+                       )
+                     )
+                   (setq building-dir (concat
+                                       (file-name-as-directory (directory-file-name building-dir))
+                                       resolved-dir
+                                       )
+                         )
+                   )
+                 )
                 )
              ;; else if there is no id, then we cannot resolve the file. set the buidling path to nil
              (setq building-dir nil)
@@ -303,8 +335,8 @@ It is assumed you already checked that file-path is not valid.
 (defun linkin-org-resolve-file-with-store-directory (file-path &optional directories-to-look-into)
   "Searches for files contained in directories-to-look-into recursively and returns a file that has the same id as that of file-path.
 returns nil if file-path has no id or if no matching file was found.
+File-path can be the path of a file or a directory.
 If not provided, directories-to-look-into is set to the default linkin-org-search-directories-to-resolve-broken-links.
-file-path can be the path of a file or a directory.
 It is assumed you already checked that file-path is not valid.
 "
   (let*
@@ -411,7 +443,7 @@ It is assumed you already checked that file-path is not valid.
    )
   )
 
-(defun linkin-org-resolve-link (link-string)
+(defun linkin-org-resolve-link (string-link)
   "Take a link in string form and returns the same link but with a correct path.
 only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 "
@@ -419,15 +451,16 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
   (let*
 	  (
        ;;turn the string link into an org element
-       (link-org-element (linkin-org-parse-org-link link-string))
-       ;; get the raw link
+       (link-org-element (linkin-org-parse-org-link string-link))
+       ;; get the raw link, that is, the string containing the data of the link
 	   (link-raw-link (org-element-property :raw-link link-org-element))
        ;; get the type of the link
        (link-type (org-element-property :type link-org-element))
 	   ;; (link-raw-path (org-element-property :path link-org-element))
-	   ;; get the path of the link
+	   ;; get data of the link, that is, the interior of the link minus the type (ie, file:)
 	   (link-path (org-element-property :path link-org-element))
-	   ;; strip of the metadata from the path
+       ;; extract the path, that is, the substring of link-path before the first :: if there is one
+	   (link-path (car (string-split link-path "::")))
        ;; get the substring after the first "::"
 	   (link-metadata (let 
                           (
@@ -438,15 +471,12 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
                           )
                         )
                       )
-	   ;; if the link has a path, then change it to the correct path
-	   (new-link-path (if link-path (linkin-org-resolve-file link-path)
-                          
-			            )
-                      )
+	   ;; change the path to a correct path
+	   (new-link-path (if link-path (linkin-org-resolve-file link-path)))
 	   ;; build a new link based on the correct path
-	   (new-link-string (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]"))
+	   (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]"))
 	   )
-	new-link-string
+	new-string-link
 	)
   )
 
@@ -1409,7 +1439,7 @@ Do nothing if the file already has an id.
 	   (link-type (org-element-property :type link))
 	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
 	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
-				          (linkin-org-resolve-link string-link)
+				            (linkin-org-resolve-link string-link)
                           string-link
 			              )
 			            )
