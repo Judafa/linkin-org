@@ -13,7 +13,7 @@ It works on a file (in a dired buffer), a line in an editable file (org, markdow
 It directly copies the link in your clipboard (a.k.a kill-ring) so you can paste it right away.
 The link is reliable thanks to an automatic id system: rename, move or modify the file, the link still works.
 
-~linkin-org-get~ copies a link towards what you have at point in your clipboard; do not modify your data.
+~linkin-org-get~ copies a link towards what you have at point in your clipboard; does not modify your data.
 This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
 This function is called by ~linkin-org-store~ at the end of its execution.
 The link may not be reliable.
