@@ -546,12 +546,21 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 ;; to do an action on a file as if the point was on that file in dired
 (defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
-  "Do an action on a file as if the point was on that file in dired"
+  "Do an action on a file with path FILE-PATH as if the point was on that file in dired"
   (let*
       (
        ;; get the full path
        (file-path (expand-file-name file-path))
-       ;; get the list of dired buffer that already visit the directory of the file
+       ;; if file-path is the path of a directory, make sure there is a trailing slash
+       (is-directory? (file-directory-p file-path))
+       (file-path (if (and is-directory?
+                           (not (string-empty-p file-path))
+                           )
+                      (directory-file-name file-path)
+                    file-path
+                      )
+                  )
+       ;; get the list of dired buffers that already visit the directory of the file
        (dired-buffers-visiting-path (dired-buffers-for-dir (file-name-directory file-path)))
        ;; create a dired buffer visiting the directory of the file (or get the name of it if it already exists)
        (dired-buffer (dired-noselect (file-name-directory file-path)))
@@ -580,7 +589,6 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 (defun linkin-org-open-file-as-in-dired (file-path)
   "Open a file as if it were opened from dired"
   (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
-  ;; (find-file file-path)
   )
 
 ;; to yank the link of a given file
@@ -618,27 +626,28 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
                 )
                ;; give the file name an id
                (new-file-name (linkin-org-give-id-to-file-name new-file-name))
+               (new-file-path (if is-file-already-in-store-directory?
+                                  (concat
+                                   ;; this just concats a "/" at the end of the directory (if there's none already)
+                                   (file-name-as-directory
+                                    (file-name-directory (expand-file-name (directory-file-name file-path)))
+                                    )
+                                   new-file-name
+                                   )
+                                (concat (file-name-as-directory
+                                         (expand-file-name (directory-file-name linkin-org-store-directory))
+                                         )
+                                        new-file-name
+                                        )
+                                  )
+                              )
 	           )
-		    (copy-directory
-             file-path
-             (if is-file-already-in-store-directory?
-                 ;; if the directory is already in the store directory, just rename it without moving it
-                 (concat
-                  ;; this just concats a "/" at the end of the directory (if there's none already)
-                  (file-name-as-directory
-                   (file-name-directory (expand-file-name (directory-file-name file-path)))
-                   )
-                  new-file-name
-                  )
-               ;; else, move the directory is no in the store directory, move it in there
-               ;; (copy-directory file-path (linkin-org-store-directory new-file-name))
-               (concat (file-name-as-directory
-                        (expand-file-name (directory-file-name linkin-org-store-directory))
-                        )
-                       new-file-name
-                       )
-               )
-             )
+            (message (format "file path : %s" new-file-path))
+		    ;; (copy-directory file-path new-file-path)
+		    (rename-file file-path new-file-path)
+            
+            ;; copy a link towards the stored directory
+	        (linkin-org-yank-link-of-file new-file-path)
             ;; update the dired buffer
             (revert-buffer)
 	        )
@@ -656,19 +665,20 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
               )
              ;; give the file name an id
 	         (new-file-name (linkin-org-give-id-to-file-name new-file-name))
-	         (complete-file-path (if is-file-already-in-store-directory?
+	         (new-file-path (if is-file-already-in-store-directory?
                                      (concat (file-name-directory (expand-file-name file-path)) new-file-name)
                                    (concat (file-name-as-directory linkin-org-store-directory) new-file-name)
                                    )
                                  )
 	         )
-          (copy-file file-path complete-file-path)
+          ;; (copy-file file-path new-file-path)
+          (rename-file file-path new-file-path)
 	      ;; (if is-file-already-in-fourre-tout?
-	      ;;     ;; (rename-file file-path complete-file-path)
+	      ;;     ;; (rename-file file-path new-file-path)
 	      ;;     (rename-file file-path (concat (file-name-directory (expand-file-name (directory-file-name file-path))) id new-file-name))
-	      ;; (copy-file file-path complete-file-path)
+	      ;; (copy-file file-path new-file-path)
 	      ;;   )
-	      (linkin-org-yank-link-of-file complete-file-path)
+	      (linkin-org-yank-link-of-file new-file-path)
           ;; update the dired buffer
           (revert-buffer)
 	      )
@@ -741,37 +751,39 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 (defun linkin-org-dired-get-link ()
   "Returns a link towards the file under point in dired"
   (let* (
-         (chemin-fichier (abbreviate-file-name (dired-file-name-at-point)))
-	 ;; le nom du fichier sans le chemin
-	 (nom-fichier
-	  ;; if the file under point is a directory
-	  (if (file-directory-p chemin-fichier)
-	      ;; remove the trailing slash, get the name of the directory
-	      (file-name-nondirectory (directory-file-name chemin-fichier))
-	    ;; else if it's a file
-	   (file-name-nondirectory chemin-fichier)
-	   )
-	  )
-	 ;; le nom du fichier sans l'id, si il y a id
-	 (nom-fichier (linkin-org-strip-off-id-from-file-name nom-fichier))
-	 (nom-fichier-sans-ext (file-name-sans-extension nom-fichier))
-	 (extension (file-name-extension nom-fichier))
-	 ;; tronque le nom du fichier s'il est trop long
-	 (nom-fichier (if (> (length nom-fichier) 70)
-                          (concat (substring nom-fichier-sans-ext 0 50)  " [___] " "." extension)
-			nom-fichier)
-		      )
-	 )
-    (if nom-fichier
-	;; if it's a file, not a directory
-	(kill-new (format "[[file:%s][[file] %s]]" chemin-fichier nom-fichier)))
+         (file-path (expand-file-name (dired-file-name-at-point)))
+         ;; remove the trailing slash if it's a directory
+         (file-path (directory-file-name file-path))
+	     ;; the name of the file, without path
+	     (file-name
+	      ;; if the file under point is a directory
+	      (if (file-directory-p file-path)
+	          ;; remove the trailing slash, get the name of the directory
+	          (file-name-nondirectory (directory-file-name file-path))
+	        ;; else if it's a file
+	        (file-name-nondirectory file-path)
+	        )
+	      )
+	     ;; file name without id, if there is an id in the file name
+	     (file-name (linkin-org-strip-off-id-from-file-name file-name))
+	     (file-name-sans-ext (file-name-sans-extension file-name))
+	     (extension (file-name-extension file-name))
+	     ;; tronque le nom du fichier s'il est trop long
+	     (file-name (if (> (length file-name) 70)
+                        (concat (substring file-name-sans-ext 0 50)  " [___] " "." extension)
+			          file-name)
+		            )
+	     )
+    (if file-name
+	    ;; if it's a file, not a directory
+	    (kill-new (format "[[file:%s][[file] %s]]" file-path file-name)))
     ;; otherwise, remove the trailing slash
     (let* (
-	   (directory-name-without-slash (directory-file-name chemin-fichier))
-	   )
-      (format "[[file:%s][[file] %s]]" directory-name-without-slash nom-fichier)
+	       (directory-name-without-slash (directory-file-name file-path))
+	       )
+      (format "[[file:%s][[file] %s]]" directory-name-without-slash file-name)
+      )
     )
-  )
   )
 
 (defun linkin-org-file-open (link)
