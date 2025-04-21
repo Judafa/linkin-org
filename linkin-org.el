@@ -918,7 +918,7 @@ If there is an inline id in the current line, use it. Otherwise use the line num
        ;; get the id in the current line, if there is one
        (inline-id (linkin-org-get-id current-line linkin-org-inline-id-regexp))
        ;; remove the leading id: part of the inline id
-       (inline-id (replace-regexp-in-string "id:" "" inline-id))
+       (inline-id (when inline-id (replace-regexp-in-string "id:" "" inline-id)))
        (line-number (line-number-at-pos))
        )
     ;; get an id only if the file has a path
