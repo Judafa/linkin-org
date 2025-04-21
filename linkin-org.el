@@ -642,7 +642,6 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
                                   )
                               )
 	           )
-            (message (format "file path : %s" new-file-path))
 		    ;; (copy-directory file-path new-file-path)
 		    (rename-file file-path new-file-path)
             
@@ -744,7 +743,6 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
   )
 
 
-
 ;;;; ------------------------------------------- file link
 
 ;; To create a link towards the file under point in a dired buffer
@@ -795,12 +793,18 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
                  (read (cadr link-parts))
                  )
                )
-	 (line-number-or-id (if (plistp metadata)
+	 (line-number-or-id (if (and
+                             (plistp metadata)
+                             metadata
+                             )
                             (prin1-to-string (plist-get metadata :inline-id))
                           (cadr link-parts)
                             )
                         )
-	 (column-number (if (plistp metadata)
+	 (column-number (if (and
+                         (plistp metadata)
+                         metadata
+                         )
                         (prin1-to-string (plist-get metadata :column))
                       (caddr link-parts)
                       )
@@ -814,16 +818,14 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 	      (when line-number-or-id
 	        ;; if line-number-or-id matches an id, search for that id in the buffer
 	        (let
-		        (
-		         id-position
-		         )
+		        (id-position)
 	          (if (string-match linkin-org-id-regexp line-number-or-id)
 		          (progn
 		            (save-excursion (progn
-				                      (beginning-of-buffer)
-				                      (setq id-position (if (re-search-forward (concat "id:" line-number-or-id) nil t 1) (point) nil))
-				                      )
-				                    )
+		    	                      (beginning-of-buffer)
+		    	                      (setq id-position (if (re-search-forward (concat "id:" line-number-or-id) nil t 1) (point) nil))
+		    	                      )
+		    	                    )
 		            (when id-position
 		              (goto-char id-position)
 		              )
