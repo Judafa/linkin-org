@@ -2,7 +2,7 @@
 
 ;; Author: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org
-;; Version: 0.1
+;; Version: 1.0
 
 ;; This file is not part of GNU Emacs
 
@@ -710,7 +710,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
       (goto-char init-point)
       ;; kill all buffers that were open
       (mapcar
-       '(progn (save-buffer) (kill-buffer))
+       (lambda () (progn (save-buffer) (kill-buffer)))
        (cl-set-difference (buffer-list) init-buffer-list)
        )
       )
@@ -1173,7 +1173,6 @@ If there is an inline id in the current line, use it. Otherwise use the line num
 
 ;; pour copier un lien vers le fichier pdf courant
 (defun linkin-org-pdf-get-link ()
-  (interactive)
   (other-window 1)
   (pdf-tools-assert-pdf-buffer)
   (let* (
@@ -1390,7 +1389,6 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
   )
 
 (defun linkin-org-link-mpd-simple-mpc ()
-  (interactive)
   (let*
       (
        (track-path
