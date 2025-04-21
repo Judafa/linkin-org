@@ -56,8 +56,8 @@ Following the copied link (~linkin-org-follow~) gets you to the right page and h
 If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
 *** And more
-Easily define new link types with custom actions and take advantage of linkin-org's reliable path resolving (just add your link type inside the ~linkin-org-link-types-to-check-for-id~ list).
-Tow link types are already builtin: the video link type stores and replays precise moments of a videos (youtube or stored locally, works with [[https://github.com/mpv-player/mpv][mpv]]), the music link type launchs musics with links (you can easily turn your org notes into playlists, works with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
+Easily define new link types with custom actions and take advantage of linkin-org's reliable path resolving (for that, just add your link type inside the ~linkin-org-link-types-to-check-for-id~ list).
+Three other link types are already builtin: the pdf link type (that we already saw above), the video link type stores and replays precise moments of a videos (youtube or stored locally, works with [[https://github.com/mpv-player/mpv][mpv]]), the music link type launchs musics with links (you can easily turn your org notes into playlists, works with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
 Even more: you can use the links to automate some actions: to turn some notes into a web browser session manager, to quickly save selected text or save elfeed entries (see the last section for examples).
 
 
