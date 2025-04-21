@@ -975,51 +975,36 @@ If there is an inline id in the current line, use it. Otherwise use the line num
 	    )
     ;; insert an inline id only if there is none already
     (when (not (linkin-org-get-id current-line))
-      ;; quick fix for org-mode
-      (if (and
-	       (not (eq major-mode 'org-mode))
-	       (comment-only-p (apply #'min range) (apply #'max range))
-	       )
-	      (progn
-	        ;; go to the beginning of the commented text
-	        (comment-beginning)
+      (save-excursion
+      ;; if the current line is not commented, comment it.
+        (if (eq (apply #'min range) (apply #'max range))
+            ;; if the current line is empty, do special treatment since I cannot easily comment an empty line
+            (progn
+              ;; insert the id
+	          (insert (concat "[id:" id "] "))
+              ;; comment the line
+              (comment-or-uncomment-region (line-beginning-position) (goto-char (line-end-position 1)))
+              )
+          ;; else, if the line is non empty
+          ;; go to the end of the line
+          (end-of-line)
+          (let
+              ;; check if there are comments, if yes go at the beginning of them
+              ((comments-p (comment-beginning)))
+            (unless comments-p
+              ;; if there are no comments to go at the beginning to, comment the whole line and go at the beg of comments
+              (comment-or-uncomment-region (apply #'min range) (apply #'max range))
+              (comment-beginning)
+              )
+            ;; just insert the id at the beginning of the comments
 	        (insert (concat "[id:" id "] "))
-	        )
-        ;; else, insert at the beginning of line and comment the line
-        (progn
-          (back-to-indentation)
-          (insert (concat "[id:" id "] "))
-          (comment-region (line-beginning-position) (line-end-position))
-          ;; (comment-or-uncomment-region
-          ;; 	(apply #'min range)
-          ;; 	(apply #'max range)
-          ;; 	)
+            )
           )
         )
       )
     ;; copy the link
     (linkin-org-get)
-    ;; (let*
-	;;     (
-	;;      (file-path (buffer-file-name))
-	;;      (file-name (when file-path
-	;;                   (file-name-nondirectory file-path)
-	;;                   )
-	;;                 )
-	;;      )
-    ;;   ;; kill a link only if the current buffer has a valid file path
-    ;;   (if file-path
-    ;;       (kill-new (format
-	;;                  "[[file:%s::(:inline-id %s)][[file] %s]]"
-	;;                  file-path
-	;;                  id
-	;;                  (linkin-org-strip-off-id-from-file-name file-name)
-	;;                  )
-	;;                 )
-    ;;     (message "Current buffer is not attached to a file, no link was created.")
-    ;;     )
-    ;;   )
-    ;; go to the end of line
+    ;; go the end of the line
     (end-of-line)
     )
   )
