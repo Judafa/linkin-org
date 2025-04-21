@@ -1,4 +1,4 @@
-;; linkin-org.el --- An emacs workflow with fast, reliable links
+;; linkin-org.el --- an emacs workflow with simple, fast, reliable links
 
 ;; Author: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org
