@@ -31,14 +31,14 @@ Need that train ticket for your travel in Spain? Some people will browse their m
 For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I follow the ticket link that I pasted there some time ago.
 It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
 That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
-If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
+# If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
 
 
 linkin-org proposes to *easily store precise locations with reliable links*, making your written notes the center of your workflow.
 However, *by design, linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (using directory hierarchy or file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
 
-Here are some sample workflow examples with linkin-org.
+* Typical Workflow Samples
 
 *** Just downloaded some file?
 Put your cursor on the file in dired and store it (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
