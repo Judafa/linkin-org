@@ -689,7 +689,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 (defun linkin-org-follow-link-and-do-function (string-link function-to-perform)
   "follow the link, apply the function, come back."
   (let (
-        ;; remember the current buffer and the current position of poin
+        ;; remember the current buffer and the current position of point
         (init-buffer (current-buffer))
         (init-point (point))
         ;; save the current buffer list
@@ -704,15 +704,25 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
           (funcall function-to-perform)
           ;; remember the buffer we landed in by following the link
           (setq new-buffer (current-buffer))
+          ;; save the buffer
+          (save-buffer)
          )
+      ;; kill the opened buffer if it was not open before
+      (when (memq new-buffer (cl-set-difference (buffer-list) init-buffer-list))
+              (kill-buffer new-buffer)
+              )
+      ;; save 
+      ;; ;; kill all buffers that were open
+      ;; (mapcar
+      ;;  (lambda (e) (with-current-buffer e
+      ;;                (save-buffer) (kill-buffer)
+      ;;                )
+      ;;    )
+       ;; (cl-set-difference (buffer-list) init-buffer-list)
+       ;; )
       ;; go back where we were
       (switch-to-buffer init-buffer)
       (goto-char init-point)
-      ;; kill all buffers that were open
-      (mapcar
-       (lambda () (progn (save-buffer) (kill-buffer)))
-       (cl-set-difference (buffer-list) init-buffer-list)
-       )
       )
     )
   )
