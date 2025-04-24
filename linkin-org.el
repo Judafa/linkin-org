@@ -1,4 +1,4 @@
-;;; linkin-org.el --- an emacs workflow with simple, fast, reliable links
+;;; linkin-org.el --- an emacs workflow with simple, fast, reliable links -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2022-2025  Free Software Foundation, Inc.
 
