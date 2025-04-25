@@ -85,7 +85,8 @@
   "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second"
   (let*
       ((time-string (format-time-string "%Y%m%dT%H%M%S" (current-time))))
-    time-string))
+    time-string)
+  )
 
 ;; regexp recognizing a separator between id and original filename
 (defconst linkin-org-sep-regexp (rx (or "--" "-")))
@@ -104,7 +105,8 @@
   (if (string-match id-regexp s)
       ;; this function returns a list of list of strings
       (car (car (s-match-strings-all id-regexp s)))
-    nil))
+    nil)
+  )
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
   "Take a file name and strip off the id part"
@@ -118,7 +120,9 @@
 	         ;; remove the heading sep -- if there is one
 	         (file-name-without-sep (replace-regexp-in-string (concat "^" linkin-org-sep-regexp) "" file-name-without-id)))
           file-name-without-sep)
-      file-name)))
+      file-name)
+    )
+  )
 
 (defun linkin-org-give-id-to-file-name (file-name)
   "Take a file name FILE-NAME (without path) and return a new file name with id.
@@ -128,7 +132,9 @@ Does not add an id if FILE-NAME already has one.
       ;; if the file already has an id, dont add one
       file-name
     ;; else add an id
-    (concat (linkin-org-create-id) linkin-org-sep file-name)))
+    (concat (linkin-org-create-id) linkin-org-sep file-name)
+    )
+  )
 
 ;; [id:20250408T202457] 
 (defun linkin-org-transform-square-brackets (str)
@@ -290,7 +296,7 @@ It is assumed you already checked that file-path is not valid.
       (
        ;; expand file path
        (file-path (expand-file-name file-path))
-       ;; set the list of directories to looki into to the default if it was not provided
+       ;; set the list of directories to look into to the default if it was not provided
        (directories-to-look-into (if directories-to-look-into
                                      directories-to-look-into
                                    linkin-org-search-directories-to-resolve-broken-links))
@@ -309,7 +315,7 @@ It is assumed you already checked that file-path is not valid.
        (tmp-dirs directories-to-look-into)
        resolved-file-path)
     ;; try for each dir in directories-to-look-into
-    (while (eq file-found-p 'search-in-progress)
+    (while (and id (eq file-found-p 'search-in-progress))
       ;; take one directory in the directories to look into
       (let* ((dir (expand-file-name (car tmp-dirs))))
         
@@ -835,7 +841,11 @@ If there is an inline id in the current line, use it. Otherwise use the line num
         (if (and (plistp metadata) (= 2 (length link-parts)))
             ;; if the link is with the new plist format
             (let*
-	            ((edges-list-str (split-string (plist-get metadata :edges) ";")))
+	            (
+                 (edges-raw-str (plist-get metadata :edges))
+                 (edges-list-str (when edges-raw-str
+                                   (split-string edges-raw-str ";")))
+                 )
 	          ;; convert from string to int, get a list of four floating points numbers, that's the edges
 	          (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str))))
           ;; else if the data is just separated by ::
@@ -1345,3 +1355,5 @@ If a region is selected, open all links in that region in order.
 
 
 (provide 'linkin-org)
+
+;;; linkin-org.el ends here
