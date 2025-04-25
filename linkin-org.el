@@ -35,6 +35,8 @@
 ;;;; -------------------------------------------- main variables
 
 ;; define the directory where linkin-org-store stores the files/directories by default
+;;; Code:
+
 (defcustom linkin-org-store-directory (expand-file-name "~/") "The directory where linkin-org-store stores data by default.")
 
 ;; define the directories where to search when a link is broken
@@ -59,13 +61,17 @@
      ;; the timestamp
      (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit)
      ;; the signature, if there is one
-     (? (seq "==" (* alnum))))
+     (? (seq "==" (* alnum)))
+     )
 
     ;; org-roam style
-    (seq (= 4 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit))
+    (seq line-start (= 4 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit))
 
     ;; some stuff I tried at the beginning
-    (seq (= 4 digit) "-" (= 2 digit) "-" (= 2 digit) "--" (= 2 digit) ":" (= 2 digit) ":" (= 2 digit) (or (seq) (seq "--" (= 5 digit)))))))
+    (seq (= 4 digit) "-" (= 2 digit) "-" (= 2 digit) "--" (= 2 digit) ":" (= 2 digit) ":" (= 2 digit) (or (seq) (seq "--" (= 5 digit))))
+    )
+   )
+  )
 
 
 ;; regexp recognizing an inline id.
