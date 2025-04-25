@@ -6,9 +6,13 @@ linkin-org provides three commands:
 - ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
   It works on a file (in a dired buffer), a line in an editable file (org, markdown, python, whatever), a mail attachment (in mu4e).
   It directly copies the link in your clipboard (a.k.a kill-ring) so you can paste it right away.
-  The link is reliable thanks to an automated id system: with linkin-org, a file that you can reliably access has a name like:
+  The link is reliable thanks to an automated id system: with linkin-org, a file that you can reliably access via a link has a name like:
   #+begin_src example
-  20250425T155433--filename.txt
+20250425T155433--filename.txt
+  #+end_src
+  and a line that you can reliably access via a link (here with a python syntax) looks like:
+  #+begin_src python
+# [id:20250425T160020] link gets you there
   #+end_src
   You can rename your file (do not modify the id of course!), move, or modify the file, the link still works thanks to the id.
 
