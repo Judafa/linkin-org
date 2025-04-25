@@ -14,7 +14,7 @@ linkin-org provides three commands:
   #+begin_src python
 # [id:20250425T160020] link gets you there
   #+end_src
-  Thanks to the ids, your links will still work if you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids there!).
+  Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids there!).
 
 - ~linkin-org-get~ copies a link towards what you have at point in your clipboard; does not modify your data.
   This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
