@@ -18,7 +18,7 @@ and a line that you can reliably access via a link (here with a python syntax) l
 #+end_src
 Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
 
-* All With 3 Commands
+* 3 Commands, that's all
 
 linkin-org provides three main commands:
 - ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
