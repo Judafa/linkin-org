@@ -2,20 +2,28 @@
 linkin-org --- an emacs workflow with simple, fast, reliable links.
 
 * Quick Overview
+
+linkin-org proposes to *easily access your data with reliable links* and make your written notes the center of your workflow.
+However by design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
+
+linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (run ~linkin-org-store~), paste the link, retrieve the data (run ~linkin-org-follow~).
+An id system makes sure that your links will always work even if you move, rename or modify the linked data.
+With linkin-org, a file that you can reliably access via a link has a name like:
+#+begin_src example
+20250425T155433--filename.txt
+#+end_src
+and a line that you can reliably access via a link (here with a python syntax) looks like:
+#+begin_src python
+# [id:20250425T160020] link gets you there
+#+end_src
+Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
+
+
 linkin-org provides three commands:
 - ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
   It works on a file (in a dired buffer), a line in an editable file (org, markdown, python, whatever), a mail attachment (in mu4e).
   It directly copies the link in your clipboard (a.k.a kill-ring) so you can paste it right away.
   The link is reliable thanks to an automated id system.
-  With linkin-org, a file that you can reliably access via a link has a name like:
-  #+begin_src example
-20250425T155433--filename.txt
-  #+end_src
-  and a line that you can reliably access via a link (here with a python syntax) looks like:
-  #+begin_src python
-# [id:20250425T160020] link gets you there
-  #+end_src
-  Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
 
 - ~linkin-org-get~ copies a link towards what you have at point in your clipboard; does not modify your data.
   This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
@@ -26,20 +34,15 @@ linkin-org provides three commands:
 
 
 
+# * Meet linkin-org
 
+# I find it easier to retrieve information with context.
+# Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "Tickets" folder, others will search their files for keywords hoping they used to name the ticket file right.
+# For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I follow the ticket link that I pasted there some time ago.
+# It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
+# That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
+# # If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
 
-* Meet linkin-org
-
-I find it easier to retrieve information with context.
-Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "Tickets" folder, others will search their files for keywords hoping they used to name the ticket file right.
-For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I follow the ticket link that I pasted there some time ago.
-It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
-That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
-# If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
-
-
-linkin-org proposes to *easily store precise locations with reliable links*, making your written notes the center of your workflow.
-However, *by design, linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (using directory hierarchy or file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
 
 * Typical Workflow Samples
