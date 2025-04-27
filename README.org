@@ -1,9 +1,11 @@
 
 linkin-org --- an emacs workflow with simple, fast, reliable links.
 
-* Quick Overview
+* Overview
 
-linkin-org proposes to *easily access your data with reliable links* to make your written notes the center of your workflow.
+linkin-org proposes to *access your data with reliable links* to make your written notes the center of your workflow.
+From a note, just follow a link that you previously pasted there to access a precise location of your file system: any file, a given place in a text file, precise words in a pdf, etc.
+The killer feature: links are *reliable*; your links keep working as the linked data gets renamed, moved or modified (see [this section](How Reliable are the Links Exactly?))
 By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
 linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (run ~linkin-org-store~), paste the link, retrieve the data (run ~linkin-org-follow~).
@@ -108,6 +110,8 @@ with straight
 * Dependencies
 linkin-org has no dependencies and works out of the box.
 It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installed for faster link recovery.
+
+* How Reliable are the Links Exactly?
 
 * A few code examples
 ** Save selected text
