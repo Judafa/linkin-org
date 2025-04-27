@@ -24,8 +24,8 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;; linkin-org proposes to easily store precise locations with reliable links, making your written notes the center of your workflow.
-;; By design, linkin-org does not interfere with other types of workflows: if you want to organize your files with another method in parallel (using directory hierarchy or file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
+;; linkin-org proposes to access your data with reliable links to place your written notes at the center of your workflow.
+;; The links work fast and are easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
 (require 'ol)
 (require 'dired)
