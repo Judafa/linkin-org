@@ -5,7 +5,7 @@ linkin-org --- an emacs workflow with simple, fast, reliable links.
 
 linkin-org proposes to *access your data with reliable links* to make your written notes the center of your workflow.
 From a note, follow a link (~linkin-org-follow~) that you previously pasted there to access a precise location: a file, a given place in a text file, precise words in a pdf, etc.
-The killer feature is that the links are *reliable*: your links keep taking you exactly to the right location, even as the linked data gets renamed, moved or modified (more details [[#how-reliable-are-the-links-exactly][here]]).
+The killer feature is that the links are *reliable*: your links still work even if the linked data gets renamed, moved or modified (more details [[#how-reliable-are-the-links-exactly][here]]).
 
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
