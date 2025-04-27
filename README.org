@@ -3,7 +3,7 @@ linkin-org --- an emacs workflow with simple, fast, reliable links.
 
 * Overview
 
-linkin-org proposes to *access your data with reliable links* to make your written notes the center of your workflow.
+linkin-org proposes to *access your data with reliable links* to place your written notes at the center of your workflow.
 From a note, follow a link that you previously pasted there to access a precise location: a file, a given place in a text file, precise words in a pdf.
 The links work fast and are easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
