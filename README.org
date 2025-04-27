@@ -4,11 +4,13 @@ linkin-org --- an emacs workflow with simple, fast, reliable links.
 * Overview
 
 linkin-org proposes to *access your data with reliable links* to make your written notes the center of your workflow.
-From a note, just follow a link that you previously pasted there to access a precise location of your file system: any file, a given place in a text file, precise words in a pdf, etc.
-The killer feature of linkin-org is, links are *reliable*: your links keep working as the linked data gets renamed, moved or modified (precisions [[#how-reliable-are-the-links-exactly][here]]).
-By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
+From a note, follow a link (~linkin-org-follow~) that you previously pasted there to access a precise location: a file, a given place in a text file, precise words in a pdf, etc.
+The killer feature is that the links are *reliable*: your links keep taking you exactly to the right location, even as the linked data gets renamed, moved or modified (more details [[#how-reliable-are-the-links-exactly][here]]).
 
-linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (run ~linkin-org-store~), paste the link, retrieve the data (run ~linkin-org-follow~).
+
+# By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
+
+linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link, retrieve the data (~linkin-org-follow~).
 An id system makes sure that your links will always work even if you move, rename or modify the linked data.
 With linkin-org, a file that you can reliably access via a link has a name like:
 #+begin_src example
@@ -112,6 +114,31 @@ linkin-org has no dependencies and works out of the box.
 It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installed for faster link recovery.
 
 * How Reliable are the Links Exactly?
+
+First, let's be clear about some terms.
+To "rename a file" means that you change the name of the file *but do not modify or change the id* in the file name.
+To "modify a file" means that you change the content of a file *but do not modify or change any inline id* written inside the file.
+We say that an operation on a linked data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the linked data.
+
+- First attach an id to the data (with ~linkin-org-store~ or ~linkin-org-leave-id-to-file-in-dired~) and only then create links towards the data (~linkin-org-get~).
+  If you do not want to have an id attached to your data then directly use ~linkin-org-get~; But bear in mind that, if you later decide to attach an id then all your links that you created without id will stop working.
+- If a file or a directory has an id attached then it is always safe to rename it.
+- It is always safe to modify a file as long as no inline id is changed or modified.
+- If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in ~linkin-org-search-directories-to-resolve-broken-links~.
+  In case you cannot retrieve a file, you can add your entire home directory to ~linkin-org-search-directories-to-resolve-broken-links~ (which is by default, though it may be slow to search).
+  As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
+
+
+
+
+are guaranteed to keep working as long as you follow a few guidelines.
+
+
+First, when you create the link.
+
+
+
+
 
 * A few code examples
 ** Save selected text
