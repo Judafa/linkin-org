@@ -10,7 +10,7 @@ The links work fast and are easy to create; most importantly, the links are *rel
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
 linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link, retrieve the data (~linkin-org-follow~).
-An id system makes sure that your links will always work even if you move, rename or modify the linked data (more details [[#how-reliable-are-the-links-exactly][here]]).
+An id (identifier) system makes sure that your links will always work even if you move, rename or modify the linked data (more details [[#how-reliable-are-the-links-exactly][here]]).
 With linkin-org, a file that you can reliably access via a link has a name like:
 #+begin_src example
 20250425T155433--filename.txt
@@ -114,17 +114,25 @@ It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installe
 
 * How Reliable are the Links Exactly?
 
-First, let's be clear about some terms.
-To "rename a file" means that you change the name of the file *but do not modify or change the id* in the file name.
-To "modify a file" means that you change the content of a file *but do not modify or change any inline id* written inside the file.
-We say that an operation on a linked data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the linked data.
 
-- First attach an id to the data (with ~linkin-org-store~ or ~linkin-org-leave-id-to-file-in-dired~) and only then create links towards the data (~linkin-org-get~).
-  If you do not want to have an id attached to your data then directly use ~linkin-org-get~; But bear in mind that, if you later decide to attach an id then all your links that you created without id will stop working.
-- If a file or a directory has an id attached then it is always safe to rename it.
+We start with a few good practices so your links keep working.
+- *Do not change or remove the ids.*
+  An id in a file name (or directory name) looks like 20250425T155433, while an inline id inside a file content looks like id:20250425T160020.
+  Ids in file names, directory names and inline ids in file contents are what enable linkin-org to reliably retrieve your data.
+  If you change or remove the ids, the links will thus be broken --- not only unreliable, really broken, as you just changed the path recorded in the links.
+- *First store the data, and only then create links*.
+  You can get links towards some data without attaching an id on it (just use ~linkin-org-get~ on the data); But bear in mind that, if you later decide to attach an id then all your links that you previously created without id will stop working.
+
+
+
+
+And now, the golden rules that keep your links working.
+We say that an operation on a data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the data.
+
+- If a file or a directory has an id attached then it is always safe to rename it, without changing the id part of course.
 - It is always safe to modify a file as long as no inline id is changed or modified.
-- If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in ~linkin-org-search-directories-to-resolve-broken-links~.
-  In case you cannot retrieve a file, you can add your entire home directory to ~linkin-org-search-directories-to-resolve-broken-links~ (which is by default, though it may be slow to search).
+- If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~.
+  In case you cannot retrieve a file, you can add your entire home directory to that variable (the default, you may change it to more fine-grained directories for faster link recovery).
   As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
 
 
