@@ -132,8 +132,8 @@ We say that an operation on a data is "safe" if any non-broken link toward the d
 - If a file or a directory has an id attached then it is always safe to rename it, without changing the id part of course.
 - It is always safe to modify a file as long as no inline id is changed or modified.
 - If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~.
-  In case you cannot retrieve a file, you can add your entire home directory to that variable (the default, you may change it to more fine-grained directories for faster link recovery).
-  As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
+  # In case you cannot retrieve a file, you can add your entire home directory to that variable (the default, you may change it to more fine-grained directories for faster link recovery).
+  # As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
 
 
 
