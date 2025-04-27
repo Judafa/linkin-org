@@ -131,15 +131,6 @@ We say that an operation on a linked data is "safe" if any non-broken link towar
 
 
 
-are guaranteed to keep working as long as you follow a few guidelines.
-
-
-First, when you create the link.
-
-
-
-
-
 * A few code examples
 ** Save selected text
 This code saves some text ~text~ at the location where ~link~ points to.
