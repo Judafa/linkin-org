@@ -483,10 +483,21 @@ Set YANK-LINK? to non-nil to copy the link in the kill ring (clipboard).
 Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message before storing the file."
   (let* (
 	     (file-path (dired-file-name-at-point))
-         ;; is the file already in the store directory
-	     (is-file-already-in-store-directory? (s-prefix?
-					                           (expand-file-name linkin-org-store-directory)
-					                           (expand-file-name file-path))))
+         ;; is the file already in the list of directories to check in case of a broken link
+	     (is-file-already-in-store-directory? (cl-some #'identity
+                                                       (mapcar
+                                                        (lambda (dir)
+                                                          (s-prefix?
+					                                       (expand-file-name dir)
+					                                       (expand-file-name file-path)
+                                                           )
+                                                          )
+                                                        linkin-org-search-directories-to-resolve-broken-links
+                                                        )
+                                                       )
+                                              )
+         ;; (dumb (message "this is the value: %s" is-file-already-in-store-directory?))
+         )
     ;; check wether it's a file or a directory
     (if (file-directory-p file-path)
 	    ;; if it's a directory
@@ -516,7 +527,9 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
             ;; copy a link towards the stored directory
 	        (linkin-org-yank-link-of-file new-file-path)
             ;; update the Dired buffer
-            (revert-buffer)))
+            (revert-buffer)
+            )
+          )
       ;; if it's a file
       (progn
 	    (let*
