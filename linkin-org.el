@@ -6,7 +6,7 @@
 ;; Maintainer: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org
 ;; Version: 1.0
-;; Package-Requires: ((emacs "30.1") (org "9.3"))
+;; Package-Requires: ((emacs "30.1") (pdf-tools "1.1.0"))
 
 ;; This file is not part of GNU Emacs
 
@@ -25,7 +25,7 @@
 
 ;;; Commentary:
 ;; linkin-org proposes to access your data with reliable links to place your written notes at the center of your workflow.
-;; The links work fast and are easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
+;; The links work fast and are easy to create; most importantly, the links are reliable and can robustly support a whole link-based workflow.
 
 (require 'ol)
 (require 'dired)
@@ -40,12 +40,12 @@
 (defcustom linkin-org-store-directory (expand-file-name "~/") "The directory where linkin-org-store stores data by default.")
 
 ;; define the directories where to search when a link is broken
-(defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search into when a link is broken")
+(defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search into when a link is broken.")
 
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
 (defcustom linkin-org-link-types-to-check-for-id
   '("pdf" "file")
-  "List of link types such that, if the link is broken, the ids in the link are used to resolve the link")
+  "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
 
 
 
@@ -82,7 +82,7 @@
 
 
 (defun linkin-org-create-id ()
-  "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second"
+  "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second."
   (let*
       ((time-string (format-time-string "%Y%m%dT%H%M%S" (current-time))))
     time-string)
@@ -99,7 +99,7 @@
 ;;;; ------------------------------------------- basic functions
 
 (defun linkin-org-get-id (s &optional id-regexp)
-  "If the given string contains an id then returns it, nil otherwise"
+  "If the given string contains an id then returns it, nil otherwise."
   (unless id-regexp
     (setq id-regexp linkin-org-id-regexp))
   (if (string-match id-regexp s)
@@ -109,7 +109,7 @@
   )
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
-  "Take a file name and strip off the id part"
+  "Take a file name and strip off the id part."
   (let*
       ((id (linkin-org-get-id file-name linkin-org-id-regexp)))
     (if id
@@ -286,11 +286,11 @@ It is assumed you already checked that file-path is not valid.
 
 
 (defun linkin-org-resolve-file-with-store-directory (file-path &optional directories-to-look-into)
-  "Searches for files contained in directories-to-look-into recursively and returns a file that has the same id as that of file-path.
-returns nil if file-path has no id or if no matching file was found.
-File-path can be the path of a file or a directory.
-If not provided, directories-to-look-into is set to the default linkin-org-search-directories-to-resolve-broken-links.
-It is assumed you already checked that file-path is not valid.
+  "Searches for files contained in DIRECTORIES-TO-LOOK-INTO recursively and returns a file that has the same id as that of FILE-PATH.
+returns nil if FILE-PATH has no id or if no matching file was found.
+FILE-PATH can be the path of a file or a directory.
+If not provided, DIRECTORIES-TO-LOOK-INTO is set to the global variable linkin-org-search-directories-to-resolve-broken-links.
+It is assumed you already checked that FILE-PATH is not a valid path in your file system.
 "
   (let*
       (
@@ -381,7 +381,7 @@ It is assumed you already checked that file-path is not valid.
 
 ;; [id:20250423T204506] 
 (defun linkin-org-resolve-file (file-path)
-  "Try different approaches to resolve the file path"
+  "Try different approaches to resolve the file paht FILE-PATH."
   (cond
    ;; if the path is already correct, do nothing
    ((file-exists-p file-path) file-path)
@@ -393,7 +393,7 @@ It is assumed you already checked that file-path is not valid.
    (t (message "Neither the file nor the id could be found"))))
 
 (defun linkin-org-resolve-link (string-link)
-  "Take a link in string form and returns the same link but with a correct path.
+  "Take a link in string form STRING-LINK and returns the same link but with a correct path.
 only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 "
   
@@ -424,7 +424,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 
 (defun linkin-org-get-org-string-link-under-point ()
-  "Returns the string of an org link under point, returns nil if no link was found"
+  "Returns the string of an org link under point, returns nil if no link was found."
   (if (org-in-regexp
        org-link-any-re
        (let ((origin (point)))
@@ -441,7 +441,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 ;; to do an action on a file as if the point was on that file in dired
 (defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
-  "Do an action on a file with path FILE-PATH as if the point was on that file in dired"
+  "Apply a function FUNCTION-TO-PERFORM on a file with path FILE-PATH as if the point was on that file in dired."
   (let*
       (
        ;; get the full path
@@ -475,18 +475,21 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 ;; to open a file as if in dired
 (defun linkin-org-open-file-as-in-dired (file-path)
-  "Open a file as if it were opened from dired"
+  "Open a file with path FILE-PATH as if it were opened from dired."
   (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file))
 
 ;; to yank the link of a given file
 (defun linkin-org-yank-link-of-file (file-path)
-  "Yank the link of a given file, as if linkin-org-dired-get-link was called from dired"
+  "Yank the link of the file with path FILE-PATH, as if linkin-org-dired-get-link was called from dired."
   (linkin-org-perform-function-as-if-in-dired-buffer file-path 'linkin-org-dired-get-link))
 
 
 
 (defun linkin-org-store-file (&optional yank-link? ask-for-name-confirmation?)
-  "Store the file under point in dired"
+  "Store the file under point in dired.
+Set YANK-LINK? to non-nil to copy the link in the kill ring (clipboard).
+Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message before storing the file.
+"
   (let* (
 	     (file-path (dired-file-name-at-point))
          ;; is the file already in the store directory
@@ -549,7 +552,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
           (revert-buffer))))))
 
 (defun linkin-org-follow-link-and-do-function (string-link function-to-perform)
-  "follow the link, apply the function, come back."
+  "Follow the link in string form STRING-LINK, apply the function FUNCTION-TO-PERFORM, come back."
   (let (
         ;; remember the current buffer and the current position of point
         (init-buffer (current-buffer))
@@ -585,7 +588,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 
 (defun linkin-org-follow-string-link (string-link)
-  "Open the link STRING-LINK given in string form"
+  "Open the link STRING-LINK given in string form."
   (if-let*
       (
        ;; check that the string-link is not nil
@@ -608,7 +611,7 @@ only modify the link if its type is in linkin-org-link-types-to-check-for-id.
 
 ;; To create a link towards the file under point in a dired buffer
 (defun linkin-org-dired-get-link ()
-  "Returns a link towards the file under point in dired"
+  "Returns a link towards the file under point in dired."
   (let* (
          (file-path (expand-file-name (dired-file-name-at-point)))
          ;; remove the trailing slash if it's a directory
@@ -780,7 +783,7 @@ If there is an inline id in the current line, use it. Otherwise use the line num
 
 ;; to leave an id in an editable line
 (defun linkin-org-store-inline ()
-  "Leaves an id in an editable line and copy a link towards that id in the kill-ring"
+  "Leaves an id in an editable line and copy a link towards that id in the kill-ring."
   (let (
 	    (id (linkin-org-create-id))
 	    (range
@@ -797,7 +800,7 @@ If there is an inline id in the current line, use it. Otherwise use the line num
             ;; if the current line is empty, do special treatment since I cannot easily comment an empty line
             (progn
               ;; insert the id
-	          (insert (concat "[id:" id "] "))
+	          (insert "[id:" id "] ")
               ;; comment the line
               (comment-or-uncomment-region (line-beginning-position) (goto-char (line-end-position 1))))
           ;; else, if the line is non empty
@@ -811,11 +814,17 @@ If there is an inline id in the current line, use it. Otherwise use the line num
               (comment-or-uncomment-region (apply #'min range) (apply #'max range))
               (comment-beginning))
             ;; just insert the id at the beginning of the comments
-	        (insert (concat "[id:" id "] "))))))
+	        (insert "[id:" id "] ")
+            )
+          )
+        )
+      )
     ;; copy the link
     (linkin-org-get)
     ;; go the end of the line
-    (end-of-line)))
+    (end-of-line)
+    )
+  )
 
 ;;;; ------------------------------------------- pdf link
 
@@ -847,15 +856,15 @@ If there is an inline id in the current line, use it. Otherwise use the line num
                                    (split-string edges-raw-str ";")))
                  )
 	          ;; convert from string to int, get a list of four floating points numbers, that's the edges
-	          (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str))))
+	          (when edges-list-str (list (mapcar #'string-to-number edges-list-str))))
           ;; else if the data is just separated by ::
 	      (let*
               (
                (edges-str (car (cdr (cdr link-parts))))
 	           ;; separate the edges by |
-	           (edges-list-str (unless (not edges-str) (split-string edges-str "[;|]"))))
+	           (edges-list-str (when edges-str (split-string edges-str "[;|]"))))
 	        ;; convert from string to int, get a list of four floating points numbers, that's the edges
-	        (unless (not edges-list-str) (list (mapcar 'string-to-number edges-list-str))))))
+	        (when edges-list-str (list (mapcar #'string-to-number edges-list-str))))))
 	   ;; (path+page+edges (split-string link "::"))
 	 ;; ;; for the pdf file path
      ;;     (pdf-file (car path+page+edges))
@@ -926,10 +935,10 @@ If there is an inline id in the current line, use it. Otherwise use the line num
 
 
 		    ;; go to the page
-		    (unless (not page) 
+		    (when page
 		      (pdf-view-goto-page page))
 		    ;; ;; hightlight the edges
-		    (unless (not edges-list)
+		    (when edges-list
 		      (let
 			  ;; idk then do the same here
 			  ;; [[file:~/.config/emacs/straight/repos/pdf-tools/lisp/pdf-occur.el::290][[file] pdf-occur.el_at_290]]
@@ -1036,9 +1045,7 @@ If there is an inline id in the current line, use it. Otherwise use the line num
 
 
 (defun org-mpd-open (string-link)
-  " link is a string containing
-the paths to the song (an mp3 file or so, or a .cue file with a trailing /track<number>) as a lisp list, each song is a string element of the list
-then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
+  "LINK is a string containing the paths to the song (an mp3 file or so, or a .cue file with a trailing /track<number>) as a lisp list, each song is a string element of the list then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
   (let* (
 	     (link-parts (split-string string-link "::"))
 	     (songs (read (car link-parts)))
@@ -1056,7 +1063,7 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
             (cadr link-parts))))
     ;; (message (concat "song:" (prin1-to-string songs)))
     ;; (simple-mpc-call-mpc nil (cons "add" songs))
-    (apply 'call-process "mpc" nil nil nil (cons "add" songs))))
+    (apply #'call-process "mpc" nil nil nil (cons "add" songs))))
 
 ;; code that takes a mpd entry list (with file, title, etc) and returns the title
 (defun linkin-org-get-mpd-track-title (lst)
@@ -1065,10 +1072,10 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
         (file-pos (cl-position 'file lst)))
     (cond
      ;; if there is a 'Title elem in the list and if there is a value (a next elem after 'Title)
-     ((and title-pos (not (null (nth (1+ title-pos) lst))))
+     ((and title-pos (nth (1+ title-pos) lst))
       (nth (1+ title-pos) lst)) ;; Return the element after 'Title
      ;; else, if there is a 'file elem in the list and if there is a value (a next elem after 'file)
-     ((and file-pos (not (null (nth (1+ file-pos) lst))))
+     ((and file-pos (nth (1+ file-pos) lst))
       (let*
 	  (
 	   (file-path (nth (1+ file-pos) lst))
@@ -1089,7 +1096,7 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
 
 ;; returns a link in string format towards the mingus entry at point
 (defun linkin-org-lien-mpd-mingus ()
-  "Returns a link in string format towards the mingus entry at point"
+  "Returns a link in string format towards the mingus entry at point."
   (let* (
 	 (list-songs
 	  (mapcar
@@ -1162,7 +1169,7 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
 (defun org-video-open (link)
   "Where timestamp is 00:15:37.366 , the link should look like:
    [[video:/path/to/file.mp4::00:15:37.366][My description.]]
-   path can also be a youtube url
+   path can also be a youtube url.
    "
 
   (let* (
@@ -1180,7 +1187,7 @@ then ::,then, a timestamp in format readable by mpd, for instance 1:23:45 "
        ;; ((linkin-org-is-link-path-correct video-address)
        ((linkin-org-resolve-file video-address)
 	    (progn
-	      (message (format  "Playing %s at %s" video-address timestamp))
+	      (message "Playing %s at %s" video-address timestamp)
 	      (start-process "mpv" nil "mpv" (format "--start=%s" timestamp) video-address)))
        (t
 	    (message "Not a valid video file or url"))))))
@@ -1285,7 +1292,7 @@ If a region is selected, open all links in that region in order.
 
 
 (defun linkin-org-get ()
-  "kill a link to what is under point"
+  "Kill a link to what is under point."
   (interactive)
   (let*
       ((mode (symbol-name major-mode)))
@@ -1303,7 +1310,7 @@ If a region is selected, open all links in that region in order.
      ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
       ;; (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
       (kill-new (let
-                 ((l (call-interactively 'org-store-link)))
+                 ((l (call-interactively #'org-store-link)))
                  (format "[[%s][%s %s]]"
                         (car l)
                         "[mail]"
@@ -1322,7 +1329,7 @@ If a region is selected, open all links in that region in order.
 
 
 (defun linkin-org-store ()
-  "Store what is under point and kill a link to it"
+  "Store what is under point and kill a link to it."
   (interactive)
   (let*
       ((mode (symbol-name major-mode)))
