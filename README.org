@@ -1,4 +1,3 @@
-
 linkin-org --- an emacs workflow with simple, fast, reliable links.
 
 * Overview
