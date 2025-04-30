@@ -136,8 +136,16 @@ We say that an operation on a data is "safe" if any non-broken link toward the d
 
 
 
+* A Few Tips
+Here are tips that I personally apply, but this is a matter of preference.
 
-* A few code examples
+- You may want to bind ~org-next-link~ and ~org-previous-link~ to comfortable keys.
+  When you start to have many links, it gives the not unsatisfying sensation that you merged org and dired.
+- In your file system, attach your ids at the end of the chain, best directly in the file name.
+  Try not to over-engineer with ids everywhere along the file paths, as adding an id to a directory may break links towards files deeper in the path.
+  Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the link to the folder that contains it.
+
+* Code Examples
 ** Save selected text
 This code saves some text ~text~ at the location where ~link~ points to.
 #+begin_src emacs-lisp
