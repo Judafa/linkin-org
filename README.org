@@ -163,7 +163,7 @@ Here are tips that I personally apply, this is a matter of preference.
   #+end_src
 - Attach your ids at the right-end of the paths in your file system, best directly in the file name.
   Try not to over-engineer with ids everywhere along the file paths.
-  Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the link to the folder that contains it.
+  Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the id to the folder that contains it.
 - Place the most relevant link at the top of the note.
   It can be a link towards some data you access a lot in the context of the note.
   It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and follow the pdf link I pasted there last time I stopped reading to go where I was.
