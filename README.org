@@ -129,7 +129,7 @@ If you respect them, your links will always work.
    Ids are what enable linkin-org to reliably retrieve your data.
    So tampering with the ids breaks your links --- the links are really broken, not just unreliable, as you just changed the path recorded in the links without id backup.
 2. *First attach an id to the data, then create a link*.
-   The reverse order will break your links
+   The reverse order will break your links.
    Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
    But if you later decide to attach an id to the data, all your previous links towards the data will be broken.
 3. *Keep your data in sub-directories of* ~linkin-org-search-directories-to-resolve-broken-links~.
