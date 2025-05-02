@@ -666,7 +666,8 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	 )
     (if (file-exists-p file-path)
 	    (progn
-	      (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+	      ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+	      (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-find-file)
 	      (when line-number-or-id
 	        ;; if line-number-or-id matches an id, search for that id in the buffer
 	        (let
