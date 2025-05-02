@@ -131,7 +131,9 @@ If you respect them, your links will always work.
    Ids are what enable linkin-org to reliably retrieve your data.
    So tampering with the ids breaks your links --- the links are really broken, not just unreliable, as you just changed the path recorded in the links without id backup.
 2. *First attach an id to the data, then create a link*.
-   You can get links towards some data without attaching an id on it (just use ~linkin-org-get~ on the data); But bear in mind that, if you later decide to attach an id then all your links that you previously created without id will stop working.
+   The reverse order will break your links
+   Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
+   But if you later decide to attach an id to the data, all your previous links towards the data will be broken.
 3. *Keep your data in sub-directories of* ~linkin-org-search-directories-to-resolve-broken-links~.
    linkin-org recursively searches throughout those directories to find your data in last resort.
    No link is broken if the linked data has an id and lies inside those directories.
@@ -166,7 +168,7 @@ Here are tips that I personally apply, this is a matter of preference.
   Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the id to the folder that contains it.
 - Place the most relevant link at the top of the note.
   It can be a link towards some data you access a lot in the context of the note.
-  It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and follow the pdf link I pasted there last time I stopped reading to go where I was.
+  It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and follow the pdf link I pasted there last time I stopped reading to go back where I was.
   With this, your fingers quickly learn the automation "go to the note -> org-next-line -> linkin-org-follow" to access a data quickly.
 
 
