@@ -46,6 +46,10 @@
   '("pdf" "file")
   "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
 
+(defcustom linkin-org-opening-file-function
+  #'dired-find-file
+  "Function to use to open a file. This function is called as the point is on the file in a dired buffer."
+  )
 
 
 ;;;; -------------------------------------------- patterns
@@ -667,7 +671,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
     (if (file-exists-p file-path)
 	    (progn
 	      ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
-	      (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-find-file)
+	      (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function)
 	      (when line-number-or-id
 	        ;; if line-number-or-id matches an id, search for that id in the buffer
 	        (let
