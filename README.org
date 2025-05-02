@@ -2,9 +2,21 @@ linkin-org --- an emacs workflow with simple, fast, reliable links.
 
 * Overview
 
-linkin-org proposes to *access your data with reliable links* to place your written notes at the center of your workflow.
-From a note, follow a link that you previously pasted there to access a precise location: a file, a given place in a text file, precise words in a pdf.
-The links work fast and are easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
+linkin-org proposes to access your data with reliable links to place your written notes at the center of your workflow.
+linkin-org turns your notes into precise, reliable access points towards your data: create, paste and follow a link to access a file, a precise line in a text file, precise words in a pdf.
+
+
+The most important features of linkin-org:
+- *reliable*: your links just wont break.
+  It takes a bit of [[#how-reliable-are-the-links-exactly][discipline]], nothing painful.
+- *fully distributed*: rename, move, modify your files from literally anywhere.
+  Not modifying or removing the ids is all it takes.
+- *simple*: 3 main commands, that's all you need.
+
+
+
+# From a note, follow a link that you previously pasted there to access a precise location: a file, a given place in a text file, precise words in a pdf.
+# The links work fast and are easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
@@ -113,37 +125,51 @@ It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installe
 
 * How Reliable are the Links Exactly?
 
-
-We start with a few good practices so your links keep working.
+There are *three golden rules*.
+If you respect them, your links will always work.
 - *Do not change or remove the ids.*
-  An id in a file name (or directory name) looks like 20250425T155433, while an inline id inside a file content looks like id:20250425T160020.
-  Ids in file names, directory names and inline ids in file contents are what enable linkin-org to reliably retrieve your data.
-  If you change or remove the ids, the links will thus be broken --- not only unreliable, really broken, as you just changed the path recorded in the links.
-- *First store the data, and only then create links*.
+  An id in a file name or a directory name looks like 20250425T155433, an inline id inside a file content looks like id:20250425T160020.
+  Ids are what enable linkin-org to reliably retrieve your data.
+  So tampering with the ids breaks your links --- the links are really broken, not just unreliable, as you just changed the path recorded in the links without id backup.
+- *First attach an id to the data, then create a link*.
   You can get links towards some data without attaching an id on it (just use ~linkin-org-get~ on the data); But bear in mind that, if you later decide to attach an id then all your links that you previously created without id will stop working.
+- *Keep your data in sub-directories of* ~linkin-org-search-directories-to-resolve-broken-links~.
+  linkin-org recursively searches throughout those directories to find your data in last resort.
+  No link is broken if the linked data has an id and lies inside those directories.
 
 
 
 
-And now, the golden rules that keep your links working.
-We say that an operation on a data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the data.
-
+And now, here are the operations that *always preserve your links*:
 - If a file or a directory has an id attached then it is always safe to rename it, without changing the id part of course.
-- It is always safe to modify a file as long as no inline id is changed or modified.
+- It is always safe to modify the content of a file as long as no inline id is changed or modified.
 - If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~.
   # In case you cannot retrieve a file, you can add your entire home directory to that variable (the default, you may change it to more fine-grained directories for faster link recovery).
   # As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
 
+Note: We say that an operation on a data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the data.
 
 
 * A Few Tips
-Here are tips that I personally apply, but this is a matter of preference.
-
-- You may want to bind ~org-next-link~ and ~org-previous-link~ to comfortable keys.
-  When you start to have many links, it gives the not unsatisfying sensation that you merged org and dired.
-- In your file system, attach your ids at the end of the chain, best directly in the file name.
-  Try not to over-engineer with ids everywhere along the file paths, as adding an id to a directory may break links towards files deeper in the path.
+Here are tips that I personally apply, this is a matter of preference.
+- Bind ~org-next-link~ and ~org-previous-link~ to comfortable keys.
+  When you start to have many links, it gives the not unsatisfying sensation that you merged org with dired.
+  Here are my bindings (for an evil user):
+  #+begin_src emacs-lisp
+(nvmap :keymaps 'override
+  "C-n"   '(org-next-link :which-key "jump to the next org link")
+  "C-p"   '(org-previous-link :which-key "jump to the previous org link")
+  "C-l"   '(linkin-org-follow :which-key "follow the link at point, using ids to resolve a broken link.")
+  )
+  #+end_src
+- Attach your ids at the right-end of the paths in your file system, best directly in the file name.
+  Try not to over-engineer with ids everywhere along the file paths.
   Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the link to the folder that contains it.
+- Place the most relevant link at the top of the note.
+  It can be a link towards some data you access a lot in the context of the note.
+  It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and follow the pdf link I pasted there last time I stopped reading to go where I was.
+  With this, your fingers quickly learn the automation "go to the note -> org-next-line -> linkin-org-follow" to access a data quickly.
+
 
 * Code Examples
 ** Save selected text
