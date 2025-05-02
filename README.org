@@ -150,7 +150,7 @@ Note: We say that an operation on a data is "safe" if any non-broken link toward
 
 
 * A Few Tips
-Here are tips that I personally apply, this is a matter of preference.
+Here are personal tips, this is a matter of preference.
 - Bind ~org-next-link~ and ~org-previous-link~ to comfortable keys.
   When you start to have many links, it gives the not unsatisfying sensation that you merged org with dired.
   Here are my bindings (for an evil user):
