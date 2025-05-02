@@ -6,25 +6,22 @@ linkin-org proposes to access your data with reliable links to place your writte
 
 
 linkin-org is:
-- *reliable*: your links just wont break.
+- *reliable*: your links will always work.
   It takes a bit of [[#how-reliable-are-the-links-exactly][discipline]]; also, you should not be afraid of seeing ids everywhere.
-  Nothing habit cannot handle.
-- *fully distributed*: rename, move, modify your files from literally anywhere.
-  Just dont modify or remove the ids.
+  Give it a try! It's nothing habit cannot handle.
+- *fully distributed*: rename, move, modify your files from literally anywhere without risk.
 - *simple*: 3 main commands is all you need.
 
 
-
 linkin-org turns your notes into precise, reliable access points towards your data.
-Create, paste and follow a link to access a file, a precise line in a text file, precise words in a pdf.
-# From a note, follow a link that you previously pasted there to access a precise location: a file, a given place in a text file, precise words in a pdf.
-The links work quickly and are easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
+Create, paste and follow a link to access a file, a precise line in a text file or precise words in a pdf.
+The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
 linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link, retrieve the data (~linkin-org-follow~).
-An id (identifier) system makes sure that your links will always work even if you move, rename or modify the linked data (more details [[#how-reliable-are-the-links-exactly][here]]).
-With linkin-org, a file that you can reliably access via a link has a name like:
+An id system makes sure that your links will always work even if you move, rename or modify the linked data.
+Concretely, a file that you can reliably access via a link has an id in its name, like:
 #+begin_src example
 20250425T155433--filename.txt
 #+end_src
