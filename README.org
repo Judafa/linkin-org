@@ -126,15 +126,15 @@ It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installe
 
 There are *three golden rules*.
 If you respect them, your links will always work.
-- *Do not change or remove the ids.*
-  An id in a file name or a directory name looks like 20250425T155433, an inline id inside a file content looks like id:20250425T160020.
-  Ids are what enable linkin-org to reliably retrieve your data.
-  So tampering with the ids breaks your links --- the links are really broken, not just unreliable, as you just changed the path recorded in the links without id backup.
-- *First attach an id to the data, then create a link*.
-  You can get links towards some data without attaching an id on it (just use ~linkin-org-get~ on the data); But bear in mind that, if you later decide to attach an id then all your links that you previously created without id will stop working.
-- *Keep your data in sub-directories of* ~linkin-org-search-directories-to-resolve-broken-links~.
-  linkin-org recursively searches throughout those directories to find your data in last resort.
-  No link is broken if the linked data has an id and lies inside those directories.
+1. *Do not change or remove the ids.*
+   An id in a file name or a directory name looks like 20250425T155433, an inline id inside a file content looks like id:20250425T160020.
+   Ids are what enable linkin-org to reliably retrieve your data.
+   So tampering with the ids breaks your links --- the links are really broken, not just unreliable, as you just changed the path recorded in the links without id backup.
+2. *First attach an id to the data, then create a link*.
+   You can get links towards some data without attaching an id on it (just use ~linkin-org-get~ on the data); But bear in mind that, if you later decide to attach an id then all your links that you previously created without id will stop working.
+3. *Keep your data in sub-directories of* ~linkin-org-search-directories-to-resolve-broken-links~.
+   linkin-org recursively searches throughout those directories to find your data in last resort.
+   No link is broken if the linked data has an id and lies inside those directories.
 
 
 
