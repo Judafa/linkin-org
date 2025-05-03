@@ -29,7 +29,7 @@ and a line that you can reliably access via a link (here with a python syntax) l
 #+begin_src python
 # [id:20250425T160020] link gets you there
 #+end_src
-Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
+# Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
 
 * Everything with 3 Commands
 
