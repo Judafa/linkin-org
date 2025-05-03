@@ -6,8 +6,8 @@ linkin-org proposes to access your data with reliable links to place your writte
 linkin-org is:
 - *reliable*: your links just always work.
   It takes a bit of [[#how-reliable-are-the-links-exactly][discipline]]; also, you should not be afraid of seeing ids everywhere.
-  Give it a try! It's nothing a little habit cannot handle.
-- *fully distributed*: rename, move, modify your files from literally anywhere without breaking your links.
+  Give it a try! It's nothing a little habit cant handle.
+- *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) wont break your links.
   All you have to do is to not change or modify the ids in the file names.
 - *non-intrusive*: you can store your files with other methods in parallel (directory hierarchy, file-naming, etc) without problem.
   The only noticeable difference is, the files that are linked have an id in their names.
