@@ -15,7 +15,7 @@ linkin-org is:
 
 
 linkin-org turns your written notes into precise, reliable access points towards your data.
-Also, it suggests a new simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (~linkin-org-follow~).
+Also, it suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (~linkin-org-follow~).
 The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
