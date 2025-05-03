@@ -20,7 +20,7 @@ The links are fast and easy to create; most importantly, the links are *reliable
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
-An id system makes sure that your links will always work even if you move, rename or modify the linked data.
+An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#how-reliable-are-the-links-exactly][3 golden rules]]).
 Concretely, a file that you can reliably access via a link has an id in its name, like:
 #+begin_src example
 20250425T155433--filename.txt
