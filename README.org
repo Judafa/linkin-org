@@ -6,16 +6,16 @@ linkin-org proposes to access your data with reliable links to place your writte
 linkin-org is:
 - *reliable*: your links just always work.
   It takes a bit of [[#how-reliable-are-the-links-exactly][discipline]]; also, you should not be afraid of seeing ids everywhere.
-  Give it a try! It's nothing habit cannot handle.
+  Give it a try! It's nothing a little habit cannot handle.
 - *fully distributed*: rename, move, modify your files from literally anywhere without breaking your links.
-  No database of any kind.
+  All you have to do is to not change or modify the ids in the file names.
 - *non-intrusive*: you can store your files with other methods in parallel (directory hierarchy, file-naming, etc) without problem.
   The only difference is, the files that are linked have an id in their names.
 - *simple*: 3 main commands is all you need.
 
 
 linkin-org turns your written notes into precise, reliable access points towards your data.
-It suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the linkin your note, retrieve the data (~linkin-org-follow~).
+It suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (~linkin-org-follow~).
 # Create, paste and follow a link to access a file, a precise line in a text file or precise words in a pdf directly from your written notes.
 The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
