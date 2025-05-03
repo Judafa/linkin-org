@@ -10,7 +10,7 @@ linkin-org is:
 - *fully distributed*: rename, move, modify your files from literally anywhere without breaking your links.
   All you have to do is to not change or modify the ids in the file names.
 - *non-intrusive*: you can store your files with other methods in parallel (directory hierarchy, file-naming, etc) without problem.
-  The only difference is, the files that are linked have an id in their names.
+  The only noticeable difference is, the files that are linked have an id in their names.
 - *simple*: 3 main commands is all you need.
 
 
