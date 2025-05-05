@@ -7,7 +7,7 @@ linkin-org is:
 - *reliable*: your links just always work.
   It takes a bit of [[#how-reliable-are-the-links-exactly][discipline]]; also, you should not be afraid of seeing ids everywhere.
   Give it a try! It's nothing a little habit cant handle.
-- *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) wont break your links.
+- *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) without risk to break your links.
   All you have to do is to not change or modify the ids in the file names.
 - *non-intrusive*: you can store your files with other methods in parallel (directory hierarchy, file-naming, etc) without problem.
   The only noticeable difference is, the files that are linked have an id in their names.
@@ -20,7 +20,7 @@ The links are fast and easy to create; most importantly, the links are *reliable
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
-An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#how-reliable-are-the-links-exactly][3 golden rules]]).
+An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]).
 Concretely, a file that you can reliably access via a link has an id in its name, like:
 #+begin_src example
 20250425T155433--filename.txt
@@ -124,17 +124,25 @@ It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installe
 
 * How Reliable are the Links Exactly?
 
-There are *three golden rules*.
+There are *four golden rules*.
 If you respect them, your links will always work.
 1. *Do not change or remove the ids.*
    An id in a file name or a directory name looks like 20250425T155433, an inline id inside a file content looks like id:20250425T160020.
    Ids are what enable linkin-org to reliably retrieve your data.
    So tampering with the ids breaks your links --- the links are really broken, not just unreliable, as you just changed the path recorded in the links without id backup.
-2. *First attach an id to the data, then create a link*.
+2. *Make sure that each id is unique.*
+   linkin-org uses time stamps to generate the ids.
+   The time stamps are precise to the second.
+   So if you only use linkin-org's builtin functions to create ids and space the calls by one second, there will be no problem.
+   But be careful when you start copying files: if you dont change the file name of the copied file, you end up with two simimlar ids.
+   In that case, remove the id of the copied file by hand and create another id for that file.
+   Also, some softwares (such as latex) will create auxiliary files with the same name as your original file.
+   In that case, a solution is to attach the id to the directory that contains your file instead.
+3. *First attach an id to the data, then create a link*.
    The reverse order will break your links.
    Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
    But if you later decide to attach an id to the data, all your previous links towards the data will be broken.
-3. *Keep your data in sub-directories of* ~linkin-org-search-directories-to-resolve-broken-links~.
+4. *Keep your data in sub-directories of* ~linkin-org-search-directories-to-resolve-broken-links~.
    linkin-org recursively searches throughout those directories to find your data in last resort.
    No link is broken if the linked data has an id and lies inside those directories.
 
@@ -169,7 +177,7 @@ Here are personal tips, this is a matter of preference.
 - Place the most relevant link at the top of the note.
   It can be a link towards some data you access a lot in the context of the note.
   It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and follow the pdf link I pasted there last time I stopped reading to go back where I was.
-  With this, your fingers quickly learn the automation "go to the note -> org-next-line -> linkin-org-follow" to access a data quickly.
+  With this, your fingers quickly learn the automation "go to the note -> org-next-link -> linkin-org-follow" to access a data quickly.
 
 
 * Code Examples
