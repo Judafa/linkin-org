@@ -134,7 +134,7 @@ If you respect them, your links will always work.
    linkin-org uses time stamps to generate the ids.
    The time stamps are precise to the second.
    So if you only use linkin-org's builtin functions to create ids and space the calls by one second, there will be no problem.
-   But be careful when you start copying files: if you dont change the file name of the copied file, you end up with two simimlar ids.
+   But be careful when you start copying files: if you dont change the file name of the copied file, you end up with two similar ids.
    In that case, remove the id of the copied file by hand and create another id for that file.
    Also, some softwares (such as latex) will create auxiliary files with the same name as your original file.
    In that case, a solution is to attach the id to the directory that contains your file instead.
