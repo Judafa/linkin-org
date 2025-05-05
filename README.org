@@ -8,7 +8,7 @@ linkin-org is:
   It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]); also, you should not be afraid of ids.
   Give it a try! It's nothing a little habit cant handle.
 - *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) without risk to break your links.
-  All you have to do is to not change or modify the ids.
+  All you have to do is to not change or remove the ids.
 - *non-intrusive*: you can store your files with other methods in parallel (directory hierarchy, file-naming, etc) without problem.
   The only noticeable difference is, the files that are linked have an id in their names.
 - *simple*: 3 main commands is all you need.
