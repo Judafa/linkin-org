@@ -5,7 +5,7 @@ linkin-org --- an emacs workflow with simple, fast, reliable links.
 linkin-org proposes to access your data with reliable links to place your written notes at the center of your workflow.
 linkin-org is:
 - *reliable*: your links just always work.
-  It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]); also, you should not be afraid of seeing ids everywhere.
+  It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]); also, you should not be afraid of ids.
   Give it a try! It's nothing a little habit cant handle.
 - *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) without risk to break your links.
   All you have to do is to not change or modify the ids in the file names.
