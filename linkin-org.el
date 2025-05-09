@@ -1258,48 +1258,70 @@ Do nothing if the file already has an id."
         (revert-buffer))))
 
 
+
 (defun linkin-org-follow ()
   "Open the link under point.
 If a region is selected, open all links in that region in order."
   (interactive)
-  ;; if a region is selected, then open all links in the region, in order
-  (if (region-active-p)
-      (let (
-	    (beg (region-beginning))
-	    (end (region-end))
-	    (text-to-investigate (buffer-substring-no-properties (region-beginning) (region-end))))
-	    (save-excursion
-	      (with-temp-buffer
-	        ;; insert the text to investigate
-	        (insert "\n")
-	        (insert text-to-investigate)
-	        ;; go to the beginning of the buffer
-	        (goto-char (point-min))
-	        ;; if there is a link under point
-	        ;; (if (org--link-at-point)
-	        ;; 	;; open the link
-	        ;; 	(linkin-org-open-link-at-point)
-	        ;; 	)
-	        (let*
-		        (
-		         ;;remember the current point
-		         (current-point (point))
-		         ;; go to the next link and remember the point
-		         (next-point (progn
-			                   (org-next-link)
-			                   (point))))
-	          ;; go to the next link while current-point is different from next-point
-	          (while (not (= current-point next-point))
-		        (linkin-org-follow)
-		        (setq current-point next-point)
-		        (setq next-point (progn
-				                   (org-next-link)
-				                   (point))))))))
-    (let (
-	      ;; get the link under point in string form
-	      (string-link (linkin-org-get-org-string-link-under-point)))
-      ;; follow the string
-      (linkin-org-follow-string-link string-link))))
+  (if-let*
+      (
+	   ;; get the link under point in string form
+	   (string-link (linkin-org-get-org-string-link-under-point))
+	   ;; turn the string link into an org element
+	   (link (linkin-org-parse-org-link string-link))
+	   ;; get the type of the link
+	   (link-type (org-element-property :type link))
+	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
+	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
+				            (linkin-org-resolve-link string-link)
+                          string-link)))
+      ;; open the resolved link in the normal org way
+      (org-link-open (linkin-org-parse-org-link new-string-link))
+    ;; if the link could not be resolved, just open the link in the normal org way
+    (org-link-open string-link)))
+
+;; (defun linkin-org-follow ()
+;;   "Open the link under point.
+;; If a region is selected, open all links in that region in order."
+;;   (interactive)
+;;   ;; if a region is selected, then open all links in the region, in order
+;;   (if (region-active-p)
+;;       (let (
+;; 	    (beg (region-beginning))
+;; 	    (end (region-end))
+;; 	    (text-to-investigate (buffer-substring-no-properties (region-beginning) (region-end))))
+;; 	    (save-excursion
+;; 	      (with-temp-buffer
+;; 	        ;; insert the text to investigate
+;; 	        (insert "\n")
+;; 	        (insert text-to-investigate)
+;; 	        ;; go to the beginning of the buffer
+;; 	        (goto-char (point-min))
+;; 	        ;; if there is a link under point
+;; 	        ;; (if (org--link-at-point)
+;; 	        ;; 	;; open the link
+;; 	        ;; 	(linkin-org-open-link-at-point)
+;; 	        ;; 	)
+;; 	        (let*
+;; 		        (
+;; 		         ;;remember the current point
+;; 		         (current-point (point))
+;; 		         ;; go to the next link and remember the point
+;; 		         (next-point (progn
+;; 			                   (org-next-link)
+;; 			                   (point))))
+;; 	          ;; go to the next link while current-point is different from next-point
+;; 	          (while (not (= current-point next-point))
+;; 		        (linkin-org-follow)
+;; 		        (setq current-point next-point)
+;; 		        (setq next-point (progn
+;; 				                   (org-next-link)
+;; 				                   (point))))))))
+;;     (let (
+;; 	      ;; get the link under point in string form
+;; 	      (string-link (linkin-org-get-org-string-link-under-point)))
+;;       ;; follow the string
+;;       (linkin-org-follow-string-link string-link))))
 
 
 
