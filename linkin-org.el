@@ -595,7 +595,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
       (goto-char init-point))))
 
 
-(defun linkin-org-follow-string-link (string-link)
+(defun linkin-org-follow-string-link (string-link &optional open-in-dired-p)
   "Open the link STRING-LINK given in string form."
   (if-let*
       (
@@ -610,7 +610,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 				            (linkin-org-resolve-link string-link)
                           string-link)))
       ;; open the resolved link in the normal org way
-      (org-link-open (linkin-org-parse-org-link new-string-link))
+      (org-link-open (linkin-org-parse-org-link new-string-link) open-in-dired-p)
     ;; if the link could not be resolved, just open the link in the normal org way
     (org-link-open string-link)))
 
@@ -648,7 +648,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	       (directory-name-without-slash (directory-file-name file-path)))
       (format "[[file:%s][[file] %s]]" directory-name-without-slash file-name))))
 
-(defun linkin-org-file-open (link)
+(defun linkin-org-file-open (link &optional open-in-dired-p)
   "Open the file at LINK."
   (let* (
 	 (link-parts (split-string link "::"))
@@ -668,8 +668,33 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	 ;; (line-number-or-id (cadr link-parts))
 	 ;; (column-number (caddr link-parts))
 	 )
+
     (if (file-exists-p file-path)
-	    (progn
+            ;; if the link is to be opened in Dired, open it in Dired
+        (if open-in-dired-p
+            (progn
+              (let*
+                  (
+                   ;; get the full path
+                   (file-path (expand-file-name file-path))
+                   ;; if file-path is the path of a directory, make sure there is a trailing slash
+                   (is-directory? (file-directory-p file-path))
+                   (file-path (if (and is-directory?
+                                       (not (string-empty-p file-path)))
+                                  (directory-file-name file-path)
+                                file-path))
+                   ;; create a Dired buffer visiting the directory of the file (or get the name of it if it already exists)
+                   ;; (dired-buffer (dired-noselect (file-name-directory file-path)))
+                   )
+                ;; switch to the Dired buffer
+                (dired (file-name-directory file-path))
+                ;; (switch-to-buffer dired-buffer)
+                ;; update the cloned Dired buffer
+                ;; (revert-buffer)
+                ;; place the point on the file
+                (dired-goto-file file-path)
+                )
+              )
 	      ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
 	      (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function)
 	      (when line-number-or-id
@@ -717,7 +742,7 @@ for internal and \"file\" links, or stored as a parameter in
 	 ;; 			  ("emacs" 'emacs)
 	 ;; 			  ("sys" 'system)))))
 	 ;; (linkin-org-open-file-as-in-dired path)
-	     (linkin-org-file-open path)))
+	     (linkin-org-file-open path arg)))
       ;; End of changes
 
       ;; Internal links.
@@ -1268,6 +1293,17 @@ If a region is selected, open all links in that region in order."
 	      (string-link (linkin-org-get-org-string-link-under-point)))
       ;; follow the string
       (linkin-org-follow-string-link string-link)))
+
+
+(defun linkin-org-follow-in-dired ()
+  "Open the link under point.
+If a region is selected, open all links in that region in order."
+  (interactive)
+    (let (
+	      ;; get the link under point in string form
+	      (string-link (linkin-org-get-org-string-link-under-point)))
+      ;; follow the string
+      (linkin-org-follow-string-link string-link t)))
 
 ;; (defun linkin-org-follow ()
 ;;   "Open the link under point.
