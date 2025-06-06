@@ -1,4 +1,4 @@
-;;; linkin-org.el --- an emacs workflow with simple, fast, reliable links -*- lexical-binding: t -*-
+;;; linkin-org.el --- an emacs workflow with fast, reliable links -*- lexical-binding: t -*-
 
 ;; Copyright 2025 Julien Dallot
 
