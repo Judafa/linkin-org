@@ -559,8 +559,8 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
           ;; update the Dired buffer
           (revert-buffer))))))
 
-(defun linkin-org-follow-link-and-do-function (string-link function-to-perform)
-  "Follow the link in string form STRING-LINK, apply the function FUNCTION-TO-PERFORM, come back."
+(defun linkin-org-open-link-and-do-function (string-link function-to-perform)
+  "Open the link in string form STRING-LINK, apply the function FUNCTION-TO-PERFORM, come back."
   (let (
         ;; remember the current buffer and the current position of point
         (init-buffer (current-buffer))
@@ -570,11 +570,11 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
         new-buffer)
     (unwind-protect
         (progn
-          ;; follow to the link
-          (linkin-org-follow-string-link link)
+          ;; Open to the link
+          (linkin-org-open-string-link link)
           ;; call the function
           (funcall function-to-perform)
-          ;; remember the buffer we landed in by following the link
+          ;; remember the buffer we landed in by opening the link
           (setq new-buffer (current-buffer))
           ;; save the buffer
           (save-buffer))
@@ -595,7 +595,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
       (goto-char init-point))))
 
 
-(defun linkin-org-follow-string-link (string-link &optional open-in-dired-p)
+(defun linkin-org-open-string-link (string-link &optional open-in-dired-p)
   "Open the link STRING-LINK given in string form."
   (if-let*
       (
@@ -605,7 +605,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	   (link (linkin-org-parse-org-link string-link))
 	   ;; get the type of the link
 	   (link-type (org-element-property :type link))
-	   ;; change the string link into a correct link following id, only if its type is in linkin-org-link-types-to-check-for-id
+	   ;; change the string link into a correct link opening id, only if its type is in linkin-org-link-types-to-check-for-id
 	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
 				            (linkin-org-resolve-link string-link)
                           string-link)))
@@ -768,7 +768,7 @@ for internal and \"file\" links, or stored as a parameter in
 	     (widen))
 	   (goto-char destination))))
       (_
-       ;; Look for a dedicated "follow" function in custom links.
+       ;; Look for a dedicated "open" function in custom links.
        (let ((f (org-link-get-parameter type :follow)))
 	 (when (functionp f)
 	   ;; Function defined in `:follow' parameter may use a single
@@ -1284,28 +1284,28 @@ Do nothing if the file already has an id."
 
 
 
-(defun linkin-org-follow ()
+(defun linkin-org-open ()
   "Open the link under point.
 If a region is selected, open all links in that region in order."
   (interactive)
     (let (
 	      ;; get the link under point in string form
 	      (string-link (linkin-org-get-org-string-link-under-point)))
-      ;; follow the string
-      (linkin-org-follow-string-link string-link)))
+      ;; open the string
+      (linkin-org-open-string-link string-link)))
 
 
-(defun linkin-org-follow-in-dired ()
+(defun linkin-org-open-in-dired ()
   "Open the link under point.
 If a region is selected, open all links in that region in order."
   (interactive)
     (let (
 	      ;; get the link under point in string form
 	      (string-link (linkin-org-get-org-string-link-under-point)))
-      ;; follow the string
-      (linkin-org-follow-string-link string-link t)))
+      ;; open the string
+      (linkin-org-open-string-link string-link t)))
 
-;; (defun linkin-org-follow ()
+;; (defun linkin-org-open ()
 ;;   "Open the link under point.
 ;; If a region is selected, open all links in that region in order."
 ;;   (interactive)
@@ -1337,7 +1337,7 @@ If a region is selected, open all links in that region in order."
 ;; 			                   (point))))
 ;; 	          ;; go to the next link while current-point is different from next-point
 ;; 	          (while (not (= current-point next-point))
-;; 		        (linkin-org-follow)
+;; 		        (linkin-org-open)
 ;; 		        (setq current-point next-point)
 ;; 		        (setq next-point (progn
 ;; 				                   (org-next-link)
@@ -1345,8 +1345,8 @@ If a region is selected, open all links in that region in order."
 ;;     (let (
 ;; 	      ;; get the link under point in string form
 ;; 	      (string-link (linkin-org-get-org-string-link-under-point)))
-;;       ;; follow the string
-;;       (linkin-org-follow-string-link string-link))))
+;;       ;; open the string
+;;       (linkin-org-open-string-link string-link))))
 
 
 
