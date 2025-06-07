@@ -838,17 +838,34 @@ If there is an inline id in the current line, use it.
               ;; comment the line
               (comment-or-uncomment-region (line-beginning-position) (goto-char (line-end-position 1))))
           ;; else, if the line is non empty
-          ;; go to the end of the line
-          (end-of-line)
-          (let
-              ;; check if there are comments, if yes go at the beginning of them
-              ((comments-p (comment-beginning)))
-            (unless comments-p
-              ;; if there are no comments to go at the beginning to, comment the whole line and go at the beg of comments
-              (comment-or-uncomment-region (apply #'min range) (apply #'max range))
-              (comment-beginning))
-            ;; just insert the id at the beginning of the comments
-	        (insert "[id:" id "] ")
+          ;; do a differenet treatment if the mode is org-mode, since there's a bug there
+          (if (eq major-mode 'org-mode)
+              (progn
+                ;; check if the first characters are # followed by a space
+                (unless (s-matches-p "^# " current-line)
+                  ;; if not, then comment the line
+                  ;; go to the beginning of the line
+                  (beginning-of-line)
+                  (insert "# ")
+                  )
+                ;; return to the beginning of the line
+                (beginning-of-line)
+                ;; go two char forward to skip the # and the space
+                (forward-char 2)
+                ;; insert the id
+                (insert "[id:" id "] ")
+                )
+            ;; else if the mode is not org-mode, just comment the line
+            (let
+                ;; check if there are comments, if yes go at the beginning of them
+                ((comments-p (comment-beginning)))
+              (unless comments-p
+                ;; if there are no comments to go at the beginning to, comment the whole line and go at the beg of comments
+                (comment-or-uncomment-region (apply #'min range) (apply #'max range))
+                (comment-beginning))
+              ;; just insert the id at the beginning of the comments
+	          (insert "[id:" id "] ")
+              )
             )
           )
         )
@@ -1304,50 +1321,6 @@ If a region is selected, open all links in that region in order."
 	      (string-link (linkin-org-get-org-string-link-under-point)))
       ;; open the string
       (linkin-org-open-string-link string-link t)))
-
-;; (defun linkin-org-open ()
-;;   "Open the link under point.
-;; If a region is selected, open all links in that region in order."
-;;   (interactive)
-;;   ;; if a region is selected, then open all links in the region, in order
-;;   (if (region-active-p)
-;;       (let (
-;; 	    (beg (region-beginning))
-;; 	    (end (region-end))
-;; 	    (text-to-investigate (buffer-substring-no-properties (region-beginning) (region-end))))
-;; 	    (save-excursion
-;; 	      (with-temp-buffer
-;; 	        ;; insert the text to investigate
-;; 	        (insert "\n")
-;; 	        (insert text-to-investigate)
-;; 	        ;; go to the beginning of the buffer
-;; 	        (goto-char (point-min))
-;; 	        ;; if there is a link under point
-;; 	        ;; (if (org--link-at-point)
-;; 	        ;; 	;; open the link
-;; 	        ;; 	(linkin-org-open-link-at-point)
-;; 	        ;; 	)
-;; 	        (let*
-;; 		        (
-;; 		         ;;remember the current point
-;; 		         (current-point (point))
-;; 		         ;; go to the next link and remember the point
-;; 		         (next-point (progn
-;; 			                   (org-next-link)
-;; 			                   (point))))
-;; 	          ;; go to the next link while current-point is different from next-point
-;; 	          (while (not (= current-point next-point))
-;; 		        (linkin-org-open)
-;; 		        (setq current-point next-point)
-;; 		        (setq next-point (progn
-;; 				                   (org-next-link)
-;; 				                   (point))))))))
-;;     (let (
-;; 	      ;; get the link under point in string form
-;; 	      (string-link (linkin-org-get-org-string-link-under-point)))
-;;       ;; open the string
-;;       (linkin-org-open-string-link string-link))))
-
 
 
 (defun linkin-org-get ()
