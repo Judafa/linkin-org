@@ -15,7 +15,7 @@ linkin-org is:
 
 
 linkin-org turns your written notes into precise, reliable access points towards your data.
-Also, it suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (~linkin-org-follow~).
+Also, it suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (~linkin-org-open~).
 The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
@@ -43,7 +43,7 @@ linkin-org provides three main commands:
   This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
   The link may not be reliable; it will be reliable if you called ~linkin-org-store~ beforehand on the data.
 
-- ~linkin-org-follow~ opens the link at point.
+- ~linkin-org-open~ opens the link at point.
   If the known path towards the data is no valid anymore, uses ids to retrieve it.
 
 
@@ -52,7 +52,7 @@ linkin-org provides three main commands:
 
 # I find it easier to retrieve information with context.
 # Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "Tickets" folder, others will search their files for keywords hoping they used to name the ticket file right.
-# For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I follow the ticket link that I pasted there some time ago.
+# For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I open the ticket link that I pasted there some time ago.
 # It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
 # That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
 # # If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
@@ -63,17 +63,17 @@ linkin-org provides three main commands:
 
 *** Just downloaded some file?
 Put your cursor on the file in dired and store it (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
-By doing this, you copied a link: paste it in a .org file, following the link (~linkin-org-follow~) retrieves your file.
+By doing this, you copied a link: paste it in a .org file, opening the link (~linkin-org-open~) retrieves your file.
 Also while storing the file, linkin-org added an id at the beginning of your file name: your link will still work if you rename or move the file around.
 
 *** Just wrote something you'd like to go back to later?
 Go one line above and store the current line (~linkin-org-store~) to insert an inline id.
-By doing this, you just copied a link: paste it in a .org file, following the link (~linkin-org-follow~) goes back exactly where you were.
+By doing this, you just copied a link: paste it in a .org file, opening the link (~linkin-org-open~) goes back exactly where you were.
 That link will always get you exactly at the right location.
 
 *** Reading something interesting in a pdf?
 Select the text with your mouse and get a link towards the pdf location (~linkin-org-get~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
-Following the copied link (~linkin-org-follow~) gets you to the right page and highlight the words you were reading.
+Opening the copied link (~linkin-org-open~) gets you to the right page and highlight the words you were reading.
 If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
 *** And more
@@ -100,7 +100,7 @@ with straight
 
 
   ;; workflow tips (warning: I'm an evil user, this also uses the general.el package)
-  ;; (define-key global-map (kbd "C-l") 'linkin-org-follow)
+  ;; (define-key global-map (kbd "C-l") 'linkin-org-open)
   ;; (nvmap :keymaps 'override :prefix "SPC"
   ;;   "f"   '(linkin-org-store :which-key "Store the thing at point.")
   ;;   "y"   '(linkin-org-get :which-key "Yank a link towards the thing at point.")
@@ -109,7 +109,7 @@ with straight
   ;; (define-key global-map (kbd "C-p") 'org-previous-link)
 
   ;; worflow tips (for (normal?) non-evil users)
-  ;; (define-key global-map (kbd "C-c l") 'linkin-org-follow)
+  ;; (define-key global-map (kbd "C-c l") 'linkin-org-open)
   ;; (define-key global-map (kbd "C-c f") 'linkin-org-store)
   ;; (define-key global-map (kbd "C-c y") 'linkin-org-get)
   ;; (define-key global-map (kbd "C-c C-n") 'org-next-link)
@@ -169,7 +169,7 @@ Here are personal tips, this is a matter of preference.
 (nvmap :keymaps 'override
   "C-n"   '(org-next-link :which-key "jump to the next org link")
   "C-p"   '(org-previous-link :which-key "jump to the previous org link")
-  "C-l"   '(linkin-org-follow :which-key "follow the link at point, using ids to resolve a broken link.")
+  "C-l"   '(linkin-org-open :which-key "open the link at point, using ids to resolve a broken link.")
   )
   #+end_src
 - Attach your ids at the right-end of the paths in your file system, best directly in the file name.
@@ -177,8 +177,8 @@ Here are personal tips, this is a matter of preference.
   Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the id to the folder that contains it.
 - Place the most relevant link at the top of the note.
   It can be a link towards some data you access a lot in the context of the note.
-  It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and follow the pdf link I pasted there last time I stopped reading to go back where I was.
-  With this, your fingers quickly learn the automation "go to the note -> org-next-link -> linkin-org-follow" to access a data quickly.
+  It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and open the pdf link I pasted there last time I stopped reading to go back where I was.
+  With this, your fingers quickly learn the automation "go to the note -> org-next-link -> linkin-org-open" to access a data quickly.
 
 
 * Code Examples
@@ -186,7 +186,7 @@ Here are personal tips, this is a matter of preference.
 This code saves some text ~text~ at the location where ~link~ points to.
 #+begin_src emacs-lisp
 (defun my-store-some-text (text link)
-  (linkin-org-follow-link-and-do-function link
+  (linkin-org-open-link-and-do-function link
                                           (lambda ()
                                             ;; go to the end of the current line
                                             (end-of-line)
@@ -255,7 +255,7 @@ This code saves the url and title of the elfeed entry at point at a location whe
 		             (title (elfeed-entry-title entry))
 		             (url (elfeed-entry-link entry))
 		             )
-                  (linkin-org-follow-link-and-do-function link
+                  (linkin-org-open-link-and-do-function link
                                                           (lambda ()
                                                             (end-of-line)
 		                                                    ;; Insert header
