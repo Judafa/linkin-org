@@ -122,14 +122,18 @@ If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-re
           file-name-without-sep)
       file-name)))
 
-(defun linkin-org-give-id-to-file-name (file-name)
+(defun linkin-org-give-id-to-file-name (file-name &optional id)
   "Take a file name FILE-NAME (without path) and return a new file name with id.
-Does not add an id if FILE-NAME already has one."
+  If ID is provided, use it as the id.
+Does not add an id if FILE-NAME already has one.
+"
   (if (linkin-org-get-id file-name)
       ;; if the file already has an id, dont add one
       file-name
     ;; else add an id
-    (concat (linkin-org-create-id) linkin-org-sep file-name)))
+    (if id
+	(concat id linkin-org-sep file-name)
+      (concat (linkin-org-create-id) linkin-org-sep file-name))))
 
 (defun linkin-org-transform-square-brackets (str)
   "Escape occurrences of '\\\\', '\\[', and '\\]' in the string STR."
@@ -1237,7 +1241,7 @@ path can also be a youtube url."
        ;; if its an url
        ((linkin-org-is-url video-address)
 	    (progn
-	      (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" video-address)))
+	      (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" (format "--start=%s" timestamp) video-address)))
        ;; if it's a local file
        ;; ((linkin-org-is-link-path-correct video-address)
        ((linkin-org-resolve-file video-address)
