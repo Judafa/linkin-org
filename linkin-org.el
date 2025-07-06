@@ -41,6 +41,9 @@
 ;; define the directories where to search when a link is broken
 (defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search into when a link is broken.")
 
+;; define a regexp to match file names (without the directory part) that are not considered when resolving broken links
+(defcustom linkin-org-file-names-to-ignore (rx (or (seq (* anychar) "~" line-end) (seq line-start "" line-end))) "Define a regexp to match file names (without the directory part) that are not considered when resolving broken links.")
+
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
 (defcustom linkin-org-link-types-to-check-for-id
   '("pdf" "file")
@@ -229,15 +232,24 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
                      ;; collect the results
                      (when (and (eq found? 0) (not (zerop (buffer-size))))
                        (setq resolved-dir
-                             ;; just take the first match
-                             (car (string-lines (buffer-string)))))))
+                             ;; collect all the results
+                             (string-lines (buffer-string))))))
+		 ;; remove all the strings that should be ignored
+		 (setq resolved-dir
+		       (seq-filter
+			(lambda (s)
+			  (not (string-match-p linkin-org-file-names-to-ignore s)))
+			resolved-dir)
+		       )
+		 ;; take the first match, after filtering
+		 (setq resolved-dir (car resolved-dir))
                  (if resolved-dir
                      ;; if we found a match, append the resolved dir to the building dir
-                     (setq building-dir
-                           (if (file-exists-p resolved-dir)
-                               ;; I do this since I'm never sure whether fd returns an absolute or relative path
-                               resolved-dir
-                             (concat (file-name-as-directory (directory-file-name building-dir)) resolved-dir)))
+		      (setq building-dir
+                            (if (file-exists-p resolved-dir)
+				;; I do this since I'm never sure whether fd returns an absolute or relative path
+				resolved-dir
+                              (concat (file-name-as-directory (directory-file-name building-dir)) resolved-dir)))
                    ;; if we did not find a match, then we cannot resolve the file. set the buidling path to nil
                    (setq building-dir nil)))
                 (t
@@ -340,8 +352,18 @@ It is assumed you already checked that FILE-PATH is not a valid path."
                 ;; collect the results
                 (when (and (eq found? 0) (not (zerop (buffer-size))))
                   (setq resolved-file-path
-                        ;; just take the first match
-                        (car (string-lines (buffer-string)))))))
+                        ;; collect all the results
+                        (string-lines (buffer-string)))
+		  ;; remove all the strings that should be ignored
+		  (setq resolved-file-path
+			(seq-filter
+			 (lambda (s)
+			   (not (string-match-p linkin-org-file-names-to-ignore s)))
+			 resolved-file-path)
+			)
+		  ;; take the first match, after filtering
+		  (setq resolved-file-path (car resolved-file-path))
+		  )))
             ;; if we found a match, the search is over
             (when resolved-file-path
                 (setq file-found-p 'found)
@@ -420,6 +442,7 @@ It only resolve the link if its type is in 'linkin-org-link-types-to-check-for-i
 	   (new-link-path (if link-path (linkin-org-resolve-file link-path)))
 	   ;; build a new link based on the correct path
 	   (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
+    (message "Resolving link %s to %s" string-link new-link-path)
 	new-string-link))
 
 
