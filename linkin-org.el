@@ -442,7 +442,6 @@ It only resolve the link if its type is in 'linkin-org-link-types-to-check-for-i
 	   (new-link-path (if link-path (linkin-org-resolve-file link-path)))
 	   ;; build a new link based on the correct path
 	   (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
-    (message "Resolving link %s to %s" string-link new-link-path)
 	new-string-link))
 
 
@@ -839,7 +838,9 @@ If there is an inline id in the current line, use it.
 	           (linkin-org-strip-off-id-from-file-name file-name)
 		       line-number))
      ;; else if the file has no path, do nothing
-     (message "linkin-org: this file has no path, cannot get an id for it."))))
+     (message "linkin-org: this file has no path, cannot get an id for it.")
+     nil
+     )))
 
 
 ;; to leave an id in an editable line
