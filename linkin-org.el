@@ -34,11 +34,10 @@
 ;;;; -------------------------------------------- main variables
 
 ;; define the directory where linkin-org-store stores the files/directories by default
-;;; Code:
-
 (defcustom linkin-org-store-directory (expand-file-name "~/") "The directory where 'linkin-org-store' stores data by default.")
 
 ;; define the directories where to search when a link is broken
+;; this is a list of directories that are searched in order to resolve broken links
 (defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search into when a link is broken.")
 
 ;; define a regexp to match file names (without the directory part) that are not considered when resolving broken links
@@ -83,11 +82,6 @@
 
 
 
-(defun linkin-org-create-id ()
-  "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second."
-  (let*
-      ((time-string (format-time-string "%Y%m%dT%H%M%S" (current-time))))
-    time-string))
 
 ;; regexp recognizing a separator between id and original filename
 (defconst linkin-org-sep-regexp (rx (or "--" "-")))
@@ -98,6 +92,13 @@
 
 
 ;;;; ------------------------------------------- basic functions
+
+
+(defun linkin-org-create-id ()
+  "Return an id in Denote style, which is a string with the current year, month, day, hour, minute, second."
+  (let*
+      ((time-string (format-time-string "%Y%m%dT%H%M%S" (current-time))))
+    time-string))
 
 (defun linkin-org-get-id (s &optional id-regexp)
   "Return a substring of string S that matches ID-REGEXP.
@@ -201,7 +202,6 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
                     'string-empty-p
                     split-path)))
     (dolist (sub-dir split-path)
-      
       ;; building-dir is set of nil as soon as we know the path cannot be resolved.
       (when building-dir
        (let
@@ -413,36 +413,69 @@ It is assumed you already checked that FILE-PATH is not a valid path."
    ;; else, file could not be resolved
    (t (message "Neither the file nor the id could be found"))))
 
-(defun linkin-org-resolve-link (string-link)
-  "Try to return a link in string form with a correct path.
-STRING-LINK is a link in string form.
+
+(defun linkin-org-resolve-link (link &optional arg)
+  "Try to return a link in org element form with a correct path.
+LINK is an org element.
 If the link could not be resolved, return the input link.
 It only resolve the link if its type is in 'linkin-org-link-types-to-check-for-id'."
   
+  ;; (message "Resolving link: %s" link)
+  ;; (message "Resolving link with path: %s" (org-element-property :path link))
   (let*
-	  (
-       ;;turn the string link into an org element
-       (link-org-element (linkin-org-parse-org-link string-link))
+      (
+       ;; ;;turn the string link into an org element
+       ;; (link-org-element (linkin-org-parse-org-link string-link))
+       (link-org-element link)
        ;; get the raw link, that is, the string containing the data of the link
-	   (link-raw-link (org-element-property :raw-link link-org-element))
+       (link-raw-link (org-element-property :raw-link link-org-element))
        ;; get the type of the link
        (link-type (org-element-property :type link-org-element))
-	   ;; (link-raw-path (org-element-property :path link-org-element))
-	   ;; get data of the link, that is, the interior of the link minus the type (ie, file:)
-	   (link-path (org-element-property :path link-org-element))
+       ;; (link-raw-path (org-element-property :path link))
+       ;; get data of the link, that is, the interior of the link minus the type (ie, file:)
+       (link-path (org-element-property :path link-org-element))
        ;; extract the path, that is, the substring of link-path before the first :: if there is one
-	   (link-path (car (string-split link-path "::")))
+       (link-path (car (string-split link-path "::")))
        ;; get the substring after the first "::"
-	   (link-metadata (let
+       (link-metadata (let
                           (
-                           (index (string-match "::" link-raw-link)))
-                        (if index
-                            (substring link-raw-link index))))
-	   ;; change the path to a correct path
-	   (new-link-path (if link-path (linkin-org-resolve-file link-path)))
-	   ;; build a new link based on the correct path
-	   (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
-	new-string-link))
+                           (index (string-match "::" link-raw-link))
+			   (link-parts (split-string link-raw-link "::"))
+			   )
+                        (when index
+                          (read (cadr link-parts))
+			  )
+			)
+		      )
+       (link-inline-id (when link-metadata
+			 (symbol-name (plist-get link-metadata :inline-id))
+			 )
+		       )
+
+       ;; change the path to a correct path
+       (new-link-path (if link-path (linkin-org-resolve-file link-path)))
+       )
+    ;; (message "Metadata: %s" link-metadata)
+
+    ;; build a new link based on the correct path
+    ;; (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
+    ;; new-string-link
+    
+    ;; if the link has an inline id, add it to the link as a search string value
+    (when link-inline-id
+      ;; (org-plist-delete link-org-element :search-option)
+      (org-element-put-property link-org-element :search-option (concat "id:" link-inline-id))
+      ;; (plist-put link-org-element :search-option (concat "id:" link-inline-id))
+      ;; (org-plist-delete link-org-element :inline-id)
+      )
+
+    (when (plist-member link-org-element :path)
+	;; (plist-put link-org-element :path new-link-path)
+      (org-element-put-property link-org-element :path new-link-path)
+      )
+    link-org-element
+    )
+  )
 
 
 (defun linkin-org-get-org-string-link-under-point ()
@@ -739,71 +772,71 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	          (move-to-column (string-to-number column-number))))))))
 
 ;; rewriting org-link-open since they do some special treatment for file type links
-(defun org-link-open (link &optional arg)
-  "Open a link object LINK.
+;; (defun org-link-open (link &optional arg)
+;;   "Open a link object LINK.
 
-ARG is an optional prefix argument.  Some link types may handle
-it.  For example, it determines what application to run when
-opening a \"file\" link.
+;; ARG is an optional prefix argument.  Some link types may handle
+;; it.  For example, it determines what application to run when
+;; opening a \"file\" link.
 
-Functions responsible for opening the link are either hard-coded
-for internal and \"file\" links, or stored as a parameter in
-`org-link-parameters', which see."
+;; Functions responsible for opening the link are either hard-coded
+;; for internal and \"file\" links, or stored as a parameter in
+;; `org-link-parameters', which see."
   
-  (let ((type (org-element-property :type link))
-	(path (org-element-property :path link)))
-    (pcase type
-      ;; Opening a "file" link requires special treatment since we
-      ;; first need to integrate search option, if any.
-      ("file"
-       (let* (
-	      (option (org-element-property :search-option link))
-	      (path (if option (concat path "::" option) path)))
+;;   (let ((type (org-element-property :type link))
+;; 	(path (org-element-property :path link)))
+;;     (pcase type
+;;       ;; Opening a "file" link requires special treatment since we
+;;       ;; first need to integrate search option, if any.
+;;       ("file"
+;;        (let* (
+;; 	      (option (org-element-property :search-option link))
+;; 	      (path (if option (concat path "::" option) path)))
 
 
-	 ;; Start of changes
-	 ;; (org-link-open-as-file path
-	 ;; 			(pcase (org-element-property :application link)
-	 ;; 			  ((guard arg) arg)
-	 ;; 			  ("emacs" 'emacs)
-	 ;; 			  ("sys" 'system)))))
-	 ;; (linkin-org-open-file-as-in-dired path)
-	     (linkin-org-file-open path arg)))
-      ;; End of changes
+;; 	 ;; Start of changes
+;; 	 ;; (org-link-open-as-file path
+;; 	 ;; 			(pcase (org-element-property :application link)
+;; 	 ;; 			  ((guard arg) arg)
+;; 	 ;; 			  ("emacs" 'emacs)
+;; 	 ;; 			  ("sys" 'system)))))
+;; 	 ;; (linkin-org-open-file-as-in-dired path)
+;; 	     (linkin-org-file-open path arg)))
+;;       ;; End of changes
 
-      ;; Internal links.
-      ((or "coderef" "custom-id" "fuzzy" "radio")
-       (unless (run-hook-with-args-until-success 'org-open-link-functions path)
-	 (if (not arg) (org-mark-ring-push)
-	   (switch-to-buffer-other-window (org-link--buffer-for-internals)))
-	 (let ((destination
-		(org-with-wide-buffer
-		 (if (equal type "radio")
-		     (org-link--search-radio-target path)
-		   (org-link-search
-		    (pcase type
-		      ("custom-id" (concat "#" path))
-		      ("coderef" (format "(%s)" path))
-		      (_ path))
-		    ;; Prevent fuzzy links from matching themselves.
-		    (and (equal type "fuzzy")
-			 (+ 2 (org-element-begin link)))))
-		 (point))))
-	   (unless (and (<= (point-min) destination)
-			(>= (point-max) destination))
-	     (widen))
-	   (goto-char destination))))
-      (_
-       ;; Look for a dedicated "open" function in custom links.
-       (let ((f (org-link-get-parameter type :follow)))
-	 (when (functionp f)
-	   ;; Function defined in `:follow' parameter may use a single
-	   ;; argument, as it was mandatory before Org 9.4.  This is
-	   ;; deprecated, but support it for now.
-	   (condition-case nil
-	       (funcall f path arg)
-	     (wrong-number-of-arguments
-	      (funcall f path)))))))))
+;;       ;; Internal links.
+;;       ((or "coderef" "custom-id" "fuzzy" "radio")
+;;        (unless (run-hook-with-args-until-success 'org-open-link-functions path)
+;; 	 (if (not arg) (org-mark-ring-push)
+;; 	   (switch-to-buffer-other-window (org-link--buffer-for-internals)))
+;; 	 (let ((destination
+;; 		(org-with-wide-buffer
+;; 		 (if (equal type "radio")
+;; 		     (org-link--search-radio-target path)
+;; 		   (org-link-search
+;; 		    (pcase type
+;; 		      ("custom-id" (concat "#" path))
+;; 		      ("coderef" (format "(%s)" path))
+;; 		      (_ path))
+;; 		    ;; Prevent fuzzy links from matching themselves.
+;; 		    (and (equal type "fuzzy")
+;; 			 (+ 2 (org-element-begin link)))))
+;; 		 (point))))
+;; 	   (unless (and (<= (point-min) destination)
+;; 			(>= (point-max) destination))
+;; 	     (widen))
+;; 	   (goto-char destination))))
+;;       (_
+;;        ;; Look for a dedicated "open" function in custom links.
+;;        (let ((f (org-link-get-parameter type :follow)))
+;; 	 (when (functionp f)
+;; 	   ;; Function defined in `:follow' parameter may use a single
+;; 	   ;; argument, as it was mandatory before Org 9.4.  This is
+;; 	   ;; deprecated, but support it for now.
+;; 	   (condition-case nil
+;; 	       (funcall f path arg)
+;; 	     (wrong-number-of-arguments
+;; 	      (funcall f path)))))))))
 
 
 ;; to get a link towards the current line in an editale file.
@@ -1418,6 +1451,44 @@ If a region is selected, open all links in that region in order."
      ;; If in an editable buffer
      ((not buffer-read-only)
       (linkin-org-store-inline)))))
+
+
+
+
+
+(defun plug-in-org-link-open (args)
+  "A function to format the arguments of `org-link-open'"
+  (let (
+	(link (car args))
+	(rest (cadr args)))
+    (list (linkin-org-resolve-link link) rest)
+    )
+  )
+
+
+
+(define-minor-mode linkin-org-mode
+  "Minor mode to open your links with linkin-org."
+  :init-value nil
+  :lighter nil
+  (if linkin-org-mode
+      (advice-add 'org-link-open :filter-args #'plug-in-org-link-open)
+    (advice-remove 'org-link-open #'plug-in-org-link-open)
+    )
+  )
+
+(defun linkin-org-turn-on-minor-mode ()
+  "Turn on linkin-org minor mode."
+  (interactive)
+  (linkin-org-mode 1)
+  )
+
+
+
+(define-global-minor-mode linkin-org-global-mode linkin-org-mode linkin-org-turn-on-minor-mode)
+
+
+;; [id:20250810T165832] test
 
 
 
