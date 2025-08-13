@@ -6,7 +6,7 @@
 ;; Maintainer: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org
 ;; Version: 1.0
-;; Package-Requires: ((emacs "30.1") (pdf-tools "1.1.0"))
+;; Package-Requires: ((emacs "30.1"))
 
 ;; This file is not part of GNU Emacs
 
@@ -28,7 +28,6 @@
 
 (require 'ol)
 (require 'dired)
-(require 'pdf-tools)
 
 
 ;;;; -------------------------------------------- main variables
@@ -45,12 +44,16 @@
 
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
 (defcustom linkin-org-link-types-to-check-for-id
-  '("pdf" "file")
+  '("file" "pdf")
   "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
 
 (defcustom linkin-org-opening-file-function
   #'dired-find-file
   "Function to use to open a file. This function is called as the point is on the file in a dired buffer."
+  )
+
+(defcustom linkin-org-open-links-as-in-dired-p t
+  "If non-nil, open links as if they were opened in Dired."
   )
 
 
@@ -104,13 +107,14 @@
   "Return a substring of string S that matches ID-REGEXP.
 Returns nil if no match was found.
 If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-regexp'."
-
   (unless id-regexp
     (setq id-regexp linkin-org-id-regexp))
-  (if (string-match id-regexp s)
+  (when (stringp s)
+    (when (string-match id-regexp s)
       ;; this function returns a list of list of strings
-      (car (car (s-match-strings-all id-regexp s)))
-    nil))
+      (car (car (s-match-strings-all id-regexp s))))
+    )
+  )
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
   "Take a file name FILE-NAME (without path) and strip off the id part."
@@ -119,10 +123,10 @@ If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-re
     (if id
         (let*
             (
-	         ;; remove the id
-	         (file-name-without-id (replace-regexp-in-string id "" file-name))
-	         ;; remove the heading sep -- if there is one
-	         (file-name-without-sep (replace-regexp-in-string (concat "^" linkin-org-sep-regexp) "" file-name-without-id)))
+	     ;; remove the id
+	     (file-name-without-id (replace-regexp-in-string id "" file-name))
+	     ;; remove the heading sep -- if there is one
+	     (file-name-without-sep (replace-regexp-in-string (concat "^" linkin-org-sep-regexp) "" file-name-without-id)))
           file-name-without-sep)
       file-name)))
 
@@ -181,13 +185,13 @@ It works by running the package's name followed by --version and checks if that 
     (eq (call-process-shell-command cmd) 0)))
 
 
-(defun linkin-org-resolve-file-with-path (file-path)
+(defun linkin-org-resolve-path-with-path (file-path)
   "Return a correct file path by resolving FILE-PATH with id.
 Return nil if no such path could be found.
-Starting from the root directory, it climb up the file path FILE-PATH directory by directory;
-Whenever the current subpath is not valid, resolves using id.
-This always finds your file back if you only renamed files and preserved the ids; it does not work if you changed the location of some directories in FILE-PATH.
-It is assumed you already checked that FILE-PATH is not a valid path in your file system."
+In more details: Starting from the root directory, climbs up FILE-PATH directory by directory;
+Whenever the current subpath is not valid, tries resolving using id.
+This always finds your file back if you only renamed files (and preserved the ids); it does not work if you changed the location of some directories in FILE-PATH.
+It is assumed you already checked that FILE-PATH is not a valid path in your file system before running this function."
   (let*
       (
        ;; expand file path
@@ -296,13 +300,13 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
     building-dir))
 
 
-(defun linkin-org-resolve-file-with-store-directory (file-path &optional directories-to-look-into)
+(defun linkin-org-resolve-path-with-store-directory (file-path &optional directories-to-look-into)
   "Return a correct file path by resolving FILE-PATH with ids.
 It recursively searches for files contained in DIRECTORIES-TO-LOOK-INTO.
 Returns nil if FILE-PATH has no id or if no matching file was found.
 FILE-PATH can be the path of a file or a directory.
 If not provided, DIRECTORIES-TO-LOOK-INTO is set to 'linkin-org-search-directories-to-resolve-broken-links'.
-It is assumed you already checked that FILE-PATH is not a valid path."
+It is assumed you already checked that FILE-PATH is not a valid path before running this function."
   (let*
       (
        ;; expand file path
@@ -335,7 +339,7 @@ It is assumed you already checked that FILE-PATH is not a valid path."
         ;; check if dir is a valid directory.
         ;; if not, try to resolve it with ids
         (unless (file-exists-p dir)
-          (setq dir (linkin-org-resolve-file-with-path dir)))
+          (setq dir (linkin-org-resolve-path-with-path dir)))
         ;; if dir exists or could be resolved
         (when dir
           (cond
@@ -401,81 +405,76 @@ It is assumed you already checked that FILE-PATH is not a valid path."
       resolved-file-path)))
 
 ;; [id:20250423T204506]
-(defun linkin-org-resolve-file (file-path)
+(defun linkin-org-resolve-path (file-path)
   "Try different approaches to resolve the file paht FILE-PATH."
   (cond
    ;; if the path is already correct, do nothing
    ((file-exists-p file-path) file-path)
    ;; else, try resolving the file path with just ids
-   ((linkin-org-resolve-file-with-path file-path))
+   ((linkin-org-resolve-path-with-path file-path))
    ;; else, try resolving the file path looking inside store directories
-   ((linkin-org-resolve-file-with-store-directory file-path))
+   ((linkin-org-resolve-path-with-store-directory file-path))
    ;; else, file could not be resolved
    (t (message "Neither the file nor the id could be found"))))
 
 
-(defun linkin-org-resolve-link (link &optional arg)
-  "Try to return a link in org element form with a correct path.
-LINK is an org element.
-If the link could not be resolved, return the input link.
-It only resolve the link if its type is in 'linkin-org-link-types-to-check-for-id'."
+;; (defun linkin-org-resolve-link (link &optional arg)
+;;   "Try to return a link in org element form with a correct path.
+;; LINK is an org element.
+;; If the link could not be resolved, return the input link.
+;; It only resolve the link if its type is in 'linkin-org-link-types-to-check-for-id'."
   
-  ;; (message "Resolving link: %s" link)
-  ;; (message "Resolving link with path: %s" (org-element-property :path link))
-  (let*
-      (
-       ;; ;;turn the string link into an org element
-       ;; (link-org-element (linkin-org-parse-org-link string-link))
-       (link-org-element link)
-       ;; get the raw link, that is, the string containing the data of the link
-       (link-raw-link (org-element-property :raw-link link-org-element))
-       ;; get the type of the link
-       (link-type (org-element-property :type link-org-element))
-       ;; (link-raw-path (org-element-property :path link))
-       ;; get data of the link, that is, the interior of the link minus the type (ie, file:)
-       (link-path (org-element-property :path link-org-element))
-       ;; extract the path, that is, the substring of link-path before the first :: if there is one
-       (link-path (car (string-split link-path "::")))
-       ;; get the substring after the first "::"
-       (link-metadata (let
-                          (
-                           (index (string-match "::" link-raw-link))
-			   (link-parts (split-string link-raw-link "::"))
-			   )
-                        (when index
-                          (read (cadr link-parts))
-			  )
-			)
-		      )
-       (link-inline-id (when link-metadata
-			 (symbol-name (plist-get link-metadata :inline-id))
-			 )
-		       )
+;;   ;; (message "Resolving link: %s" link)
+;;   ;; (message "Resolving link with path: %s" (org-element-property :path link))
+;;   (let*
+;;       (
+;;        ;; ;;turn the string link into an org element
+;;        ;; (link-org-element (linkin-org-parse-org-link string-link))
+;;        ;; get the raw link, that is, the string containing the data of the link
+;;        (link-raw-link (org-element-property :raw-link link))
+;;        ;; get the type of the link
+;;        (link-type (org-element-property :type link))
+;;        ;; (link-raw-path (org-element-property :path link))
+;;        ;; get data of the link, that is, the interior of the link minus the type (ie, file:)
+;;        (link-path (org-element-property :path link))
+;;        ;; extract the path, that is, the substring of link-path before the first :: if there is one
+;;        (link-path (car (string-split link-path "::")))
+;;        ;; get the substring after the first "::"
+;;        (link-metadata (let
+;;                           (
+;;                            (index (string-match "::" link-raw-link))
+;; 			   (link-parts (split-string link-raw-link "::"))
+;; 			   )
+;;                         (when index
+;;                           (read (cadr link-parts))
+;; 			  )
+;; 			)
+;; 		      )
+;;        (link-inline-id (when link-metadata
+;; 			 (symbol-name (plist-get link-metadata :inline-id))
+;; 			 )
+;; 		       )
 
-       ;; change the path to a correct path
-       (new-link-path (if link-path (linkin-org-resolve-file link-path)))
-       )
-    ;; (message "Metadata: %s" link-metadata)
+;;        ;; change the path to a correct path
+;;        (new-link-path (if link-path (linkin-org-resolve-path link-path)))
+;;        )
+;;     ;; (message "Metadata: %s" link-metadata)
 
-    ;; build a new link based on the correct path
-    ;; (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
-    ;; new-string-link
+;;     ;; build a new link based on the correct path
+;;     ;; (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
+;;     ;; new-string-link
     
-    ;; if the link has an inline id, add it to the link as a search string value
-    (when link-inline-id
-      ;; (org-plist-delete link-org-element :search-option)
-      (org-element-put-property link-org-element :search-option (concat "id:" link-inline-id))
-      ;; (plist-put link-org-element :search-option (concat "id:" link-inline-id))
-      ;; (org-plist-delete link-org-element :inline-id)
-      )
+;;     ;; if the link has an inline id, add it to the link as a search string value
+;;     (when link-inline-id
+;;       (org-element-put-property link :search-option (concat "id:" link-inline-id))
+;;       )
 
-    (when (plist-member link-org-element :path)
-	;; (plist-put link-org-element :path new-link-path)
-      (org-element-put-property link-org-element :path new-link-path)
-      )
-    link-org-element
-    )
-  )
+;;     (when (plist-member link :path)
+;;       (org-element-put-property link :path new-link-path)
+;;       )
+;;     link
+;;     )
+;;   )
 
 
 (defun linkin-org-get-org-string-link-under-point ()
@@ -545,21 +544,20 @@ It only resolve the link if its type is in 'linkin-org-link-types-to-check-for-i
 Set YANK-LINK? to non-nil to copy the link in the kill ring (clipboard).
 Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message before storing the file."
   (let* (
-	     (file-path (dired-file-name-at-point))
+	 (file-path (dired-file-name-at-point))
          ;; is the file already in the list of directories to check in case of a broken link
-	     (is-file-already-in-store-directory? (cl-some #'identity
+	 (is-file-already-in-store-directory? (cl-some #'identity
                                                        (mapcar
                                                         (lambda (dir)
                                                           (s-prefix?
-					                                       (expand-file-name dir)
-					                                       (expand-file-name file-path)
+					                   (expand-file-name dir)
+					                   (expand-file-name file-path)
                                                            )
                                                           )
                                                         linkin-org-search-directories-to-resolve-broken-links
                                                         )
                                                        )
                                               )
-         ;; (dumb (message "this is the value: %s" is-file-already-in-store-directory?))
          )
     ;; check wether it's a file or a directory
     (if (file-directory-p file-path)
@@ -674,9 +672,12 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
     (org-link-open string-link)))
 
 
-;;;; ------------------------------------------- file link
+
+
+;;;; ------------------------------------------- file link type
 
 ;; To create a link towards the file under point in a Dired buffer
+;;;###autoload
 (defun linkin-org-dired-get-link ()
   "Return a link towards the file under point in Dired."
   (let* (
@@ -707,140 +708,14 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	       (directory-name-without-slash (directory-file-name file-path)))
       (format "[[file:%s][[file] %s]]" directory-name-without-slash file-name))))
 
-(defun linkin-org-file-open (link &optional open-in-dired-p)
-  "Open the file at LINK."
-  (let* (
-	 (link-parts (split-string link "::"))
-	 (file-path (car link-parts))
-     (metadata (when (cadr link-parts)
-                 (read (cadr link-parts))))
-	 (line-number-or-id (if (and
-                             (plistp metadata)
-                             metadata)
-                            (prin1-to-string (plist-get metadata :inline-id))
-                          (cadr link-parts)))
-	 (column-number (if (and
-                         (plistp metadata)
-                         metadata)
-                        (prin1-to-string (plist-get metadata :column))
-                      (caddr link-parts)))
-	 ;; (line-number-or-id (cadr link-parts))
-	 ;; (column-number (caddr link-parts))
-	 )
-
-    (if (file-exists-p file-path)
-            ;; if the link is to be opened in Dired, open it in Dired
-        (if open-in-dired-p
-            (progn
-              (let*
-                  (
-                   ;; get the full path
-                   (file-path (expand-file-name file-path))
-                   ;; if file-path is the path of a directory, make sure there is a trailing slash
-                   (is-directory? (file-directory-p file-path))
-                   (file-path (if (and is-directory?
-                                       (not (string-empty-p file-path)))
-                                  (directory-file-name file-path)
-                                file-path))
-                   ;; create a Dired buffer visiting the directory of the file (or get the name of it if it already exists)
-                   ;; (dired-buffer (dired-noselect (file-name-directory file-path)))
-                   )
-                ;; switch to the Dired buffer
-                (dired (file-name-directory file-path))
-                ;; (switch-to-buffer dired-buffer)
-                ;; update the cloned Dired buffer
-                ;; (revert-buffer)
-                ;; place the point on the file
-                (dired-goto-file file-path)
-                )
-              )
-	      ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
-	      (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function)
-	      (when line-number-or-id
-	        ;; if line-number-or-id matches an id, search for that id in the buffer
-	        (let
-		        (id-position)
-	          (if (string-match linkin-org-id-regexp line-number-or-id)
-		          (progn
-		            (save-excursion (progn
-		    	                      (beginning-of-buffer)
-		    	                      (setq id-position (if (re-search-forward (concat "id:" line-number-or-id) nil t 1) (point) nil))))
-		            (when id-position
-		              (goto-char id-position)))
-	            (goto-line (string-to-number line-number-or-id))))
-	        (when column-number
-	          (move-to-column (string-to-number column-number))))))))
-
-;; rewriting org-link-open since they do some special treatment for file type links
-;; (defun org-link-open (link &optional arg)
-;;   "Open a link object LINK.
-
-;; ARG is an optional prefix argument.  Some link types may handle
-;; it.  For example, it determines what application to run when
-;; opening a \"file\" link.
-
-;; Functions responsible for opening the link are either hard-coded
-;; for internal and \"file\" links, or stored as a parameter in
-;; `org-link-parameters', which see."
-  
-;;   (let ((type (org-element-property :type link))
-;; 	(path (org-element-property :path link)))
-;;     (pcase type
-;;       ;; Opening a "file" link requires special treatment since we
-;;       ;; first need to integrate search option, if any.
-;;       ("file"
-;;        (let* (
-;; 	      (option (org-element-property :search-option link))
-;; 	      (path (if option (concat path "::" option) path)))
 
 
-;; 	 ;; Start of changes
-;; 	 ;; (org-link-open-as-file path
-;; 	 ;; 			(pcase (org-element-property :application link)
-;; 	 ;; 			  ((guard arg) arg)
-;; 	 ;; 			  ("emacs" 'emacs)
-;; 	 ;; 			  ("sys" 'system)))))
-;; 	 ;; (linkin-org-open-file-as-in-dired path)
-;; 	     (linkin-org-file-open path arg)))
-;;       ;; End of changes
 
-;;       ;; Internal links.
-;;       ((or "coderef" "custom-id" "fuzzy" "radio")
-;;        (unless (run-hook-with-args-until-success 'org-open-link-functions path)
-;; 	 (if (not arg) (org-mark-ring-push)
-;; 	   (switch-to-buffer-other-window (org-link--buffer-for-internals)))
-;; 	 (let ((destination
-;; 		(org-with-wide-buffer
-;; 		 (if (equal type "radio")
-;; 		     (org-link--search-radio-target path)
-;; 		   (org-link-search
-;; 		    (pcase type
-;; 		      ("custom-id" (concat "#" path))
-;; 		      ("coderef" (format "(%s)" path))
-;; 		      (_ path))
-;; 		    ;; Prevent fuzzy links from matching themselves.
-;; 		    (and (equal type "fuzzy")
-;; 			 (+ 2 (org-element-begin link)))))
-;; 		 (point))))
-;; 	   (unless (and (<= (point-min) destination)
-;; 			(>= (point-max) destination))
-;; 	     (widen))
-;; 	   (goto-char destination))))
-;;       (_
-;;        ;; Look for a dedicated "open" function in custom links.
-;;        (let ((f (org-link-get-parameter type :follow)))
-;; 	 (when (functionp f)
-;; 	   ;; Function defined in `:follow' parameter may use a single
-;; 	   ;; argument, as it was mandatory before Org 9.4.  This is
-;; 	   ;; deprecated, but support it for now.
-;; 	   (condition-case nil
-;; 	       (funcall f path arg)
-;; 	     (wrong-number-of-arguments
-;; 	      (funcall f path)))))))))
 
 
 ;; to get a link towards the current line in an editale file.
 ;; if there is an id in the current line, use it. Otherwise use the line number.
+;;;###autoload
 (defun linkin-org-get-inline ()
   "Return a link towards the current line in an editable file.
 If there is an inline id in the current line, use it.
@@ -877,6 +752,7 @@ If there is an inline id in the current line, use it.
 
 
 ;; to leave an id in an editable line
+;;;###autoload
 (defun linkin-org-store-inline ()
   "Leave an id in an editable line and copy a link towards that id in the 'kill-ring'."
   (let (
@@ -938,397 +814,8 @@ If there is an inline id in the current line, use it.
     )
   )
 
-;;;; ------------------------------------------- pdf link
 
 
-(org-add-link-type "pdf" 'org-pdf-open nil)
-
-(defun org-pdf-open (link)
-  "Open a LINK in string form with type pdf."
-  (let*
-      (
-	   (link-parts (split-string link "::"))
-	   (file-path (car link-parts))
-       (metadata (when (cadr link-parts)
-                   (read (cadr link-parts))))
-       (pdf-file (car link-parts))
-	   (page
-        (if (and (plistp metadata) (= 2 (length link-parts)))
-            ;; if the link is with the plist format
-            (plist-get metadata :page)
-          ;; else if the data is just separated by ::
-          (string-to-number (car (cdr link-parts)))))
-       
-	   (edges-list
-        (if (and (plistp metadata) (= 2 (length link-parts)))
-            ;; if the link is with the new plist format
-            (let*
-	            (
-                 (edges-raw-str (plist-get metadata :edges))
-                 (edges-list-str (when edges-raw-str
-                                   (split-string edges-raw-str ";")))
-                 )
-	          ;; convert from string to int, get a list of four floating points numbers, that's the edges
-	          (when edges-list-str (list (mapcar #'string-to-number edges-list-str))))
-          ;; else if the data is just separated by ::
-	      (let*
-              (
-               (edges-str (car (cdr (cdr link-parts))))
-	           ;; separate the edges by |
-	           (edges-list-str (when edges-str (split-string edges-str "[;|]"))))
-	        ;; convert from string to int, get a list of four floating points numbers, that's the edges
-	        (when edges-list-str (list (mapcar #'string-to-number edges-list-str))))))
-	   ;; (path+page+edges (split-string link "::"))
-	 ;; ;; for the pdf file path
-     ;;     (pdf-file (car path+page+edges))
-	 )
-    ;; (start-process "view-pdf" nil "zathura" pdf-file (format "--page=%s" page))))
-    (progn
-      ;; (message edges-list)
-      ;; check if the pdf file is already open
-      (if-let (
-	       ;; get the buffer of the pdf file
-	       (pdf-buffer (get-file-buffer pdf-file))
-
-	       ;; check if the buffer is visible
-	       (pdf-window (get-buffer-window pdf-buffer 'visible))
-
-               ;; Trouve toutes les fenêtres qui affichent le buffer donné en entrée
-               (windows (delq (selected-window)
-                              (get-buffer-window-list
-                               pdf-buffer 'nomini t)))
-	       
-               ;; la première de ces fenêtres
-               (fenetre-finale (car windows))
-	       
-               ;; On initialise le temps le plus récent avec la temps de la première fenêtre de la liste
-               (temps-le-plus-recent (window-use-time fenetre-finale))
-
-	       ;; (not linkin-org-open-org-link-other-frame)
-	       )
-	       ;; (pdf-buffer (get-file-buffer pdf-file))
-	       ;; ;; check if the buffer is visible
-	       ;; (pdf-window (get-buffer-window pdf-buffer 'visible))
-			  ;; )
-	      ;; then dont open a new frame, rather switch to the last visisted window and highlight the edges
-	      (progn
-                   ;; Parmi celles qui affichent le buffer, séléctionne la fenêtre la plus récement utilisée
-                   (dolist (fenetre (cdr windows))
-                     (if (> (window-use-time fenetre) temps-le-plus-recent)
-                         (progn
-                           (setq temps-le-plus-recent (window-use-time fenetre))
-                           (setq pdf-window fenetre))))
-
-		   (let (
-			 (initial-window (selected-window)))
-		     ;; switch to the frame
-		     ;; (select-frame-set-input-focus (window-frame pdf-window) t)
-		    ;; (select-frame (window-frame pdf-window))
-		    ;; switch to the window
-		    (select-window pdf-window)
-
-		    ;; (if edges-list
-		    ;;     ;; if the place to highlight is provided, then make sure that place is visible (ie, pdf is scrolled so that one can see it)
-		    ;;     (let
-		    ;; 	;; idk then do the same here
-		    ;; 	;; [[file:~/.config/emacs/straight/repos/pdf-tools/lisp/pdf-occur.el::290][[file] pdf-occur.el_at_290]]
-		    ;; 	(
-		    ;; 	 (pdf-isearch-batch-mode t)
-		    ;; 	 (pixel-match (pdf-util-scale-relative-to-pixel edges-list))
-		    ;; 	 )
-		    ;;       (pdf-isearch-focus-match-batch pixel-match)
-		    ;;     
-		    ;;       (pdf-isearch-hl-matches pixel-match nil t)
-		    ;;       )
-		    ;;   ;; else, just go to the page
-		    ;;   (unless (not page)
-		    ;;     (pdf-view-goto-page page)
-		    ;;     )
-		    ;;   )
-
-
-		    ;; go to the page
-		    (when page
-		      (pdf-view-goto-page page))
-		    ;; ;; hightlight the edges
-		    (when edges-list
-		      (let
-			  ;; idk then do the same here
-			  ;; [[file:~/.config/emacs/straight/repos/pdf-tools/lisp/pdf-occur.el::290][[file] pdf-occur.el_at_290]]
-			  (
-			   (pdf-isearch-batch-mode t)
-			   (pixel-match (pdf-util-scale-relative-to-pixel edges-list)))
-			;; dont forget to scale the edges to the current display!
-			(pdf-isearch-hl-matches pixel-match nil t)
-			(pdf-isearch-focus-match-batch pixel-match)))
-		    ;; switch back to the initial buffer
-		    (select-window initial-window)))
-	;; if the pdf file is not visible, open a new frame
-	;; or if I specifically asked to open a new frame for the pdf file
-	    (progn
-	      ;; (message "not visible")
-	      (clone-frame)
-	      (find-file pdf-file)
-	      (pdf-view-goto-page page))
-	    ;; (if linkin-org-open-pdf-link-other-frame
-	    ;; 	  (progn
-	    ;; 	    (find-file-other-frame pdf-file)
-	    ;; 	    (pdf-view-goto-page page)
-	    ;; 	    )
-	    ;; 	)
-	    ))))
-
-;; pour copier un lien vers le fichier pdf courant
-(defun linkin-org-pdf-get-link ()
-  "Return a link in string form to the pdf in the current buffer.
-Highlighted text is included in the link."
-  (other-window 1)
-  (pdf-tools-assert-pdf-buffer)
-  (let* (
-	 (page (number-to-string (pdf-view-current-page)))
-         (file (abbreviate-file-name (pdf-view-buffer-file-name)))
-	 (file-name (file-name-nondirectory file))
-	 (file-name-sans-id (linkin-org-strip-off-id-from-file-name file-name))
-	 (file-name-sans-ext (file-name-sans-extension file-name-sans-id))
-	 (file-name-extension (file-name-extension file-name-sans-id))
-	 (nom-fichier-tronque (if (> (length file-name-sans-ext) 70)
-				  (concat (substring file-name-sans-ext 0 50)
-					  "[___]"
-					  (if file-name-extension
-					      (concat "." file-name-extension)))
-				file-name-sans-id))
-	 ;; for selected text
-	 (selected-text (if (pdf-view-active-region-p)
-			    ;; delete the newlines
-			    (replace-regexp-in-string "\n" " " (car (pdf-view-active-region-text)))
-			  nil))
-
-	 ;; ;; truncate the selected text
-	 ;; (selected-text (if (and selected-text (> (length selected-text) 15))
-	 ;; 			     (concat (substring selected-text 0 15) "...")
-	 ;; 			   selected-text
-	 ;; 			   )
-	 ;; 			 )
-
-	 ;; for the edges
-	 (edges (if (pdf-view-active-region-p)
-                ;; the edges that were really hovered by the mouse.
-                ;; not necessarily the visual highlightings, that are wordwise by default
-                ;; (pdf-info-getselection
-                ;;  (string-to-number page)
-                ;;  pdf-view-active-region
-                ;;  pdf-view-selection-style
-                ;;  )
-              
-                (mapcar
-                 (lambda (edges)
-                   (pdf-info-getselection
-                    (string-to-number page)
-                    edges
-                    pdf-view-selection-style))
-                 pdf-view-active-region)
-		      nil)))
-    (other-window 1)
-
-    ;; deselect the text, if there is an active region
-    (if (pdf-view-active-region-p)
-	(pdf-view-deactivate-region))
-
-    (if (and selected-text edges)
-	(progn
-	 (let*
-	     (
-	      ;; edges are actually outputed as a list of list of Lists-trees
-	      (edges (car (car edges)))
-	      ;; concat the edges with |
-	      (string-edges (concat "\"" (mapconcat #'prin1-to-string edges ";") "\"" )))
-
-	   ;; (format "[[pdf:%s::%s::%s][[pdf] %s _ p%s _ \"%s\"]]" file page string-edges nom-fichier-tronque page selected-text)
-	   ;; without the pdf name
-	   ;; (format "[[pdf:%s::%s::%s][[pdf] p%s _ \"%s\"]]" file page string-edges page selected-text)
-	   (format "[[pdf:%s::(:page %s :edges %s)][[pdf] p%s _ \"%s\"]]" file page string-edges page selected-text)))
-      ;; else, no selected text, just care about the path and page
-      ;; (format "[[pdf:%s::%s][[pdf] %s _ p%s]]" file page nom-fichier-tronque page)
-      (format "[[pdf:%s::(:page %s)][[pdf] %s _ p%s]]" file page nom-fichier-tronque page))))
-
-
-
-;;;; ------------------------------------------- music link
-(org-add-link-type "mpd" 'org-mpd-open nil)
-;; ishould use this instead
-;; (org-link-set-parameters TYPE &rest PARAMETERS)
-
-
-(defun org-mpd-open (string-link)
-  "STRING-LINK is a string containing the paths to the song (an mp3 file or so, or a .cue file with a trailing /track<number>) as a Lisp list, each song is a string element of the list then ::,then, a timestamp in format readable by mpd, for instance 1:23:45."
-  (let* (
-	     (link-parts (split-string string-link "::"))
-	     (songs (read (car link-parts)))
-         (metadata (when (cadr link-parts)
-                     (read (cadr link-parts))))
-	     ;; unescape the link
-	     ;; (link (unescape-special-characters link))
-	     ;; use the read function that parses a string as code
-	     ;; (songs (read (car link-parts)))
-	     (timestamp
-          (if (and (plistp metadata) (= 2 (length link-parts)))
-              ;; if the metadata are in the plist format
-              (plist-get metadata :timestamp)
-            ;; else if the data is just separated by ::
-            (cadr link-parts))))
-    ;; (message (concat "song:" (prin1-to-string songs)))
-    ;; (simple-mpc-call-mpc nil (cons "add" songs))
-    (apply #'call-process "mpc" nil nil nil (cons "add" songs))))
-
-;; code that takes a mpd entry list (with file, title, etc) and returns the title
-(defun linkin-org-get-mpd-track-title (lst)
-  "Return the element after 'Title if present in LST, else the element after 'file."
-  (let ((title-pos (cl-position 'Title lst))
-        (file-pos (cl-position 'file lst)))
-    (cond
-     ;; if there is a 'Title elem in the list and if there is a value (a next elem after 'Title)
-     ((and title-pos (nth (1+ title-pos) lst))
-      (nth (1+ title-pos) lst)) ;; Return the element after 'Title
-     ;; else, if there is a 'file elem in the list and if there is a value (a next elem after 'file)
-     ((and file-pos (nth (1+ file-pos) lst))
-      (let*
-	  (
-	   (file-path (nth (1+ file-pos) lst))
-	   ;; Get the file name from the file path
-	   (file-name (file-name-nondirectory file-path))
-	   ;; get the file name without the extension
-	   (file-name (file-name-sans-extension file-name))
-	   ;; shorten the file name if it is too long
-	   (max-length 50)
-	   (file-name (if (> (length file-name) max-length)
-			  ;; If file-name is longer than 15 characters, truncate it
-			  (concat (substring file-name 0 max-length) "[___]")
-			file-name)))
-	  file-name))
-     ;; Return nil if neither found
-     (t nil))))
-
-
-;; returns a link in string format towards the mingus entry at point
-(defun linkin-org-lien-mpd-mingus ()
-  "Return a link in string format towards the mingus entry at point."
-  (let* (
-	 (list-songs
-	  (mapcar
-	   (lambda (index)
-	     ;; the song normally is the second element
-	     (nth 1 (car (mpd-get-playlist-entry mpd-inter-conn index nil t))))
-	   mingus-marked-list))
-	 ;; remove any nil element
-	 (list-songs (remove nil list-songs))
-	 ;; reverse the list
-	 (list-songs (reverse list-songs)))
-    ;; if there are marked songs
-    (if list-songs
-	(let
-	    (
-	     ;; get the file name of the first song
-	     (title (if list-songs
-			(linkin-org-get-mpd-track-title (car
-						 (mpd-get-playlist-entry
-						  mpd-inter-conn
-						  (car (last mingus-marked-list))
-						  nil
-						  t))))))
-	 (format
-	  ;; "[[mpd:%s::00:00:00][[music] %s _ 00:00]]"
-	  "[[mpd:%s::00:00:00][[music] %s]]"
-	  (linkin-org-transform-square-brackets (prin1-to-string list-songs))
-	  title))
-      ;; else
-      (let (
-	    (track-path (nth 1 (mingus-get-details)))
-	    (title (linkin-org-get-mpd-track-title (mingus-get-details))))
-	;; (format "[[mpd:(\"%s\")::00:00:00][[music] %s _ 00:00]]" track-path title)
-	(format "[[mpd:(\"%s\")::(:timestamp \"00:00:00\")][[music] %s]]" (linkin-org-transform-square-brackets track-path) title)))))
-
-(defun linkin-org-link-mpd-simple-mpc ()
-  "Return a link in string form to the current 'simple-mpc' entry."
-  (let*
-      (
-       (track-path
-	(simple-mpc-query-get-%file%-for-result
-	 (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
-	
-       ;; remove the folder part and the extension
-       (title
-	    (file-name-nondirectory (file-name-sans-extension track-path))))
-    (format
-     "[[mpd:(\"%s\")::00:00:00][[music] %s]]"
-     track-path
-     title)))
-
-;;;; ------------------------------------------- video link
-(org-add-link-type "video" 'org-video-open nil)
-
-(defun linkin-org-is-url (string)
-  "Return non-nil if STRING is a valid URL."
-  (string-match-p
-   (rx string-start
-       (seq (or "http" "https" "ftp") "://")
-       (1+ (not (any " ")))  ;; Match one or more non-space characters
-       string-end)
-   string))
-
-(defun org-video-link-get-path (link)
-  "Extract the path of LINK."
-  (let* (
-         (path+timestamp (split-string link "::"))
-         ;; for the video file path
-         (video-file (car path+timestamp)))
-    video-file))
-
-(defun org-video-open (link)
-  "Where timestamp is 00:15:37.366 , the LINK should look like:
-[[video:/path/to/file.mp4::00:15:37.366][My description.]]
-path can also be a youtube url."
-
-  (let* (
-	 (path-or-url+timestamp (split-string link "::"))
-         (timestamp (car (cdr path-or-url+timestamp)))
-         (video-address (car path-or-url+timestamp)))
-    (progn
-      ;; (message (concat "video address : " video-address))
-      (cond
-       ;; if its an url
-       ((linkin-org-is-url video-address)
-	    (progn
-	      (start-process "mpv" nil "mpv" "--force-window" "--ytdl=no" (format "--start=%s" timestamp) video-address)))
-       ;; if it's a local file
-       ;; ((linkin-org-is-link-path-correct video-address)
-       ((linkin-org-resolve-file video-address)
-	    (progn
-	      (message "Playing %s at %s" video-address timestamp)
-	      (start-process "mpv" nil "mpv" (format "--start=%s" timestamp) video-address)))
-       (t
-	    (message "Not a valid video file or url"))))))
-
-
-;;;; ------------------------------------------- saving mu4e attachment
-
-(defun linkin-org-store-mu4e-attachment ()
-  "Store the mu4e attachement at point."
-  (let* (
-	 ;; get text at point
-	 (data (get-text-property (point) 'gnus-data))
-	 ;; get name of the attachment
-	 (filename-without-directory (or (mail-content-type-get
-					  (mm-handle-disposition data) 'filename)
-					 (mail-content-type-get
-					  (mm-handle-type data) 'name)))
-
-	 (nouveau-filename-without-directory (read-string "Nom : " (file-name-nondirectory filename-without-directory)))
-	 (id (linkin-org-create-id))
-	 (nouveau-filename-without-directory (concat id linkin-org-sep nouveau-filename-without-directory))
-	 (nouveau-filename (concat linkin-org-store-directory "/" nouveau-filename-without-directory)))
-    (mm-save-part-to-file data nouveau-filename)
-    ;; yank link to file
-    (linkin-org-yank-link-of-file nouveau-filename)))
 
 
 ;;;; ------------------------------------------- main commands
@@ -1362,15 +849,15 @@ Do nothing if the file already has an id."
 
 
 
-(defun linkin-org-open ()
-  "Open the link under point.
-If a region is selected, open all links in that region in order."
-  (interactive)
-    (let (
-	      ;; get the link under point in string form
-	      (string-link (linkin-org-get-org-string-link-under-point)))
-      ;; open the string
-      (linkin-org-open-string-link string-link)))
+;; (defun linkin-org-open ()
+;;   "Open the link under point.
+;; If a region is selected, open all links in that region in order."
+;;   (interactive)
+;;     (let (
+;; 	  ;; get the link under point in string form
+;; 	  (string-link (linkin-org-get-org-string-link-under-point)))
+;;       ;; open the string
+;;       (linkin-org-open-string-link string-link)))
 
 
 (defun linkin-org-open-in-dired ()
@@ -1384,8 +871,9 @@ If a region is selected, open all links in that region in order."
       (linkin-org-open-string-link string-link t)))
 
 
+;;;###autoload
 (defun linkin-org-get ()
-  "Kill a link to what is under point."
+  "Kill a link towards what is under point."
   (interactive)
   (let*
       ((mode (symbol-name major-mode)))
@@ -1393,7 +881,7 @@ If a region is selected, open all links in that region in order."
      ;; if in a pdf, kill a link towards the pdf
      ((string= mode "pdf-view-mode")
       (kill-new (linkin-org-pdf-get-link)))
-     ;; if text is selected, just kill the that text
+     ;; if text is selected, just kill that text
      ((region-active-p)
       (kill-ring-save (region-beginning) (region-end)))
      ;; if in a Dired buffer, kill a link towards the file under point
@@ -1421,6 +909,10 @@ If a region is selected, open all links in that region in order."
       (kill-new (linkin-org-get-inline))))))
 
 
+
+
+
+;;;###autoload
 (defun linkin-org-store ()
   "Store what is under point and kill a link to it."
   (interactive)
@@ -1456,27 +948,192 @@ If a region is selected, open all links in that region in order."
 
 
 
-(defun plug-in-org-link-open (args)
-  "A function to format the arguments of `org-link-open'"
-  (let (
-	(link (car args))
-	(rest (cadr args)))
-    (list (linkin-org-resolve-link link) rest)
+
+;;;###autoload
+(defun linkin-org-file-open (link)
+  "Open the file at LINK."
+  (let* (
+	 (file-path (org-element-property :path link))
+	 (metadata (org-element-property :metadata link))
+	 (line-number-or-id (org-element-property :search-option link))
+	 ;; (metadata (when (cadr link-parts)
+	 ;;             (read (cadr link-parts))))
+	 ;; (line-number-or-id (if (and
+	 ;; 			 (plistp metadata)
+	 ;; 			 metadata)
+	 ;; 			(prin1-to-string (plist-get metadata :inline-id))
+	 ;; 		      metadata
+	 ;; 		      )
+	 ;; 		    )
+	 )
+
+    (when (file-exists-p file-path)
+            ;; if the link is to be opened in Dired, open it in Dired
+        ;; (if open-in-dired-p
+        ;;     (progn
+        ;;       (let*
+        ;;           (
+        ;;            ;; get the full path
+        ;;            (file-path (expand-file-name file-path))
+        ;;            ;; if file-path is the path of a directory, make sure there is a trailing slash
+        ;;            (is-directory? (file-directory-p file-path))
+        ;;            (file-path (if (and is-directory?
+        ;;                                (not (string-empty-p file-path)))
+        ;;                           (directory-file-name file-path)
+        ;;                         file-path))
+        ;;            ;; create a Dired buffer visiting the directory of the file (or get the name of it if it already exists)
+        ;;            ;; (dired-buffer (dired-noselect (file-name-directory file-path)))
+        ;;            )
+        ;;         ;; switch to the Dired buffer
+        ;;         (dired (file-name-directory file-path))
+        ;;         ;; (switch-to-buffer dired-buffer)
+        ;;         ;; update the cloned Dired buffer
+        ;;         ;; (revert-buffer)
+        ;;         ;; place the point on the file
+        ;;         (dired-goto-file file-path)
+        ;;         )
+        ;;       )
+	      ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
+      ;; open the file
+      (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function)
+      ;; go to the id if specified
+      (when line-number-or-id
+	(cond
+	 (;; if line-number-or-id matches an id, search for that id in the buffer
+	  (linkin-org-get-id line-number-or-id)
+	  (org-link-search line-number-or-id)
+	  )
+	 (
+	  ;; else, if it matches a number, go to that line number
+	  (string-match-p "^[0-9]+$" line-number-or-id)
+	  (org-goto-line (string-to-number line-number-or-id))
+	  )
+	 )
+	)
+      )
+    )
+  )
+;; )
+
+
+
+;; (defun linkin-org-link-open (std-link-opening-function link &optional args)
+;;   "Open the link LINK.
+;; Take another function STD-LINK-OPENING-FUNCTION that opens links in the standard way, typically `org-link-open'.
+;; If the use variable `linkin-org-open-links-as-in-dired-p' is set to non-nil and if the link has type file, use `linkin-org-file-open' to open it.
+;; Otherwise, use the standard link opening function."
+;;   (if (and linkin-org-open-links-as-in-dired-p (string= (org-element-property :type link) "file"))
+;;       ;; open the link as in Dired if it's a file link and if the user wants to
+;;       (linkin-org-file-open link)
+;;     (funcall std-link-opening-function link args)
+;;     )
+;;   )
+
+
+
+;;;###autoload
+(defun linkin-org-resolve-link (link)
+  "Parse the metadata in LINK.
+Returns a link org element with a resolved path and an additional :metadata property.
+LINK is an org element as returned by the standard org link parser `parse-org-link'.
+"
+  (let*
+      (
+       ;; ;;turn the string link into an org element
+       ;; (link-org-element (linkin-org-parse-org-link string-link))
+       ;; get the raw link, that is, the string containing the data of the link
+       (link-raw-link (org-element-property :raw-link link))
+       ;; get the type of the link
+       (link-type (org-element-property :type link))
+       ;; (link-raw-path (org-element-property :path link))
+       ;; get data of the link, that is, the interior of the link minus the type (ie, file:)
+       (link-path (org-element-property :path link))
+       ;; extract the path, that is, the substring of link-path before the first :: if there is one
+       (link-path (car (string-split link-path "::")))
+       ;; get the metadata, that is, the alist after the last "::" in the link-raw-link
+       (link-metadata (let
+                          (
+                           (index (string-match "::" link-raw-link))
+			   (link-parts (split-string link-raw-link "::"))
+			   )
+			;; if there is metadata
+                        (when index
+			  ;; get the string after the last "::"
+                          (read (car (last link-parts)))
+			  )
+			)
+		      )
+       (link-inline-id (when (plist-get link-metadata :inline-id)
+			 (symbol-name (plist-get link-metadata :inline-id))
+			 )
+		       )
+
+       ;; change the path to a correct path
+       ;; (new-link-path (if link-path (linkin-org-resolve-file link-path)))
+       )
+    ;; build a new link based on the correct path
+    ;; (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
+    ;; new-string-link
+    
+    ;; (when (plist-member link :path)
+    ;; compute the new path, if we should resolve the path for that link type
+    (when (and
+	   link-path
+	   (member link-type linkin-org-link-types-to-check-for-id)
+	   )
+      (org-element-put-property link :path (linkin-org-resolve-path link-path))
+      )
+    (when link-metadata
+      (org-element-put-property link :metadata link-metadata)
+      )
+    ;; if the link has an inline id, add it to the link as a search string value
+    (if link-inline-id
+	(org-element-put-property link :search-option (concat "id:" link-inline-id))
+      ;; else, check if the original search option is an id
+      (if-let
+	  (id (linkin-org-get-id (org-element-property :search-option link)))
+	  ;; then add the id: keyword to the search option
+	  (org-element-put-property link :search-option (concat "id:" id))
+	)
+      )
+    link
     )
   )
 
+;;;###autoload
+(defun linkin-org-redirect-link-opening (std-link-opening-function link args)
+  "A function to format the arguments of `org-link-open'"
+  (let
+      (
+       ;; resolve the link, so that it has a correct path and metadata
+       (link (linkin-org-resolve-link link))
+       )
+   (if (and linkin-org-open-links-as-in-dired-p (string= (org-element-property :type link) "file"))
+       ;; open the link as in Dired if it's a file link and if the user wants to
+       (linkin-org-file-open link)
+     (funcall std-link-opening-function link link)
+     )
+   )
+  )
 
-
+;;;###autoload
 (define-minor-mode linkin-org-mode
   "Minor mode to open your links with linkin-org."
   :init-value nil
   :lighter nil
   (if linkin-org-mode
-      (advice-add 'org-link-open :filter-args #'plug-in-org-link-open)
-    (advice-remove 'org-link-open #'plug-in-org-link-open)
+      (progn
+	;; replace org-lin-open with linkin-org-open, so that dired is used to open links in case it is asked
+	(advice-add 'org-link-open :around #'linkin-org-redirect-link-opening)
+	;; modify the inputs of the org-link-open function, to resolve the path etc
+	;; (advice-add 'org-link-open :filter-args #'plug-in-org-link-open)
+       )
+    ;; (advice-remove 'org-link-open #'linkin-org-link-open)
+    (advice-remove 'org-link-open #'linkin-org-redirect-link-opening)
     )
   )
 
+;;;###autoload
 (defun linkin-org-turn-on-minor-mode ()
   "Turn on linkin-org minor mode."
   (interactive)
@@ -1488,10 +1145,13 @@ If a region is selected, open all links in that region in order."
 (define-global-minor-mode linkin-org-global-mode linkin-org-mode linkin-org-turn-on-minor-mode)
 
 
-;; [id:20250810T165832] test
+;; [id:20250813T113703] 
 
 
+
+;; [id:20250813T131833] 
 
 (provide 'linkin-org)
 
 ;;; linkin-org.el ends here
+
