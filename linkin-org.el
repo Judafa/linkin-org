@@ -498,6 +498,9 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
   "Apply a function FUNCTION-TO-PERFORM on a file with path FILE-PATH as if the point was on that file in Dired."
   (let*
       (
+       
+       ;; to make operation silent
+       (org-inhibit-startup nil)
        ;; get the full path
        (file-path (expand-file-name file-path))
        ;; if file-path is the path of a directory, make sure there is a trailing slash
@@ -616,7 +619,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
           ;; update the Dired buffer
           (revert-buffer))))))
 
-(defun linkin-org-open-link-and-do-function (string-link function-to-perform)
+(defun linkin-org-open-link-and-do-function (link function-to-perform)
   "Open the link in string form STRING-LINK, apply the function FUNCTION-TO-PERFORM, come back."
   (let (
         ;; remember the current buffer and the current position of point
@@ -628,7 +631,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
     (unwind-protect
         (progn
           ;; Open to the link
-          (linkin-org-open-string-link link)
+          (org-link-open link)
           ;; call the function
           (funcall function-to-perform)
           ;; remember the buffer we landed in by opening the link
@@ -819,7 +822,6 @@ If there is an inline id in the current line, use it.
 
 
 ;;;; ------------------------------------------- main commands
-
 (defun linkin-org-leave-id-to-file-in-dired ()
   "Add an id to the under point in Dired.
 Do nothing if the file already has an id."
@@ -870,43 +872,57 @@ If a region is selected, open all links in that region in order."
       ;; open the string
       (linkin-org-open-string-link string-link t)))
 
-
-;;;###autoload
 (defun linkin-org-get ()
   "Kill a link towards what is under point."
   (interactive)
-  (let*
-      ((mode (symbol-name major-mode)))
+  (let ((mode (symbol-name major-mode)))
     (cond
-     ;; if in a pdf, kill a link towards the pdf
-     ((string= mode "pdf-view-mode")
-      (kill-new (linkin-org-pdf-get-link)))
-     ;; if text is selected, just kill that text
-     ((region-active-p)
-      (kill-ring-save (region-beginning) (region-end)))
-     ;; if in a Dired buffer, kill a link towards the file under point
-     ((string= mode "dired-mode")
-      (kill-new (linkin-org-dired-get-link)))
-     ;; if viewing a mail in mu4e
-     ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
-      ;; (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
-      (kill-new (let
-                 ((l (call-interactively #'org-store-link)))
-                 (format "[[%s][%s %s]]"
-                        (car l)
-                        "[mail]"
-                        (cadr l)))))
-     ;; if in a mingus playlist buffer
-     ((string= mode "mingus-playlist-mode")
-      (kill-new (linkin-org-lien-mpd-mingus)))
-     ;; if in a simple-mpc buffer
-     ((string= mode "simple-mpc-mode")
-      (kill-new (linkin-org-link-mpd-simple-mpc)))
+     ;; if in a dired buffer, get a link towards the file under point
+     ((symbol-name major-mode) (kill-new (linkin-org-dired-get-link)))
+     ;; else, get a link towards the current line of the buffer
+     (t (kill-new (linkin-org-get-inline)))
+     )
+    )
+  )
 
 
-     ;; Otherwise, kill a link towards the current line of the buffer
-     (t
-      (kill-new (linkin-org-get-inline))))))
+
+;; ;;;###autoload
+;; (defun linkin-org-get ()
+;;   "Kill a link towards what is under point."
+;;   (interactive)
+;;   (let*
+;;       ((mode (symbol-name major-mode)))
+;;     (cond
+;;      ;; if in a pdf, kill a link towards the pdf
+;;      ((string= mode "pdf-view-mode")
+;;       (kill-new (linkin-org-pdf-get-link)))
+;;      ;; if text is selected, just kill that text
+;;      ((region-active-p)
+;;       (kill-ring-save (region-beginning) (region-end)))
+;;      ;; if in a Dired buffer, kill a link towards the file under point
+;;      ((string= mode "dired-mode")
+;;       (kill-new (linkin-org-dired-get-link)))
+;;      ;; if viewing a mail in mu4e
+;;      ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
+;;       ;; (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
+;;       (kill-new (let
+;;                  ((l (call-interactively #'org-store-link)))
+;;                  (format "[[%s][%s %s]]"
+;;                         (car l)
+;;                         "[mail]"
+;;                         (cadr l)))))
+;;      ;; if in a mingus playlist buffer
+;;      ((string= mode "mingus-playlist-mode")
+;;       (kill-new (linkin-org-lien-mpd-mingus)))
+;;      ;; if in a simple-mpc buffer
+;;      ((string= mode "simple-mpc-mode")
+;;       (kill-new (linkin-org-link-mpd-simple-mpc)))
+
+
+;;      ;; Otherwise, kill a link towards the current line of the buffer
+;;      (t
+;;       (kill-new (linkin-org-get-inline))))))
 
 
 
@@ -919,7 +935,7 @@ If a region is selected, open all links in that region in order."
   (let*
       ((mode (symbol-name major-mode)))
     (cond
-     ;; ;; If text is selected
+     ;; If text is selected
      ;; ((region-active-p)
      ;;  (progn
      ;;   (my-store-some-text
@@ -937,9 +953,9 @@ If a region is selected, open all links in that region in order."
      ;; If in a Dired buffer
      ((string= mode "dired-mode")
       (linkin-org-store-file t))
-     ;; If in mu4e
-     ((string= mode "mu4e-view-mode")
-      (linkin-org-store-mu4e-attachment))
+     ;; ;; If in mu4e
+     ;; ((string= mode "mu4e-view-mode")
+     ;;  (linkin-org-store-mu4e-attachment))
      ;; If in an editable buffer
      ((not buffer-read-only)
       (linkin-org-store-inline)))))
@@ -956,45 +972,10 @@ If a region is selected, open all links in that region in order."
 	 (file-path (org-element-property :path link))
 	 (metadata (org-element-property :metadata link))
 	 (line-number-or-id (org-element-property :search-option link))
-	 ;; (metadata (when (cadr link-parts)
-	 ;;             (read (cadr link-parts))))
-	 ;; (line-number-or-id (if (and
-	 ;; 			 (plistp metadata)
-	 ;; 			 metadata)
-	 ;; 			(prin1-to-string (plist-get metadata :inline-id))
-	 ;; 		      metadata
-	 ;; 		      )
-	 ;; 		    )
 	 )
 
     (when (file-exists-p file-path)
-            ;; if the link is to be opened in Dired, open it in Dired
-        ;; (if open-in-dired-p
-        ;;     (progn
-        ;;       (let*
-        ;;           (
-        ;;            ;; get the full path
-        ;;            (file-path (expand-file-name file-path))
-        ;;            ;; if file-path is the path of a directory, make sure there is a trailing slash
-        ;;            (is-directory? (file-directory-p file-path))
-        ;;            (file-path (if (and is-directory?
-        ;;                                (not (string-empty-p file-path)))
-        ;;                           (directory-file-name file-path)
-        ;;                         file-path))
-        ;;            ;; create a Dired buffer visiting the directory of the file (or get the name of it if it already exists)
-        ;;            ;; (dired-buffer (dired-noselect (file-name-directory file-path)))
-        ;;            )
-        ;;         ;; switch to the Dired buffer
-        ;;         (dired (file-name-directory file-path))
-        ;;         ;; (switch-to-buffer dired-buffer)
-        ;;         ;; update the cloned Dired buffer
-        ;;         ;; (revert-buffer)
-        ;;         ;; place the point on the file
-        ;;         (dired-goto-file file-path)
-        ;;         )
-        ;;       )
-	      ;; (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file)
-      ;; open the file
+      ;; open the file from a dired buffer using the function `linkin-org-open-file-as-in-dired'
       (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function)
       ;; go to the id if specified
       (when line-number-or-id
@@ -1016,26 +997,12 @@ If a region is selected, open all links in that region in order."
 ;; )
 
 
-
-;; (defun linkin-org-link-open (std-link-opening-function link &optional args)
-;;   "Open the link LINK.
-;; Take another function STD-LINK-OPENING-FUNCTION that opens links in the standard way, typically `org-link-open'.
-;; If the use variable `linkin-org-open-links-as-in-dired-p' is set to non-nil and if the link has type file, use `linkin-org-file-open' to open it.
-;; Otherwise, use the standard link opening function."
-;;   (if (and linkin-org-open-links-as-in-dired-p (string= (org-element-property :type link) "file"))
-;;       ;; open the link as in Dired if it's a file link and if the user wants to
-;;       (linkin-org-file-open link)
-;;     (funcall std-link-opening-function link args)
-;;     )
-;;   )
-
-
-
 ;;;###autoload
-(defun linkin-org-resolve-link (link)
+(defun linkin-org-resolve-link (link &optional no-path-resolving)
   "Parse the metadata in LINK.
 Returns a link org element with a resolved path and an additional :metadata property.
 LINK is an org element as returned by the standard org link parser `parse-org-link'.
+If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
 "
   (let*
       (
@@ -1080,6 +1047,7 @@ LINK is an org element as returned by the standard org link parser `parse-org-li
     (when (and
 	   link-path
 	   (member link-type linkin-org-link-types-to-check-for-id)
+	   (not no-path-resolving)
 	   )
       (org-element-put-property link :path (linkin-org-resolve-path link-path))
       )
@@ -1111,6 +1079,7 @@ LINK is an org element as returned by the standard org link parser `parse-org-li
    (if (and linkin-org-open-links-as-in-dired-p (string= (org-element-property :type link) "file"))
        ;; open the link as in Dired if it's a file link and if the user wants to
        (linkin-org-file-open link)
+     ;; else call the standard link opening function
      (funcall std-link-opening-function link link)
      )
    )
@@ -1122,12 +1091,9 @@ LINK is an org element as returned by the standard org link parser `parse-org-li
   :init-value nil
   :lighter nil
   (if linkin-org-mode
-      (progn
-	;; replace org-lin-open with linkin-org-open, so that dired is used to open links in case it is asked
+      ;; replace org-lin-open with linkin-org-open, so that dired is used to open links in case it is asked
 	(advice-add 'org-link-open :around #'linkin-org-redirect-link-opening)
-	;; modify the inputs of the org-link-open function, to resolve the path etc
-	;; (advice-add 'org-link-open :filter-args #'plug-in-org-link-open)
-       )
+    ;; (advice-add 'org-link-open :filter-args #'plug-in-org-link-open)
     ;; (advice-remove 'org-link-open #'linkin-org-link-open)
     (advice-remove 'org-link-open #'linkin-org-redirect-link-opening)
     )
