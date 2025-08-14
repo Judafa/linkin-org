@@ -687,29 +687,29 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
          (file-path (expand-file-name (dired-file-name-at-point)))
          ;; remove the trailing slash if it's a directory
          (file-path (directory-file-name file-path))
-	     ;; the name of the file, without path
-	     (file-name
-	      ;; if the file under point is a directory
-	      (if (file-directory-p file-path)
-	          ;; remove the trailing slash, get the name of the directory
-	          (file-name-nondirectory (directory-file-name file-path))
-	        ;; else if it's a file
-	        (file-name-nondirectory file-path)))
-	     ;; file name without id, if there is an id in the file name
-	     (file-name (linkin-org-strip-off-id-from-file-name file-name))
-	     (file-name-sans-ext (file-name-sans-extension file-name))
-	     (extension (file-name-extension file-name))
-	     ;; tronque le nom du fichier s'il est trop long
-	     (file-name (if (> (length file-name) 70)
+	 ;; the name of the file, without path
+	 (file-name
+	  ;; if the file under point is a directory
+	  (if (file-directory-p file-path)
+	      ;; remove the trailing slash, get the name of the directory
+	      (file-name-nondirectory (directory-file-name file-path))
+	    ;; else if it's a file
+	    (file-name-nondirectory file-path)))
+	 ;; file name without id, if there is an id in the file name
+	 (file-name (linkin-org-strip-off-id-from-file-name file-name))
+	 (file-name-sans-ext (file-name-sans-extension file-name))
+	 (extension (file-name-extension file-name))
+	 ;; tronque le nom du fichier s'il est trop long
+	 (file-name (if (> (length file-name) 70)
                         (concat (substring file-name-sans-ext 0 50)  " [___] " "." extension)
-			          file-name)))
+		      file-name)))
     (if file-name
 	    ;; if it's a file, not a directory
-	    (kill-new (format "[[file:%s][[file] %s]]" file-path file-name)))
+	    (kill-new (format "[[file:%s][[file] %s]]" (linkin-org-transform-square-brackets file-path) file-name)))
     ;; otherwise, remove the trailing slash
     (let* (
-	       (directory-name-without-slash (directory-file-name file-path)))
-      (format "[[file:%s][[file] %s]]" directory-name-without-slash file-name))))
+	   (directory-name-without-slash (directory-file-name file-path)))
+      (format "[[file:%s][[file] %s]]" (linkin-org-transform-square-brackets directory-name-without-slash) file-name))))
 
 
 
