@@ -732,26 +732,68 @@ If there is an inline id in the current line, use it.
                       (line-beginning-position)
                       (line-end-position)))
        ;; get the id in the current line, if there is one
-       (inline-id (linkin-org-get-id current-line linkin-org-inline-id-regexp))
+       (inline-id-with-prefix (linkin-org-get-id current-line linkin-org-inline-id-regexp))
        ;; remove the leading id: part of the inline id
-       (inline-id (when inline-id (replace-regexp-in-string "id:" "" inline-id)))
-       (line-number (line-number-at-pos)))
+       (inline-id (when inline-id-with-prefix (replace-regexp-in-string "id:" "" inline-id-with-prefix)))
+       ;; get the text that is after the id part, if any
+       ;; if the
+       (raw-text-after-id (when inline-id
+			    (let* (
+				   (text (cadr (split-string current-line inline-id-with-prefix)))
+				   ;; remove the leading ] if there is one
+				   (text (if (string-prefix-p "]" text)
+					     (substring text 1)
+					   text
+					   )
+					 )
+				   )
+			      ;; if the text is only made of spaces, return nil
+			      (if (string-match-p "\\`[[:space:]]*\\'" text)
+				  nil
+				;; else, delete the leading and trailing spaces
+				(replace-regexp-in-string (rx (or (seq line-start (zero-or-more space)) (seq (zero-or-more space) line-end))) "" text)
+				)
+			      )
+			    )
+			  )
+       (test (message "raw-text-after-id: %s" raw-text-after-id))
+       ;; shorten the text after id if it's too long, say larger than 70 characters
+       (shortened-text-after-id
+	(when raw-text-after-id
+	  (if (> (length raw-text-after-id) 70)
+	      (concat (substring raw-text-after-id 0 50)
+		      " [___]"
+		      )
+	    raw-text-after-id)
+	  )
+	)
+       (line-number (line-number-at-pos))
+       )
     ;; get an id only if the file has a path
     (if file-name
-     (if inline-id
-         (format "[[file:%s::(:inline-id %s)][[file] %s]]"
-	             current-file-path
-                 inline-id
-	             (linkin-org-strip-off-id-from-file-name file-name))
-       (format "[[file:%s::%d][[file] %s _ l%d]]"
-		       current-file-path
-		       line-number
-	           (linkin-org-strip-off-id-from-file-name file-name)
-		       line-number))
-     ;; else if the file has no path, do nothing
-     (message "linkin-org: this file has no path, cannot get an id for it.")
-     nil
-     )))
+	(if inline-id
+            (if shortened-text-after-id
+		(format "[[file:%s::(:inline-id %s)][[file] %s _ \"%s\"]]"
+			current-file-path
+			inline-id
+			(linkin-org-strip-off-id-from-file-name file-name)
+			shortened-text-after-id
+			)
+	      (format "[[file:%s::(:inline-id %s)][[file] %s]]"
+		      current-file-path
+		      inline-id
+		      (linkin-org-strip-off-id-from-file-name file-name)
+		      )
+	      )
+	  (format "[[file:%s::%d][[file] %s _ l%d]]"
+		  current-file-path
+		  line-number
+		  (linkin-org-strip-off-id-from-file-name file-name)
+		  line-number))
+      ;; else if the file has no path, do nothing
+      (message "linkin-org: this file has no path, cannot get an id for it.")
+      nil
+      )))
 
 
 ;; to leave an id in an editable line
@@ -878,9 +920,9 @@ If a region is selected, open all links in that region in order."
   (let ((mode (symbol-name major-mode)))
     (cond
      ;; if in a dired buffer, get a link towards the file under point
-     ((symbol-name major-mode) (kill-new (linkin-org-dired-get-link)))
+     ((string= (symbol-name major-mode) "dired-mode") (kill-new (linkin-org-dired-get-link)))
      ;; else, get a link towards the current line of the buffer
-     (t (kill-new (linkin-org-get-inline)))
+     ((not buffer-read-only) (kill-new (linkin-org-get-inline)))
      )
     )
   )
@@ -1069,7 +1111,7 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
   )
 
 ;;;###autoload
-(defun linkin-org-redirect-link-opening (std-link-opening-function link args)
+(defun linkin-org-redirect-link-opening (std-link-opening-function link &optional args)
   "A function to format the arguments of `org-link-open'"
   (let
       (
