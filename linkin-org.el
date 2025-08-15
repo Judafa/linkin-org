@@ -37,6 +37,8 @@
 
 ;; define the directory where the function linkin-org-store stores the files and directories by default
 (defcustom linkin-org-store-directory (expand-file-name "~/") "The directory where 'linkin-org-store' stores data by default.")
+;; define whether to store the file directly in the directory defined by 'linkin-org-store-directory' without asking anything
+(defcustom linkin-org-store-file-directly-p nil "If non-nil, store the file directly in the directory defined by 'linkin-org-store-directory' without asking for a new name.")
 
 ;; define the directories where to search when a link is broken
 ;; this is a list of directories that are searched in order to resolve broken links
@@ -403,79 +405,129 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
       (kill-buffer dired-buffer))))
    
 
-(defun linkin-org-store-file (&optional yank-link? ask-for-name-confirmation?)
-  "Store the file under point in Dired.
-Set YANK-LINK? to non-nil to copy the link in the kill ring (clipboard).
-Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message before storing the file."
+(defun linkin-org-store-file ()
+  "Store the file under point in Dired."
   (let* (
 	 (file-path (dired-file-name-at-point))
+	 (file-name (cond
+		     ;; if it's a directory
+		     (
+		      (file-directory-p file-path)
+		      (file-name-nondirectory (directory-file-name file-path))
+		      )
+		     ;; else if it's a file
+		     (t (file-name-nondirectory file-path))
+		     )
+		    )
          ;; is the file already in the list of directories to check in case of a broken link
-	 (is-file-already-in-store-directory? (cl-some #'identity
-                                                       (mapcar
-                                                        (lambda (dir)
-                                                          (s-prefix?
-					                   (expand-file-name dir)
-					                   (expand-file-name file-path)
-                                                           )
-                                                          )
-                                                        linkin-org-search-directories-to-resolve-broken-links
-                                                        )
+	 (is-file-already-in-store-directory? (cl-some #'identity (mapcar
+								   (lambda (dir)
+								     (s-prefix?
+								      (expand-file-name dir)
+								      (expand-file-name file-path)
+								      )
+								     )
+								   linkin-org-search-directories-to-resolve-broken-links
+								   )
                                                        )
                                               )
          )
     ;; check wether it's a file or a directory
     (if (file-directory-p file-path)
-	    ;; if it's a directory
-	    (progn
-	      (let*
-	          (
-	           ;; ask for the directory new name
-	           ;; ~directory-file-name~ removes the trailing slash so that ~file-name-nondirectory~ returns the last part of the path
-	           (new-file-name
-                (if ask-for-name-confirmation?
-                    (read-string "New name: " (file-name-nondirectory (directory-file-name file-path)))
-                  (file-name-nondirectory (directory-file-name file-path))))
-               ;; give the file name an id
-               (new-file-name (linkin-org-give-id-to-file-name new-file-name))
-               (new-file-path (if is-file-already-in-store-directory?
-                                  (concat
-                                   ;; this just concats a "/" at the end of the directory (if there's none already)
-                                   (file-name-as-directory
-                                    (file-name-directory (expand-file-name (directory-file-name file-path))))
-                                   new-file-name)
-                                (concat (file-name-as-directory
-                                         (expand-file-name (directory-file-name linkin-org-store-directory)))
-                                        new-file-name))))
-		    ;; (copy-directory file-path new-file-path)
-		    (rename-file file-path new-file-path)
-		    ;; copy a link towards the stored directory
-		    (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
-		    ;; update the Dired buffer
-		    (revert-buffer)
+	;; if it's a directory
+	(progn
+	  (let*
+	      ;; compute the complete new file path to store the dir into, without id, including name at the end
+	      (
+	       (new-raw-file-path
+		(cond
+		 ((not linkin-org-store-file-directly-p)
+		  (let
+		      ((raw-user-given-path (read-directory-name "Give new location: " (file-name-as-directory linkin-org-store-directory) (file-name-as-directory linkin-org-store-directory) nil)))
+		    (if (file-directory-p raw-user-given-path)
+			;; if the user provided path is a directory, then add at the end the initial name of the directory
+			(concat (file-name-as-directory raw-user-given-path) file-name)
+		      ;; else if the user provided a file name at the end of the path, use it
+		      raw-user-given-path
+		      )
 		    )
-          )
+		  )
+		 (t (concat (file-name-as-directory linkin-org-store-directory) file-name))
+		 )
+		)
+	       ;; get the new raw file name
+	       (new-raw-file-name (file-name-nondirectory new-raw-file-path))
+               ;; give the file name an id
+               (new-file-name (linkin-org-give-id-to-file-name new-raw-file-name))
+	       ;; get the new file path
+               (new-file-path (if (not linkin-org-store-file-directly-p)
+				  ;; if the user gave a new path
+				  (concat (file-name-as-directory (file-name-directory new-raw-file-path)) new-file-name)
+				;; else, move the directory to the store directory, except if it's already in there
+				(if is-file-already-in-store-directory?
+                                    (concat
+                                     ;; this just concats a "/" at the end of the directory (if there's none already)
+                                     (file-name-as-directory
+                                      (file-name-directory (expand-file-name (directory-file-name file-path))))
+                                     new-file-name)
+				  ;; else, just put the new path in the store directory
+                                  (concat (file-name-as-directory
+                                           (expand-file-name (directory-file-name linkin-org-store-directory)))
+                                          new-file-name))))
+	       )
+	    ;; (message "new-raw-file-path: %s" new-raw-file-path)
+	    ;; (message "new-raw-file-name: %s" new-raw-file-name)
+	    ;; (message "new-file-path: %s" new-file-path)
+	    ;; (copy-directory file-path new-file-path)
+	    (rename-file file-path new-file-path)
+	    ;; copy a link towards the stored directory
+	    (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
+	    ;; update the Dired buffer
+	    (revert-buffer)
+	    )
+	  )
       ;; if it's a file
       (progn
-	    (let*
-	        ;; ask for the file new name
-	        (
-	         (new-file-name
-              (if ask-for-name-confirmation?
-                  (read-string "New name: " (file-name-nondirectory file-path))
-                (file-name-nondirectory file-path)))
+	(let*
+	    (
+	     (new-raw-file-path
+	      (cond
+	       ((not linkin-org-store-file-directly-p)
+		(let
+		    ((raw-user-given-path (read-directory-name "Give new location: " (file-name-as-directory linkin-org-store-directory) (file-name-as-directory linkin-org-store-directory) nil)))
+		  (if (file-directory-p raw-user-given-path)
+		      ;; if the user provided path is a directory, then add at the end the initial name of the directory
+		      (concat (file-name-as-directory raw-user-given-path) file-name)
+		    ;; else if the user provided a file name at the end of the path, use it
+		    raw-user-given-path
+		    )
+		  )
+		)
+	       (t (concat (file-name-as-directory linkin-org-store-directory) file-name))
+	       )
+	      )
+	     ;; get the new raw file name
+	     (new-raw-file-name (file-name-nondirectory new-raw-file-path))
              ;; give the file name an id
-	         (new-file-name (linkin-org-give-id-to-file-name new-file-name))
-	         (new-file-path (if is-file-already-in-store-directory?
-                                     (concat (file-name-directory (expand-file-name file-path)) new-file-name)
-                                   (concat (file-name-as-directory linkin-org-store-directory) new-file-name))))
-          ;; (copy-file file-path new-file-path)
+             (new-file-name (linkin-org-give-id-to-file-name new-raw-file-name))
+	     ;; get the new file path
+             (new-file-path (if (not linkin-org-store-file-directly-p)
+				;; if the user gave a new path
+				(concat (file-name-as-directory (file-name-directory new-raw-file-path)) new-file-name)
+				;; else, move the file to the store directory, except if it's already in there
+			      (if is-file-already-in-store-directory?
+                               (concat
+                                ;; this just concats a "/" at the end of the directory (if there's none already)
+                                (file-name-as-directory
+                                 (file-name-directory (expand-file-name (directory-file-name file-path))))
+                                new-file-name)
+			       ;; else, just put the new path in the store directory
+                               (concat (file-name-as-directory
+					(expand-file-name (directory-file-name linkin-org-store-directory)))
+                                       new-file-name))))
+	     )
           (rename-file file-path new-file-path)
-	      ;; (if is-file-already-in-fourre-tout?
-	      ;;     ;; (rename-file file-path new-file-path)
-	      ;;     (rename-file file-path (concat (file-name-directory (expand-file-name (directory-file-name file-path))) id new-file-name))
-	      ;; (copy-file file-path new-file-path)
-	      ;;   )
-	      (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
+	  (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
           ;; update the Dired buffer
           (revert-buffer))))))
 
@@ -542,7 +594,8 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	 ;; tronque le nom du fichier s'il est trop long
 	 (file-name (if (> (length file-name) 70)
                         (concat (substring file-name-sans-ext 0 50)  " [___] " "." extension)
-		      file-name)))
+		      file-name))
+	 )
     (if file-name
 	    ;; if it's a file, not a directory
 	    (kill-new (format "[[file:%s][[file] %s]]" (linkin-org-escape-square-brackets file-path) file-name)))
@@ -758,7 +811,7 @@ Do nothing if the file already has an id."
     (cond
      ;; If in a Dired buffer
      ((string= mode "dired-mode")
-      (linkin-org-store-file t))
+      (linkin-org-store-file))
      ;; If in an editable buffer
      ((not buffer-read-only)
       (linkin-org-store-inline)))))
