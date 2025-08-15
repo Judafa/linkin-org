@@ -2,21 +2,22 @@ linkin-org --- an emacs workflow with fast, reliable links.
 
 * Overview
 
-linkin-org proposes to access your data with reliable links to place your written notes at the center of your workflow.
+linkin-org proposes to access any data with reliable links.
+It suggests a simple, crazy effective worflow centered around your written notes.
 linkin-org is:
 - *reliable*: your links just always work.
-  It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]); also, you should not be afraid of ids.
-  Give it a try! It's nothing a little habit cant handle.
+  It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]) and you should be ok seeing ids in your file names and in your notes.
+  You'll get used to it!
 - *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) without risk to break your links.
   All you have to do is to not change or remove the ids.
 - *non-intrusive*: you can organize your files with other methods in parallel (directory hierarchy, file-naming, etc) without problem.
-  The only noticeable difference is, the files that are linked have an id in their names.
-- *simple*: 3 main commands is all you need.
+  The only noticeable difference is, the files that are reliably linked have an id in their names.
+- *simple*: linkin-org introduces two additional commands, ~linkin-org-store~ and ~linkin-org-get~
 
 
 linkin-org turns your written notes into precise, reliable access points towards your data.
-Also, it suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (~linkin-org-open~).
-The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
+Also, it suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (using the standard org link opening command ~org-open-at-point-global~).
+# The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
@@ -31,20 +32,20 @@ and a line that you can reliably access via a link (here with a python syntax) l
 #+end_src
 # Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
 
-* Everything with 3 Commands
+* Everything with 2 Commands
 
-linkin-org provides three main commands:
+linkin-org provides two main commands:
 - ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
-  It works on a file (in a dired buffer), a line in an editable file (org, markdown, python, whatever), a mail attachment (in mu4e).
-  It directly copies the link in your clipboard (a.k.a kill-ring) so you can paste it right away.
+  It works on a file (in a dired buffer) and a line in an editable file (org, markdown, python, whatever).
+  It directly copies the link in your clipboard so you can paste it right away.
   It adds an id to your data (changing your file name or the current editable line) so links towards it become reliable.
 
-- ~linkin-org-get~ copies a link towards what you have at point in your clipboard; does not modify your data.
-  This works on a file (in dired), a line in an editable file, on selected words in a pdf (in [[https://github.com/vedang/pdf-tools][pdf-tools]]).
+- ~linkin-org-get~ copies a link towards what you have at point in your clipboard; it does not modify your data.
+  This works on a file (in dired), a line in an editable file, on selected words in a pdf (using the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]] in [[https://github.com/vedang/pdf-tools][pdf-tools]]), on a music track in mingus (using the extension [[https://github.com/Judafa/linkin-org-music-link][linkin-org-music-link]] in [[https://github.com/pft/mingus][mingus]]).
   The link may not be reliable; it will be reliable if you called ~linkin-org-store~ beforehand on the data.
 
-- ~linkin-org-open~ opens the link at point.
-  If the known path towards the data is no valid anymore, uses ids to retrieve it.
+# - ~linkin-org-open~ opens the link at point.
+#   If the known path towards the data is no valid anymore, uses ids to retrieve it.
 
 
 
@@ -63,23 +64,22 @@ linkin-org provides three main commands:
 
 *** Just downloaded some file?
 Put your cursor on the file in dired and store it (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
-By doing this, you copied a link: paste it in a .org file, opening the link (~linkin-org-open~) retrieves your file.
+By doing this, you copied a link: paste it in a file, opening the link retrieves your file.
 Also while storing the file, linkin-org added an id at the beginning of your file name: your link will still work if you rename or move the file around.
 
 *** Just wrote something you'd like to go back to later?
 Go one line above and store the current line (~linkin-org-store~) to insert an inline id.
-By doing this, you just copied a link: paste it in a .org file, opening the link (~linkin-org-open~) goes back exactly where you were.
-That link will always get you exactly at the right location.
+By doing this, you just copied a link: paste it in a file, opening the link goes back exactly where you were.
 
-*** Reading something interesting in a pdf?
-Select the text with your mouse and get a link towards the pdf location (~linkin-org-get~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
-Opening the copied link (~linkin-org-open~) gets you to the right page and highlight the words you were reading.
-If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
+# *** Reading something interesting in a pdf?
+# Select the text with your mouse and get a link towards the pdf location (~linkin-org-get~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
+# Opening the copied link (~linkin-org-open~) gets you to the right page and highlight the words you were reading.
+# If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 
-*** And more
-Easily define new link types with custom actions and take advantage of linkin-org's reliable path resolving (for that, just add your link type inside the ~linkin-org-link-types-to-check-for-id~ list).
-Three other link types are already builtin: the pdf link type (that we already saw above), the video link type stores and replays precise moments of a videos (youtube or stored locally, works with [[https://github.com/mpv-player/mpv][mpv]]), the music link type launchs musics with links (you can easily turn your org notes into playlists, works with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
-Even more: you can use the links to automate some actions: to turn some notes into a web browser session manager, to quickly save selected text or save elfeed entries (see the last section for examples).
+# *** And more
+# Easily define new link types with custom actions and take advantage of linkin-org's reliable path resolving (for that, just add your link type inside the ~linkin-org-link-types-to-check-for-id~ list).
+# Three other link types are already builtin: the pdf link type (that we already saw above), the video link type stores and replays precise moments of a videos (youtube or stored locally, works with [[https://github.com/mpv-player/mpv][mpv]]), the music link type launchs musics with links (you can easily turn your org notes into playlists, works with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
+# Even more: you can use the links to automate some actions: to turn some notes into a web browser session manager, to quickly save selected text or save elfeed entries (see the last section for examples).
 
 
 * Installing linkin-org

@@ -29,6 +29,7 @@
 (require 'ol)
 (require 'org-element-ast)
 (require 's)
+(require 'dash)
 (require 'dired)
 
 
@@ -47,7 +48,7 @@
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
 (defcustom linkin-org-link-types-to-check-for-id '("file" "pdf") "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
 
-(defcustom linkin-org-open-links-as-in-dired-p t "If non-nil, open links as if they were opened in Dired. Use the function in `linkin-org-opening-file-function-in-dired' to open the file.")
+(defcustom linkin-org-open-links-as-in-dired-p nil "If non-nil, open links as if they were opened in Dired. Use the function in `linkin-org-opening-file-function-in-dired' to open the file.")
 
 (defcustom linkin-org-opening-file-function-in-dired #'dired-find-file "Function to use to open a file. This function is called as the point is on the file in a dired buffer.")
 
@@ -366,22 +367,6 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 
 
 
-(defun linkin-org-get-org-string-link-under-point ()
-  "Return the string of an org link under point, return nil if no link was found."
-  (if (org-in-regexp
-       org-link-any-re
-       (let ((origin (point)))
-	 (max
-	  (save-excursion
-            (backward-paragraph)
-            (count-lines (point) origin))
-	  (save-excursion
-            (forward-paragraph)
-            (count-lines origin (point))))))
-      (match-string-no-properties 0)))
-
-
-
 ;; to do an action on a file as if the point was on that file in Dired
 (defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
   "Apply a function FUNCTION-TO-PERFORM on a file with path FILE-PATH as if the point was on that file in Dired."
@@ -417,18 +402,6 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
     (unless dired-buffers-visiting-path
       (kill-buffer dired-buffer))))
    
-
-;; to open a file as if in Dired
-(defun linkin-org-open-file-as-in-dired (file-path)
-  "Open a file with path FILE-PATH as if it were opened from Dired."
-  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'dired-open-file))
-
-;; to yank the link of a given file
-(defun linkin-org-yank-link-of-file (file-path)
-  "Yank the link of the file with path FILE-PATH, as if 'linkin-org-dired-get-link was called from Dired."
-  (linkin-org-perform-function-as-if-in-dired-buffer file-path 'linkin-org-dired-get-link))
-
-
 
 (defun linkin-org-store-file (&optional yank-link? ask-for-name-confirmation?)
   "Store the file under point in Dired.
@@ -475,11 +448,11 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
                                         new-file-name))))
 		    ;; (copy-directory file-path new-file-path)
 		    (rename-file file-path new-file-path)
-            ;; copy a link towards the stored directory
-	        (linkin-org-yank-link-of-file new-file-path)
-            ;; update the Dired buffer
-            (revert-buffer)
-            )
+		    ;; copy a link towards the stored directory
+		    (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
+		    ;; update the Dired buffer
+		    (revert-buffer)
+		    )
           )
       ;; if it's a file
       (progn
@@ -502,7 +475,7 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 	      ;;     (rename-file file-path (concat (file-name-directory (expand-file-name (directory-file-name file-path))) id new-file-name))
 	      ;; (copy-file file-path new-file-path)
 	      ;;   )
-	      (linkin-org-yank-link-of-file new-file-path)
+	      (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
           ;; update the Dired buffer
           (revert-buffer))))))
 
