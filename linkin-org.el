@@ -27,34 +27,30 @@
 ;; The links work fast and are easy to create; most importantly, the links are reliable and can robustly support a whole link-based workflow.
 
 (require 'ol)
+(require 'org-element-ast)
+(require 's)
 (require 'dired)
 
 
 ;;;; -------------------------------------------- main variables
 
-;; define the directory where linkin-org-store stores the files/directories by default
+;; define the directory where the function linkin-org-store stores the files and directories by default
 (defcustom linkin-org-store-directory (expand-file-name "~/") "The directory where 'linkin-org-store' stores data by default.")
 
 ;; define the directories where to search when a link is broken
 ;; this is a list of directories that are searched in order to resolve broken links
-(defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search into when a link is broken.")
+(defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search (in order) when a link is broken.")
 
 ;; define a regexp to match file names (without the directory part) that are not considered when resolving broken links
 (defcustom linkin-org-file-names-to-ignore (rx (or (seq (* anychar) "~" line-end) (seq line-start "" line-end))) "Define a regexp to match file names (without the directory part) that are not considered when resolving broken links.")
 
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
-(defcustom linkin-org-link-types-to-check-for-id
-  '("file" "pdf")
-  "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
+(defcustom linkin-org-link-types-to-check-for-id '("file" "pdf") "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
 
-(defcustom linkin-org-opening-file-function
-  #'dired-find-file
-  "Function to use to open a file. This function is called as the point is on the file in a dired buffer."
-  )
+(defcustom linkin-org-open-links-as-in-dired-p t "If non-nil, open links as if they were opened in Dired. Use the function in `linkin-org-opening-file-function-in-dired' to open the file.")
 
-(defcustom linkin-org-open-links-as-in-dired-p t
-  "If non-nil, open links as if they were opened in Dired."
-  )
+(defcustom linkin-org-opening-file-function-in-dired #'dired-find-file "Function to use to open a file. This function is called as the point is on the file in a dired buffer.")
+
 
 
 ;;;; -------------------------------------------- patterns
@@ -65,17 +61,10 @@
   (rx
    (or
     ;; denote style
-    (seq
-     ;; the timestamp
-     (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit)
-     ;; the signature, if there is one
-     (? (seq "==" (* alnum))))
-
+    ;; contains the timestamp, and the signature if there is one
+    (seq (= 4 digit) (= 2 digit) (= 2 digit) "T" (= 2 digit) (= 2 digit) (= 2 digit) (? (seq "==" (* alnum))))
     ;; org-roam style
-    (seq line-start (= 4 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit))
-
-    ;; some stuff I tried at the beginning
-    (seq (= 4 digit) "-" (= 2 digit) "-" (= 2 digit) "--" (= 2 digit) ":" (= 2 digit) ":" (= 2 digit) (or (seq) (seq "--" (= 5 digit)))))))
+    (seq line-start (= 4 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit) (= 2 digit)))))
 
 
 ;; regexp recognizing an inline id.
@@ -103,7 +92,7 @@
       ((time-string (format-time-string "%Y%m%dT%H%M%S" (current-time))))
     time-string))
 
-(defun linkin-org-get-id (s &optional id-regexp)
+(defun linkin-org-extract-id (s &optional id-regexp)
   "Return a substring of string S that matches ID-REGEXP.
 Returns nil if no match was found.
 If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-regexp'."
@@ -112,14 +101,12 @@ If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-re
   (when (stringp s)
     (when (string-match id-regexp s)
       ;; this function returns a list of list of strings
-      (car (car (s-match-strings-all id-regexp s))))
-    )
-  )
+      (car (car (s-match-strings-all id-regexp s))))))
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
   "Take a file name FILE-NAME (without path) and strip off the id part."
   (let*
-      ((id (linkin-org-get-id file-name linkin-org-id-regexp)))
+      ((id (linkin-org-extract-id file-name linkin-org-id-regexp)))
     (if id
         (let*
             (
@@ -135,7 +122,7 @@ If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-re
   If ID is provided, use it as the id.
 Does not add an id if FILE-NAME already has one.
 "
-  (if (linkin-org-get-id file-name)
+  (if (linkin-org-extract-id file-name)
       ;; if the file already has an id, dont add one
       file-name
     ;; else add an id
@@ -143,7 +130,7 @@ Does not add an id if FILE-NAME already has one.
 	(concat id linkin-org-sep file-name)
       (concat (linkin-org-create-id) linkin-org-sep file-name))))
 
-(defun linkin-org-transform-square-brackets (str)
+(defun linkin-org-escape-square-brackets (str)
   "Escape occurrences of '\\\\', '\\[', and '\\]' in the string STR."
   (let
       ((new-string
@@ -164,16 +151,6 @@ Does not add an id if FILE-NAME already has one.
 	     (match-string 1 m)
 	     (and (/= (match-beginning 2) (match-end 2)) "\\")))
    string-link nil t 1))
-
-(defun linkin-org-parse-org-link (string-link)
-  "Parse STRING-LINK into an org element and return the parsed result."
-  (with-temp-buffer
-   (let ((org-inhibit-startup nil))
-     (insert string-link)
-     (org-mode)
-     (goto-char (point-min))
-     (org-element-link-parser))))
-
 
 
 (defun linkin-org-package-installed-p (pkg-name)
@@ -218,7 +195,7 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
            ;; else, try to resolve it with id
            (if-let*
                ;; get the id of the considered file/dir, if it exists
-               ((id (linkin-org-get-id sub-dir linkin-org-id-regexp)))
+               ((id (linkin-org-extract-id sub-dir linkin-org-id-regexp)))
                ;; if the file has an id, try to resolve it
                (cond
                 (
@@ -266,34 +243,6 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
                                   (not (s-equals? s "."))
                                   (not (s-equals? s ".."))))
                          (directory-files building-dir t id t))))
-                 ;; (let
-                 ;;     (
-                 ;;      (file-list (directory-files building-dir))
-                 ;;      matching-id-found
-                 ;;      current-file-to-investigate
-                 ;;      resolved-dir
-                 ;;      )
-                 ;;   ;; go over each file and check for id
-                 ;;   (while (and
-                 ;;           (not matching-id-found)
-                 ;;           file-list
-                 ;;           )
-                 ;;     ;; set the current file to investigate
-                 ;;     (setq current-file-to-investigate (car file-list))
-                 ;;     ;; remove that file from the list of files
-                 ;;     (setq file-list (cdr file-list))
-                 ;;     ;; stop the search if the file contains the id
-                 ;;     (when (string-match id current-file-to-investigate)
-                 ;;       (setq matching-id-found t)
-                 ;;       (setq resolved-dir current-file-to-investigate)
-                 ;;       )
-                 ;;     )
-                 ;;   (setq building-dir (concat
-                 ;;                       (file-name-as-directory (directory-file-name building-dir))
-                 ;;                       resolved-dir
-                 ;;                       )
-                 ;;         )
-                 ;;   )
                  ))
              ;; else if there is no id, then we cannot resolve the file. set the buidling path to nil
              (setq building-dir nil))))))
@@ -322,8 +271,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 		    (file-name-nondirectory (directory-file-name file-path))
 		  ;; else if the file path is a file
 		  (file-name-nondirectory file-path)))
-       (id (linkin-org-get-id file-name))
-       
+       (id (linkin-org-extract-id file-name))
        (file-found-p (if directories-to-look-into
                          'search-in-progress
                        'not-found))
@@ -333,7 +281,6 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
     (while (and id (eq file-found-p 'search-in-progress))
       ;; take one directory in the directories to look into
       (let* ((dir (expand-file-name (car tmp-dirs))))
-        
         ;; consumes the head directory in tmp-dirs
         (setq tmp-dirs (cdr tmp-dirs))
         ;; check if dir is a valid directory.
@@ -418,64 +365,6 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
    (t (message "Neither the file nor the id could be found"))))
 
 
-;; (defun linkin-org-resolve-link (link &optional arg)
-;;   "Try to return a link in org element form with a correct path.
-;; LINK is an org element.
-;; If the link could not be resolved, return the input link.
-;; It only resolve the link if its type is in 'linkin-org-link-types-to-check-for-id'."
-  
-;;   ;; (message "Resolving link: %s" link)
-;;   ;; (message "Resolving link with path: %s" (org-element-property :path link))
-;;   (let*
-;;       (
-;;        ;; ;;turn the string link into an org element
-;;        ;; (link-org-element (linkin-org-parse-org-link string-link))
-;;        ;; get the raw link, that is, the string containing the data of the link
-;;        (link-raw-link (org-element-property :raw-link link))
-;;        ;; get the type of the link
-;;        (link-type (org-element-property :type link))
-;;        ;; (link-raw-path (org-element-property :path link))
-;;        ;; get data of the link, that is, the interior of the link minus the type (ie, file:)
-;;        (link-path (org-element-property :path link))
-;;        ;; extract the path, that is, the substring of link-path before the first :: if there is one
-;;        (link-path (car (string-split link-path "::")))
-;;        ;; get the substring after the first "::"
-;;        (link-metadata (let
-;;                           (
-;;                            (index (string-match "::" link-raw-link))
-;; 			   (link-parts (split-string link-raw-link "::"))
-;; 			   )
-;;                         (when index
-;;                           (read (cadr link-parts))
-;; 			  )
-;; 			)
-;; 		      )
-;;        (link-inline-id (when link-metadata
-;; 			 (symbol-name (plist-get link-metadata :inline-id))
-;; 			 )
-;; 		       )
-
-;;        ;; change the path to a correct path
-;;        (new-link-path (if link-path (linkin-org-resolve-path link-path)))
-;;        )
-;;     ;; (message "Metadata: %s" link-metadata)
-
-;;     ;; build a new link based on the correct path
-;;     ;; (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
-;;     ;; new-string-link
-    
-;;     ;; if the link has an inline id, add it to the link as a search string value
-;;     (when link-inline-id
-;;       (org-element-put-property link :search-option (concat "id:" link-inline-id))
-;;       )
-
-;;     (when (plist-member link :path)
-;;       (org-element-put-property link :path new-link-path)
-;;       )
-;;     link
-;;     )
-;;   )
-
 
 (defun linkin-org-get-org-string-link-under-point ()
   "Return the string of an org link under point, return nil if no link was found."
@@ -498,7 +387,6 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
   "Apply a function FUNCTION-TO-PERFORM on a file with path FILE-PATH as if the point was on that file in Dired."
   (let*
       (
-       
        ;; to make operation silent
        (org-inhibit-startup nil)
        ;; get the full path
@@ -587,7 +475,6 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
                                         new-file-name))))
 		    ;; (copy-directory file-path new-file-path)
 		    (rename-file file-path new-file-path)
-            
             ;; copy a link towards the stored directory
 	        (linkin-org-yank-link-of-file new-file-path)
             ;; update the Dired buffer
@@ -655,26 +542,6 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
       (goto-char init-point))))
 
 
-(defun linkin-org-open-string-link (string-link &optional open-in-dired-p)
-  "Open the link STRING-LINK given in string form."
-  (if-let*
-      (
-       ;; check that the string-link is not nil
-       string-link
-	   ;; turn the string link into an org element
-	   (link (linkin-org-parse-org-link string-link))
-	   ;; get the type of the link
-	   (link-type (org-element-property :type link))
-	   ;; change the string link into a correct link opening id, only if its type is in linkin-org-link-types-to-check-for-id
-	   (new-string-link (if (member link-type linkin-org-link-types-to-check-for-id)
-				            (linkin-org-resolve-link string-link)
-                          string-link)))
-      ;; open the resolved link in the normal org way
-      (org-link-open (linkin-org-parse-org-link new-string-link) open-in-dired-p)
-    ;; if the link could not be resolved, just open the link in the normal org way
-    (org-link-open string-link)))
-
-
 
 
 ;;;; ------------------------------------------- file link type
@@ -705,11 +572,11 @@ Set ASK-FOR-NAME-CONFIRMATION? to non-nil to display a confirmation message befo
 		      file-name)))
     (if file-name
 	    ;; if it's a file, not a directory
-	    (kill-new (format "[[file:%s][[file] %s]]" (linkin-org-transform-square-brackets file-path) file-name)))
+	    (kill-new (format "[[file:%s][[file] %s]]" (linkin-org-escape-square-brackets file-path) file-name)))
     ;; otherwise, remove the trailing slash
     (let* (
 	   (directory-name-without-slash (directory-file-name file-path)))
-      (format "[[file:%s][[file] %s]]" (linkin-org-transform-square-brackets directory-name-without-slash) file-name))))
+      (format "[[file:%s][[file] %s]]" (linkin-org-escape-square-brackets directory-name-without-slash) file-name))))
 
 
 
@@ -732,7 +599,7 @@ If there is an inline id in the current line, use it.
                       (line-beginning-position)
                       (line-end-position)))
        ;; get the id in the current line, if there is one
-       (inline-id-with-prefix (linkin-org-get-id current-line linkin-org-inline-id-regexp))
+       (inline-id-with-prefix (linkin-org-extract-id current-line linkin-org-inline-id-regexp))
        ;; remove the leading id: part of the inline id
        (inline-id (when inline-id-with-prefix (replace-regexp-in-string "id:" "" inline-id-with-prefix)))
        ;; get the text that is after the id part, if any
@@ -809,7 +676,7 @@ If there is an inline id in the current line, use it.
                        (line-beginning-position)
                        (line-end-position))))
     ;; insert an inline id only if there is none already
-    (when (not (linkin-org-get-id current-line))
+    (when (not (linkin-org-extract-id current-line))
       (save-excursion
       ;; if the current line is not commented, comment it.
         (if (eq (apply #'min range) (apply #'max range))
@@ -883,7 +750,7 @@ Do nothing if the file already has an id."
                 (file-name-directory (directory-file-name file-path))
               (file-name-directory file-path))))
       ;; if the file doesnt already has an id, rename the file or directory with an id at the front
-      (unless (linkin-org-get-id file-name)
+      (unless (linkin-org-extract-id file-name)
         (rename-file
          file-path
          (concat
@@ -891,28 +758,6 @@ Do nothing if the file already has an id."
           (linkin-org-give-id-to-file-name file-name)))
         (revert-buffer))))
 
-
-
-;; (defun linkin-org-open ()
-;;   "Open the link under point.
-;; If a region is selected, open all links in that region in order."
-;;   (interactive)
-;;     (let (
-;; 	  ;; get the link under point in string form
-;; 	  (string-link (linkin-org-get-org-string-link-under-point)))
-;;       ;; open the string
-;;       (linkin-org-open-string-link string-link)))
-
-
-(defun linkin-org-open-in-dired ()
-  "Open the link under point.
-If a region is selected, open all links in that region in order."
-  (interactive)
-    (let (
-	      ;; get the link under point in string form
-	      (string-link (linkin-org-get-org-string-link-under-point)))
-      ;; open the string
-      (linkin-org-open-string-link string-link t)))
 
 (defun linkin-org-get ()
   "Kill a link towards what is under point."
@@ -929,45 +774,6 @@ If a region is selected, open all links in that region in order."
 
 
 
-;; ;;;###autoload
-;; (defun linkin-org-get ()
-;;   "Kill a link towards what is under point."
-;;   (interactive)
-;;   (let*
-;;       ((mode (symbol-name major-mode)))
-;;     (cond
-;;      ;; if in a pdf, kill a link towards the pdf
-;;      ((string= mode "pdf-view-mode")
-;;       (kill-new (linkin-org-pdf-get-link)))
-;;      ;; if text is selected, just kill that text
-;;      ((region-active-p)
-;;       (kill-ring-save (region-beginning) (region-end)))
-;;      ;; if in a Dired buffer, kill a link towards the file under point
-;;      ((string= mode "dired-mode")
-;;       (kill-new (linkin-org-dired-get-link)))
-;;      ;; if viewing a mail in mu4e
-;;      ((or (string= mode "mu4e-view-mode") (string= mode "mu4e-headers-mode"))
-;;       ;; (kill-new (take-list-of-two-strings-and-make-link (call-interactively 'org-store-link) "[mail]"))
-;;       (kill-new (let
-;;                  ((l (call-interactively #'org-store-link)))
-;;                  (format "[[%s][%s %s]]"
-;;                         (car l)
-;;                         "[mail]"
-;;                         (cadr l)))))
-;;      ;; if in a mingus playlist buffer
-;;      ((string= mode "mingus-playlist-mode")
-;;       (kill-new (linkin-org-lien-mpd-mingus)))
-;;      ;; if in a simple-mpc buffer
-;;      ((string= mode "simple-mpc-mode")
-;;       (kill-new (linkin-org-link-mpd-simple-mpc)))
-
-
-;;      ;; Otherwise, kill a link towards the current line of the buffer
-;;      (t
-;;       (kill-new (linkin-org-get-inline))))))
-
-
-
 
 
 ;;;###autoload
@@ -977,27 +783,9 @@ If a region is selected, open all links in that region in order."
   (let*
       ((mode (symbol-name major-mode)))
     (cond
-     ;; If text is selected
-     ;; ((region-active-p)
-     ;;  (progn
-     ;;   (my-store-some-text
-     ;;    (buffer-substring (region-beginning) (region-end))
-     ;;    "[[file:/home/juliend/Dropbox/FourreTout/Notes/20240504T120559--fourretout-nimp-liens-todo__doc.org::(:inline-id 20250417T223553)]]"
-     ;;    )
-     ;;   ;; unselect the region
-     ;;   (deactivate-mark)
-     ;;   )
-     ;;  )
-     ;; ;; If in elfeed
-     ;; ((string= mode "elfeed-search-mode")
-     ;;  (my-save-elfeed-entry "[[file:/home/juliend/Dropbox/FourreTout/Notes/20240504T120559--fourretout-nimp-liens-todo__doc.org::(:inline-id 20250418T001752)][[file] fourretout-nimp-liens-todo__doc.org]]")
-     ;;  )
      ;; If in a Dired buffer
      ((string= mode "dired-mode")
       (linkin-org-store-file t))
-     ;; ;; If in mu4e
-     ;; ((string= mode "mu4e-view-mode")
-     ;;  (linkin-org-store-mu4e-attachment))
      ;; If in an editable buffer
      ((not buffer-read-only)
       (linkin-org-store-inline)))))
@@ -1015,15 +803,14 @@ If a region is selected, open all links in that region in order."
 	 (metadata (org-element-property :metadata link))
 	 (line-number-or-id (org-element-property :search-option link))
 	 )
-
     (when (file-exists-p file-path)
       ;; open the file from a dired buffer using the function `linkin-org-open-file-as-in-dired'
-      (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function)
+      (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function-in-dired)
       ;; go to the id if specified
       (when line-number-or-id
 	(cond
 	 (;; if line-number-or-id matches an id, search for that id in the buffer
-	  (linkin-org-get-id line-number-or-id)
+	  (linkin-org-extract-id line-number-or-id)
 	  (org-link-search line-number-or-id)
 	  )
 	 (
@@ -1036,7 +823,6 @@ If a region is selected, open all links in that region in order."
       )
     )
   )
-;; )
 
 
 ;;;###autoload
@@ -1074,15 +860,7 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
 			 (symbol-name (plist-get link-metadata :inline-id))
 			 )
 		       )
-
-       ;; change the path to a correct path
-       ;; (new-link-path (if link-path (linkin-org-resolve-file link-path)))
        )
-    ;; build a new link based on the correct path
-    ;; (new-string-link (concat "[[" link-type ":" (linkin-org-link-escape (concat new-link-path link-metadata)) "]]")))
-    ;; new-string-link
-    
-    ;; (when (plist-member link :path)
     ;; compute the new path, if we should resolve the path for that link type
     (when (and
 	   link-path
@@ -1099,7 +877,7 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
 	(org-element-put-property link :search-option (concat "id:" link-inline-id))
       ;; else, check if the original search option is an id
       (if-let
-	  (id (linkin-org-get-id (org-element-property :search-option link)))
+	  (id (linkin-org-extract-id (org-element-property :search-option link)))
 	  ;; then add the id: keyword to the search option
 	  (org-element-put-property link :search-option (concat "id:" id))
 	)
@@ -1146,16 +924,8 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
   (linkin-org-mode 1)
   )
 
-
-
 (define-global-minor-mode linkin-org-global-mode linkin-org-mode linkin-org-turn-on-minor-mode)
 
-
-;; [id:20250813T113703] 
-
-
-
-;; [id:20250813T131833] 
 
 (provide 'linkin-org)
 
