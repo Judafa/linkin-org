@@ -86,35 +86,40 @@ By doing this, you just copied a link: paste it in a file, opening the link goes
 with straight
 #+begin_src emacs-lisp
 (use-package linkin-org
-  :straight (linkin-org
-	     :type git
-	     :host github
-	     :repo "Judafa/linkin-org")
-
+  :straight (linkin-org :type git :host github :repo "Judafa/linkin-org")
   :config
-  ;; set this to the directory you want to store your things into
+  ;; change this default to put stored files where you want them
   (setq linkin-org-store-directory "~/")
-  ;; set this to the list of directories that are checked when a link is broken
-  ;; directories are checked in order; put the light ones first
-  (setq linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")))
+  ;; this is a list of directories that will be searched (in order) to resolve broken links
+  ;; this is only done if your linked data has an id attached
+  (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
+  ;; so that plain search triggered by opening a link work in org files 
+  (setq org-link-search-must-match-exact-headline nil)
+  ;; uncomment this to open your linked files as if you opened them from dired
+  ;; (setq linkin-org-open-links-as-in-dired-p t)
+  ;; (setq linkin-org-opening-file-function #'dired-open-file)
+
+  ;; start the linkin-org global mode
+  (linkin-org-global-mode 1)
+  )
 
 
-  ;; workflow tips (warning: I'm an evil user, this also uses the general.el package)
-  ;; (define-key global-map (kbd "C-l") 'linkin-org-open)
-  ;; (nvmap :keymaps 'override :prefix "SPC"
-  ;;   "f"   '(linkin-org-store :which-key "Store the thing at point.")
-  ;;   "y"   '(linkin-org-get :which-key "Yank a link towards the thing at point.")
-  ;;   )
-  ;; (define-key global-map (kbd "C-n") 'org-next-link)
-  ;; (define-key global-map (kbd "C-p") 'org-previous-link)
 
-  ;; worflow tips (for (normal?) non-evil users)
-  ;; (define-key global-map (kbd "C-c l") 'linkin-org-open)
-  ;; (define-key global-map (kbd "C-c f") 'linkin-org-store)
-  ;; (define-key global-map (kbd "C-c y") 'linkin-org-get)
-  ;; (define-key global-map (kbd "C-c C-n") 'org-next-link)
-  ;; (define-key global-map (kbd "C-c C-p") 'org-previous-link)
-)
+
+;; uncomment to install other link types
+;; (use-package linkin-org-pdf-link
+;;   :straight (linkin-org-pdf-link
+;; 	     :type git
+;; 	     :host github
+;; 	     :repo "Judafa/linkin-org-pdf-link")
+;;   )
+
+;; (use-package linkin-org-music-link
+;;   :straight (linkin-org-music-link
+;; 	     :type git
+;; 	     :host github
+;; 	     :repo "Judafa/linkin-org-music-link")
+;;   )
 #+end_src
 
 
@@ -166,153 +171,158 @@ Here are personal tips, this is a matter of preference.
   When you start to have many links, it gives the not unsatisfying sensation that you merged org with dired.
   Here are my bindings (for an evil user):
   #+begin_src emacs-lisp
-(nvmap :keymaps 'override
-  "C-n"   '(org-next-link :which-key "jump to the next org link")
-  "C-p"   '(org-previous-link :which-key "jump to the previous org link")
-  "C-l"   '(linkin-org-open :which-key "open the link at point, using ids to resolve a broken link.")
-  )
+  (nvmap :keymaps 'override :prefix "SPC"
+    "f"   '(linkin-org-store :which-key "Store the data at point")
+    "y"   '(linkin-org-get :which-key "Get a link towards the data at point in your clipboard")
+    )
+
+  (nvmap :keymaps 'override
+    "C-n"   '(org-next-link :which-key "Jump to the next org link")
+    "C-p"   '(org-previous-link :which-key "Jump to the previous org link")
+    "C-l"   '(org-open-at-point-global :which-key "Open the link at point")
+    )
   #+end_src
-- Attach your ids at the right-end of the paths in your file system, best directly in the file name.
-  Try not to over-engineer with ids everywhere along the file paths.
-  Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the id to the folder that contains it.
+- Attach your ids as deep as possible in your file system, best directly in the file name.
+  Usually, best not to over-engineer with ids everywhere along the file paths.
+- Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the id to the folder that contains it.
 - Place the most relevant link at the top of the note.
   It can be a link towards some data you access a lot in the context of the note.
   It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and open the pdf link I pasted there last time I stopped reading to go back where I was.
-  With this, your fingers quickly learn the automation "go to the note -> org-next-link -> linkin-org-open" to access a data quickly.
+  With this, your fingers quickly learn the automation "go to the note -> org-next-link -> org-open-at-point-global" to access a data quickly.
 
 
-* Code Examples
-** Save selected text
-This code saves some text ~text~ at the location where ~link~ points to.
-#+begin_src emacs-lisp
-(defun my-store-some-text (text link)
-  (linkin-org-open-link-and-do-function link
-                                          (lambda ()
-                                            ;; go to the end of the current line
-                                            (end-of-line)
-                                            ;; insert a line break
-                                            (insert "\n")
-                                            ;; create a section labeled with the current date
-                                            (insert (format "** %s" (format-time-string "%Y-%m-%d %H:%M:%S saved text" (current-time))))
-                                            (insert "\n")
-                                            ;; insert the text
-                                            (insert text)
-                                            )
-                                          )
-  )
-#+end_src
+# * Code Examples
+# ** Save selected text
+# This code saves some text ~text~ at the location where ~link~ points to.
+# #+begin_src emacs-lisp
+# (defun my-store-some-text (text link)
+#   (linkin-org-open-link-and-do-function link
+#                                           (lambda ()
+#                                             ;; go to the end of the current line
+#                                             (end-of-line)
+#                                             ;; insert a line break
+#                                             (insert "\n")
+#                                             ;; create a section labeled with the current date
+#                                             (insert (format "** %s" (format-time-string "%Y-%m-%d %H:%M:%S saved text" (current-time))))
+#                                             (insert "\n")
+#                                             ;; insert the text
+#                                             (insert text)
+#                                             )
+#                                           )
+#   )
+# #+end_src
 
-You should now redefine ~linkin-org-store~ as follows.
-Replace <put your link here> by a link towards the location where you want to save the text.
-To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
-#+begin_src emacs-lisp
-(defun linkin-org-store ()
-  "Store what is under point and kill a link to it"
-  (interactive)
-  (let*
-      ((mode (symbol-name major-mode)))
-    (cond
-     ;; If text is selected
-     ((region-active-p)
-      (progn
-       (my-store-some-text
-        (buffer-substring (region-beginning) (region-end))
-        "<put your link there>"
-        )
-       ;; unselect the region
-       (deactivate-mark)
-       )
-      )
-     ;; If in a dired buffer
-     ((string= mode "dired-mode")
-      (linkin-org-store-file t)
-      )
-     ;; If in mu4e
-     ((string= mode "mu4e-view-mode")
-      (my/sauve-piece-jointe-dans-fourre-tout)
-      )
-     ;; If in an editable buffer
-     ((not buffer-read-only)
-      (linkin-org-store-inline-id)
-      )
-     )
-    )
-  )
-#+end_src
+# You should now redefine ~linkin-org-store~ as follows.
+# Replace <put your link here> by a link towards the location where you want to save the text.
+# To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
+# #+begin_src emacs-lisp
+# (defun linkin-org-store ()
+#   "Store what is under point and kill a link to it"
+#   (interactive)
+#   (let*
+#       ((mode (symbol-name major-mode)))
+#     (cond
+#      ;; If text is selected
+#      ((region-active-p)
+#       (progn
+#        (my-store-some-text
+#         (buffer-substring (region-beginning) (region-end))
+#         "<put your link there>"
+#         )
+#        ;; unselect the region
+#        (deactivate-mark)
+#        )
+#       )
+#      ;; If in a dired buffer
+#      ((string= mode "dired-mode")
+#       (linkin-org-store-file t)
+#       )
+#      ;; If in mu4e
+#      ((string= mode "mu4e-view-mode")
+#       (my/sauve-piece-jointe-dans-fourre-tout)
+#       )
+#      ;; If in an editable buffer
+#      ((not buffer-read-only)
+#       (linkin-org-store-inline-id)
+#       )
+#      )
+#     )
+#   )
+# #+end_src
 
-** Save an elfeed entry
-This code saves the url and title of the elfeed entry at point at a location where ~link~ points towards.
-#+begin_src emacs-lisp
-(defun my-save-elfeed-entry (link)
-  ;; save the elfeed entry under point
-  (let (
-	(buffer (current-buffer))
-	(entries (elfeed-search-selected))
-	)
-    (cl-loop for entry in entries
-             do (let*
-		            (
-		             (title (elfeed-entry-title entry))
-		             (url (elfeed-entry-link entry))
-		             )
-                  (linkin-org-open-link-and-do-function link
-                                                          (lambda ()
-                                                            (end-of-line)
-		                                                    ;; Insert header
-		                                                    (insert (concat "\n" "** " title))
-		                                                    ;; add today's date as a header property
-		                                                    (org-set-property "DATE" (format-time-string "[%Y-%m-%d %a %H:%M]"))
-		                                                    ;; Go to the end of the header's properties
-		                                                    (org-end-of-meta-data)
-		                                                    ;; insert the url
-		                                                    (insert url)
-		                                                    (insert "\n")
-                                                            )
-                                                          )
+# ** Save an elfeed entry
+# This code saves the url and title of the elfeed entry at point at a location where ~link~ points towards.
+# #+begin_src emacs-lisp
+# (defun my-save-elfeed-entry (link)
+#   ;; save the elfeed entry under point
+#   (let (
+# 	(buffer (current-buffer))
+# 	(entries (elfeed-search-selected))
+# 	)
+#     (cl-loop for entry in entries
+#              do (let*
+# 		            (
+# 		             (title (elfeed-entry-title entry))
+# 		             (url (elfeed-entry-link entry))
+# 		             )
+#                   (linkin-org-open-link-and-do-function link
+#                                                           (lambda ()
+#                                                             (end-of-line)
+# 		                                                    ;; Insert header
+# 		                                                    (insert (concat "\n" "** " title))
+# 		                                                    ;; add today's date as a header property
+# 		                                                    (org-set-property "DATE" (format-time-string "[%Y-%m-%d %a %H:%M]"))
+# 		                                                    ;; Go to the end of the header's properties
+# 		                                                    (org-end-of-meta-data)
+# 		                                                    ;; insert the url
+# 		                                                    (insert url)
+# 		                                                    (insert "\n")
+#                                                             )
+#                                                           )
 
-		          )
-	         )
-    )
-  )
-#+end_src
+# 		          )
+# 	         )
+#     )
+#   )
+# #+end_src
 
 
-You should redefine ~linkin-org-store~ as follows.
-Replace <put your link here> by a link towards the location where you want to save the text.
-To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
-#+begin_src emacs-lisp
-;; If in elfeed
-(defun linkin-org-store ()
-  "Store what is under point and kill a link to it"
-  (interactive)
-  (let*
-      ((mode (symbol-name major-mode)))
-    (cond
-     ;; If text is selected
-     ((region-active-p)
-      (progn
-       (my-store-some-text
-        "<put your link there>"
-        (buffer-substring (region-beginning) (region-end))
-        )
-       ;; unselect the region
-       (deactivate-mark)
-       )
-      )
-     ;; If in a dired buffer
-     ((string= mode "dired-mode")
-      (linkin-org-store-file t)
-      )
-     ;; If in mu4e
-     ((string= mode "mu4e-view-mode")
-      (my/sauve-piece-jointe-dans-fourre-tout)
-      )
-     ;; If in an editable buffer
-     ((not buffer-read-only)
-      (linkin-org-store-inline-id)
-      )
-     )
-    )
-  )
-#+end_src
+# You should redefine ~linkin-org-store~ as follows.
+# Replace <put your link here> by a link towards the location where you want to save the text.
+# To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
+# #+begin_src emacs-lisp
+# ;; If in elfeed
+# (defun linkin-org-store ()
+#   "Store what is under point and kill a link to it"
+#   (interactive)
+#   (let*
+#       ((mode (symbol-name major-mode)))
+#     (cond
+#      ;; If text is selected
+#      ((region-active-p)
+#       (progn
+#        (my-store-some-text
+#         "<put your link there>"
+#         (buffer-substring (region-beginning) (region-end))
+#         )
+#        ;; unselect the region
+#        (deactivate-mark)
+#        )
+#       )
+#      ;; If in a dired buffer
+#      ((string= mode "dired-mode")
+#       (linkin-org-store-file t)
+#       )
+#      ;; If in mu4e
+#      ((string= mode "mu4e-view-mode")
+#       (my/sauve-piece-jointe-dans-fourre-tout)
+#       )
+#      ;; If in an editable buffer
+#      ((not buffer-read-only)
+#       (linkin-org-store-inline-id)
+#       )
+#      )
+#     )
+#   )
+# #+end_src
 
