@@ -869,7 +869,7 @@ If there is an inline id in the current line, use it.
 Do nothing if the file already has an id."
     (interactive)
     (let* (
-	       (file-path (dired-file-name-at-point))
+	   (file-path (dired-file-name-at-point))
            ;; t if file-path is a directory, nil if it's a file
            (is-directory? (file-directory-p file-path))
            ;; get the file-name, or directory name
@@ -1048,8 +1048,6 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
 "
   (let*
       (
-       ;; ;;turn the string link into an org element
-       ;; (link-org-element (linkin-org-parse-org-link string-link))
        ;; get the raw link, that is, the string containing the data of the link
        (link-raw-link (org-element-property :raw-link link))
        ;; get the type of the link
