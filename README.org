@@ -133,8 +133,8 @@ There are *four golden rules*.
 If you respect them, your links will always work.
 1. *Do not change or remove the ids.*
    An id in a file name or a directory name looks like 20250425T155433, an inline id inside a file content looks like id:20250425T160020.
-   Ids are what enable linkin-org to reliably retrieve your data.
-   So tampering with the ids breaks your links --- the links are really broken, not just unreliable, as you just changed the path recorded in the links without id backup.
+   Ids are what enables linkin-org to reliably retrieve your data.
+   So tampering with the ids breaks your links.
 2. *Make sure that each id is unique.*
    linkin-org uses time stamps to generate the ids.
    The time stamps are precise to the second.
@@ -143,7 +143,7 @@ If you respect them, your links will always work.
    In that case, remove the id of the copied file by hand and create another id for that file.
    Also, some softwares (such as latex) will create auxiliary files with the same name as your original file.
    In that case, a solution is to attach the id to the directory that contains your file instead.
-3. *First attach an id to the data, then create a link*.
+3. *Attach an id before creating a link*.
    The reverse order will break your links.
    Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
    But if you later decide to attach an id to the data, all your previous links towards the data will be broken.
@@ -155,14 +155,14 @@ With its builtin commands, linkin-org suggests a simple workflow that respects a
 
 
 
-And now, here are the operations that *always preserve your links*:
-- If a file or a directory has an id attached then it is always safe to rename it (dont change or remove the id in the name of course!).
-- It is always safe to modify the content of a file as long as no inline id is changed or removed.
-- If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~.
-  # In case you cannot retrieve a file, you can add your entire home directory to that variable (the default, you may change it to more fine-grained directories for faster link recovery).
-  # As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
+# And now, here are the operations that *always preserve your links*:
+# - If a file or a directory has an id attached then it is always safe to rename it (dont change or remove the id in the name of course!).
+# - It is always safe to modify the content of a file as long as no inline id is changed or removed.
+# - If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~.
+#   # In case you cannot retrieve a file, you can add your entire home directory to that variable (the default, you may change it to more fine-grained directories for faster link recovery).
+#   # As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
 
-Note: We say that an operation on a data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the data.
+# Note: We say that an operation on a data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the data.
 
 
 * A Few Tips
