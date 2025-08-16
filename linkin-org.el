@@ -649,7 +649,6 @@ If there is an inline id in the current line, use it.
 			      )
 			    )
 			  )
-       (test (message "raw-text-after-id: %s" raw-text-after-id))
        ;; shorten the text after id if it's too long, say larger than 70 characters
        (shortened-text-after-id
 	(when raw-text-after-id
