@@ -88,14 +88,13 @@ with straight
 (use-package linkin-org
   :straight (linkin-org :type git :host github :repo "Judafa/linkin-org")
   :config
-  ;; change this default to put stored files where you want them
+  ;; set this to the place where you want to store your files
   (setq linkin-org-store-directory "~/")
-  ;; this is a list of directories that will be searched (in order) to resolve broken links
-  ;; this is only done if your linked data has an id attached
+  ;; set this to a list of directories that will be searched (in order) to resolve broken links
   (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
   ;; so that plain search triggered by opening a link work in org files 
   (setq org-link-search-must-match-exact-headline nil)
-  ;; uncomment this to open your linked files as if you opened them from dired
+  ;; ;; uncomment those two lines of code to open your linked files as if you opened them from dired
   ;; (setq linkin-org-open-links-as-in-dired-p t)
   ;; (setq linkin-org-opening-file-function #'dired-open-file)
 
@@ -106,7 +105,7 @@ with straight
 
 
 
-;; uncomment to install other link types
+;; ;; uncomment to install other link types
 ;; (use-package linkin-org-pdf-link
 ;;   :straight (linkin-org-pdf-link
 ;; 	     :type git
