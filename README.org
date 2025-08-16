@@ -99,10 +99,11 @@ Also while storing the file, linkin-org added an id at the beginning of your fil
 Go one line above and store the current line (~linkin-org-store~) to insert an inline id.
 By doing this, you just copied a link: paste it in a file, opening the link goes back exactly where you were.
 
-# *** Reading something interesting in a pdf?
-# Select the text with your mouse and get a link towards the pdf location (~linkin-org-get~, works with the emacs package [[https://github.com/vedang/pdf-tools][pdf-tools]]).
-# Opening the copied link (~linkin-org-open~) gets you to the right page and highlight the words you were reading.
-# If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
+*** Reading something interesting in a pdf?
+Select the text with your mouse and get a link towards the pdf location (~linkin-org-get~).
+Opening the copied link (~linkin-org-open~) gets you to the right page and highlight the words you were reading.
+If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
+This works with the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]] and the pdf reader [[https://github.com/vedang/pdf-tools][pdf-tools]].
 
 # *** And more
 # Easily define new link types with custom actions and take advantage of linkin-org's reliable path resolving (for that, just add your link type inside the ~linkin-org-link-types-to-check-for-id~ list).
