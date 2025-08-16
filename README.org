@@ -2,26 +2,31 @@ linkin-org --- an emacs workflow with fast, reliable links.
 
 * Overview
 
-linkin-org proposes to access any data with reliable links.
-It suggests a simple, crazy effective worflow centered around your written notes.
-linkin-org is:
+linkin-org allows you to access your data with reliable links.
+The links are made reliable thanks to ids attached to your data --- directories, files and lines.
+By design, it suggests a simple yet crazy efficient worflow centered around your written notes.
+
+
+In a few words, linkin-org is:
 - *reliable*: your links just always work.
   It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]) and you should be ok seeing ids in your file names and in your notes.
-  You'll get used to it!
+  You get used to it!
 - *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) without risk to break your links.
   All you have to do is to not change or remove the ids.
 - *non-intrusive*: you can organize your files with other methods in parallel (directory hierarchy, file-naming, etc) without problem.
-  The only noticeable difference is, the files that are reliably linked have an id in their names.
-- *simple*: linkin-org introduces two additional commands, ~linkin-org-store~ and ~linkin-org-get~
+  The only noticeable difference is, the files and directories that are reliably linked have an id in their names.
+- *simple*: there are two main commands: ~linkin-org-store~ and ~linkin-org-get~
 
 
-linkin-org turns your written notes into precise, reliable access points towards your data.
-Also, it suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (using the standard org link opening command ~org-open-at-point-global~).
+# linkin-org turns your written notes into precise, reliable access points towards your data.
+linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (with standard link opening command ~org-open-at-point-global~).
 # The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
+* How does it work?
 An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]).
+The ids used by linkin-org are time stamps that are precise to the second.
 Concretely, a file that you can reliably access via a link has an id in its name, like:
 #+begin_src example
 20250425T155433--filename.txt
@@ -32,7 +37,30 @@ and a line that you can reliably access via a link (here with a python syntax) l
 #+end_src
 # Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
 
-* Everything with 2 Commands
+
+When you open a link that contains an outdated path (e.g., the linked file was renamed or moved), linkin-org will try to resolve the link using the ids in the path.
+For that, linkin-org will attempt two heuristics: First, it tries to resolve the path with local id search (fast, always works if the file was only renamed); Second, it performs an exhaustive recursive search in the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~ (slower, always works as long as the file is in one of those directories).
+
+
+
+The links follow a similar syntax as usual org links.
+For more convenient link-based workflows, it is however tempting to store more informations in the links.
+For that, linkin-org defines a new format to store metadata in the links.
+For example, a link that points towards the line above looks like this:
+#+begin_src example
+[[file:/home/juliend/Downloads/20250816T174006--filename.py::(:inline-id 20250425T160020)][[file] filename.py]]
+#+end_src
+
+Sometimes, more information is needed.
+This is the case of the pdf link for example (defined in the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]]), where we need to specify the page and the place to highlight on the page:
+#+begin_src example
+[[pdf:~/Dropbox/FourreTout/Papers/20250325T235411--The purely functional software deployment model.pdf::(:page 98 :edges (0.190915 0.268993 0.398431 0.289572))][[pdf] p98 _ "File system objects"]]
+#+end_src
+
+
+
+
+* Everything with 2 commands
 
 linkin-org provides two main commands:
 - ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
@@ -60,7 +88,7 @@ linkin-org provides two main commands:
 
 
 
-* Typical Workflow Samples
+* Typical workflow samples
 
 *** Just downloaded some file?
 Put your cursor on the file in dired and store it (~linkin-org-store~) to move the file in your store directory (whatever the variable ~linkin-org-store-directory~ equals to).
@@ -123,10 +151,10 @@ with straight
 
 
 * Dependencies
-linkin-org has no dependencies and works out of the box.
-It is however recommended to have [[https://github.com/sharkdp/fd][fd]] installed for faster link recovery.
+linkin-org depends on the [[https://github.com/magnars/s.el][string manipulation library (s.el)]] and [[https://github.com/magnars/dash.el][dash.el]].
+For fast link recovery, it is recommended to have [[https://github.com/sharkdp/fd][fd]] installed.
 
-* How Reliable are the Links Exactly?
+* The 4 golden rules: How Reliable are the links exactly?
 
 There are *four golden rules*.
 If you respect them, your links will always work.
@@ -164,7 +192,7 @@ With its builtin commands, linkin-org suggests a simple workflow that respects a
 # Note: We say that an operation on a data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the data.
 
 
-* A Few Tips
+* A few tips
 Here are personal tips, this is a matter of preference.
 - Bind ~org-next-link~ and ~org-previous-link~ to comfortable keys.
   When you start to have many links, it gives the not unsatisfying sensation that you merged org with dired.
