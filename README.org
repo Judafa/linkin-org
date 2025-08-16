@@ -24,6 +24,34 @@ linkin-org suggests a simple, blazingly fast workflow to store and retrieve your
 
 # By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
+* Everything with 2 commands
+
+linkin-org provides two main commands:
+- ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
+  It works on a file (in a dired buffer) and a line in an editable file (org, markdown, python, whatever).
+  It directly copies the link in your clipboard so you can paste it right away.
+  It adds an id to your data (changing your file name or the current editable line) so links towards it become reliable.
+
+- ~linkin-org-get~ copies a link towards what you have at point in your clipboard; it does not modify your data.
+  This works on a file (in dired), a line in an editable file, on selected words in a pdf (using the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]] in [[https://github.com/vedang/pdf-tools][pdf-tools]]), on a music track in mingus (using the extension [[https://github.com/Judafa/linkin-org-music-link][linkin-org-music-link]] in [[https://github.com/pft/mingus][mingus]]).
+  The link may not be reliable; it will be reliable if you called ~linkin-org-store~ beforehand on the data.
+
+# - ~linkin-org-open~ opens the link at point.
+#   If the known path towards the data is no valid anymore, uses ids to retrieve it.
+
+
+
+# * Meet linkin-org
+
+# I find it easier to retrieve information with context.
+# Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "Tickets" folder, others will search their files for keywords hoping they used to name the ticket file right.
+# For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I open the ticket link that I pasted there some time ago.
+# It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
+# That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
+# # If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
+
+
+
 * How does it work?
 An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]).
 The ids used by linkin-org are time stamps that are precise to the second.
@@ -57,34 +85,6 @@ This is the case of the pdf link for example (defined in the extension [[https:/
 [[pdf:~/Dropbox/FourreTout/Papers/20250325T235411--The purely functional software deployment model.pdf::(:page 98 :edges (0.190915 0.268993 0.398431 0.289572))][[pdf] p98 _ "File system objects"]]
 #+end_src
 
-
-
-
-* Everything with 2 commands
-
-linkin-org provides two main commands:
-- ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
-  It works on a file (in a dired buffer) and a line in an editable file (org, markdown, python, whatever).
-  It directly copies the link in your clipboard so you can paste it right away.
-  It adds an id to your data (changing your file name or the current editable line) so links towards it become reliable.
-
-- ~linkin-org-get~ copies a link towards what you have at point in your clipboard; it does not modify your data.
-  This works on a file (in dired), a line in an editable file, on selected words in a pdf (using the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]] in [[https://github.com/vedang/pdf-tools][pdf-tools]]), on a music track in mingus (using the extension [[https://github.com/Judafa/linkin-org-music-link][linkin-org-music-link]] in [[https://github.com/pft/mingus][mingus]]).
-  The link may not be reliable; it will be reliable if you called ~linkin-org-store~ beforehand on the data.
-
-# - ~linkin-org-open~ opens the link at point.
-#   If the known path towards the data is no valid anymore, uses ids to retrieve it.
-
-
-
-# * Meet linkin-org
-
-# I find it easier to retrieve information with context.
-# Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "Tickets" folder, others will search their files for keywords hoping they used to name the ticket file right.
-# For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I open the ticket link that I pasted there some time ago.
-# It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
-# That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
-# # If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
 
 
 
