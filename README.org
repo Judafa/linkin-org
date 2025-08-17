@@ -125,7 +125,7 @@ with straight
   (setq org-link-search-must-match-exact-headline nil)
   ;; ;; uncomment those two lines of code to open your linked files as if you opened them from dired
   ;; (setq linkin-org-open-links-as-in-dired-p t)
-  ;; (setq linkin-org-opening-file-function #'dired-open-file)
+  ;; (setq linkin-org-opening-file-function-in-dired #'dired-open-file)
 
   ;; start the linkin-org global mode
   (linkin-org-global-mode 1)
