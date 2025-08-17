@@ -6,7 +6,7 @@
 ;; Maintainer: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org
 ;; Version: 1.0
-;; Package-Requires: ((emacs "30.1"))
+;; Package-Requires: ((emacs "30.1") (s "1.30.0") (dash "2.20.0"))
 
 ;; This file is not part of GNU Emacs
 
@@ -189,8 +189,7 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
       ;; building-dir is set of nil as soon as we know the path cannot be resolved.
       (when building-dir
        (let
-           (
-            (tmp-building-dir (concat (file-name-as-directory (directory-file-name building-dir)) sub-dir))
+           ((tmp-building-dir (concat (file-name-as-directory (directory-file-name building-dir)) sub-dir))
             resolved-dir)
          (if (file-exists-p tmp-building-dir)
              ;; if the subdir is already valid, just pile it up
@@ -201,8 +200,7 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
                ((id (linkin-org-extract-id sub-dir linkin-org-id-regexp)))
                ;; if the file has an id, try to resolve it
                (cond
-                (
-                 ;; try with fd, if installed
+                (;; try with fd, if installed
                  (linkin-org-package-installed-p "fd")
                  (with-temp-buffer
                    (let
@@ -223,8 +221,7 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
 		       (seq-filter
 			(lambda (s)
 			  (not (string-match-p linkin-org-file-names-to-ignore s)))
-			resolved-dir)
-		       )
+			resolved-dir))
 		 ;; take the first match, after filtering
 		 (setq resolved-dir (car resolved-dir))
                  (if resolved-dir
@@ -245,8 +242,7 @@ It is assumed you already checked that FILE-PATH is not a valid path in your fil
                                  (or
                                   (not (s-equals? s "."))
                                   (not (s-equals? s ".."))))
-                         (directory-files building-dir t id t))))
-                 ))
+                         (directory-files building-dir t id t))))))
              ;; else if there is no id, then we cannot resolve the file. set the buidling path to nil
              (setq building-dir nil))))))
     building-dir))
@@ -260,8 +256,7 @@ FILE-PATH can be the path of a file or a directory.
 If not provided, DIRECTORIES-TO-LOOK-INTO is set to 'linkin-org-search-directories-to-resolve-broken-links'.
 It is assumed you already checked that FILE-PATH is not a valid path before running this function."
   (let*
-      (
-       ;; expand file path
+      (;; expand file path
        (file-path (expand-file-name file-path))
        ;; set the list of directories to look into to the default if it was not provided
        (directories-to-look-into (if directories-to-look-into
@@ -293,13 +288,11 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
         ;; if dir exists or could be resolved
         (when dir
           (cond
-           (
-            ;; try with fd, if installed
+           (;; try with fd, if installed
             (linkin-org-package-installed-p "fd")
             (with-temp-buffer
               (let
-                  (
-                   (found?
+                  ((found?
                     (call-process "fd" nil (current-buffer) nil
                                   (format "--base-directory=%s" dir)
                                   id)))
@@ -313,11 +306,9 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 			(seq-filter
 			 (lambda (s)
 			   (not (string-match-p linkin-org-file-names-to-ignore s)))
-			 resolved-file-path)
-			)
+			 resolved-file-path))
 		  ;; take the first match, after filtering
-		  (setq resolved-file-path (car resolved-file-path))
-		  )))
+		  (setq resolved-file-path (car resolved-file-path)))))
             ;; if we found a match, the search is over
             (when resolved-file-path
                 (setq file-found-p 'found)
@@ -330,11 +321,6 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
             (when (and (not resolved-file-path) (not tmp-dirs))
               (setq file-found-p 'not-found)))
            (t
-            ;; (let
-            ;;     (
-            ;;      (file-list-rec (directory-files-recursively dir id))
-            ;;      )
-            ;;     )
             (setq resolved-file-path
                   (car
                    (-filter
@@ -373,8 +359,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 (defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
   "Apply a function FUNCTION-TO-PERFORM on a file with path FILE-PATH as if the point was on that file in Dired."
   (let*
-      (
-       ;; to make operation silent
+      (;; to make operation silent
        (org-inhibit-startup nil)
        ;; get the full path
        (file-path (expand-file-name file-path))
@@ -411,35 +396,24 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 	 (file-path (dired-file-name-at-point))
 	 (file-name (cond
 		     ;; if it's a directory
-		     (
-		      (file-directory-p file-path)
-		      (file-name-nondirectory (directory-file-name file-path))
-		      )
+		     ((file-directory-p file-path)
+		      (file-name-nondirectory (directory-file-name file-path)))
 		     ;; else if it's a file
-		     (t (file-name-nondirectory file-path))
-		     )
-		    )
+		     (t (file-name-nondirectory file-path))))
          ;; is the file already in the list of directories to check in case of a broken link
 	 (is-file-already-in-store-directory? (cl-some #'identity (mapcar
 								   (lambda (dir)
 								     (s-prefix?
 								      (expand-file-name dir)
-								      (expand-file-name file-path)
-								      )
-								     )
-								   linkin-org-search-directories-to-resolve-broken-links
-								   )
-                                                       )
-                                              )
-         )
+								      (expand-file-name file-path)))
+								   linkin-org-search-directories-to-resolve-broken-links))))
     ;; check wether it's a file or a directory
     (if (file-directory-p file-path)
 	;; if it's a directory
 	(progn
 	  (let*
 	      ;; compute the complete new file path to store the dir into, without id, including name at the end
-	      (
-	       (new-raw-file-path
+	      ((new-raw-file-path
 		(cond
 		 ((not linkin-org-store-file-directly-p)
 		  (let
@@ -448,13 +422,8 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 			;; if the user provided path is a directory, then add at the end the initial name of the directory
 			(concat (file-name-as-directory raw-user-given-path) file-name)
 		      ;; else if the user provided a file name at the end of the path, use it
-		      raw-user-given-path
-		      )
-		    )
-		  )
-		 (t (concat (file-name-as-directory linkin-org-store-directory) file-name))
-		 )
-		)
+		      raw-user-given-path)))
+		 (t (concat (file-name-as-directory linkin-org-store-directory) file-name))))
 	       ;; get the new raw file name
 	       (new-raw-file-name (file-name-nondirectory new-raw-file-path))
                ;; give the file name an id
@@ -473,8 +442,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 				  ;; else, just put the new path in the store directory
                                   (concat (file-name-as-directory
                                            (expand-file-name (directory-file-name linkin-org-store-directory)))
-                                          new-file-name))))
-	       )
+                                          new-file-name)))))
 	    ;; (message "new-raw-file-path: %s" new-raw-file-path)
 	    ;; (message "new-raw-file-name: %s" new-raw-file-name)
 	    ;; (message "new-file-path: %s" new-file-path)
@@ -483,14 +451,11 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 	    ;; copy a link towards the stored directory
 	    (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
 	    ;; update the Dired buffer
-	    (revert-buffer)
-	    )
-	  )
+	    (revert-buffer)))
       ;; if it's a file
       (progn
 	(let*
-	    (
-	     (new-raw-file-path
+	    ((new-raw-file-path
 	      (cond
 	       ((not linkin-org-store-file-directly-p)
 		(let
@@ -499,13 +464,8 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 		      ;; if the user provided path is a directory, then add at the end the initial name of the directory
 		      (concat (file-name-as-directory raw-user-given-path) file-name)
 		    ;; else if the user provided a file name at the end of the path, use it
-		    raw-user-given-path
-		    )
-		  )
-		)
-	       (t (concat (file-name-as-directory linkin-org-store-directory) file-name))
-	       )
-	      )
+		    raw-user-given-path)))
+	       (t (concat (file-name-as-directory linkin-org-store-directory) file-name))))
 	     ;; get the new raw file name
 	     (new-raw-file-name (file-name-nondirectory new-raw-file-path))
              ;; give the file name an id
@@ -524,8 +484,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 			       ;; else, just put the new path in the store directory
                                (concat (file-name-as-directory
 					(expand-file-name (directory-file-name linkin-org-store-directory)))
-                                       new-file-name))))
-	     )
+                                       new-file-name)))))
           (rename-file file-path new-file-path)
 	  (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
           ;; update the Dired buffer
@@ -533,8 +492,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 
 (defun linkin-org-open-link-and-do-function (link function-to-perform)
   "Open the link in string form STRING-LINK, apply the function FUNCTION-TO-PERFORM, come back."
-  (let (
-        ;; remember the current buffer and the current position of point
+  (let (;; remember the current buffer and the current position of point
         (init-buffer (current-buffer))
         (init-point (point))
         ;; save the current buffer list
@@ -575,8 +533,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 ;;;###autoload
 (defun linkin-org-dired-get-link ()
   "Return a link towards the file under point in Dired."
-  (let* (
-         (file-path (expand-file-name (dired-file-name-at-point)))
+  (let* ((file-path (expand-file-name (dired-file-name-at-point)))
          ;; remove the trailing slash if it's a directory
          (file-path (directory-file-name file-path))
 	 ;; the name of the file, without path
@@ -594,14 +551,12 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 	 ;; tronque le nom du fichier s'il est trop long
 	 (file-name (if (> (length file-name) 70)
                         (concat (substring file-name-sans-ext 0 50)  " [___] " "." extension)
-		      file-name))
-	 )
+		      file-name)))
     (if file-name
 	    ;; if it's a file, not a directory
 	    (kill-new (format "[[file:%s][[file] %s]]" (linkin-org-escape-square-brackets file-path) file-name)))
     ;; otherwise, remove the trailing slash
-    (let* (
-	   (directory-name-without-slash (directory-file-name file-path)))
+    (let* ((directory-name-without-slash (directory-file-name file-path)))
       (format "[[file:%s][[file] %s]]" (linkin-org-escape-square-brackets directory-name-without-slash) file-name))))
 
 
@@ -617,8 +572,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 If there is an inline id in the current line, use it.
  Otherwise use the line number."
   (let*
-      (
-       (current-file-path (when (buffer-file-name) (expand-file-name (buffer-file-name))))
+      ((current-file-path (when (buffer-file-name) (expand-file-name (buffer-file-name))))
        (file-name (when current-file-path (file-name-nondirectory current-file-path)))
        ;; get the current line in string
        (current-line (buffer-substring-no-properties
@@ -636,31 +590,20 @@ If there is an inline id in the current line, use it.
 				   ;; remove the leading ] if there is one
 				   (text (if (string-prefix-p "]" text)
 					     (substring text 1)
-					   text
-					   )
-					 )
-				   )
+					   text)))
 			      ;; if the text is only made of spaces, return nil
 			      (if (string-match-p "\\`[[:space:]]*\\'" text)
 				  nil
 				;; else, delete the leading and trailing spaces
-				(replace-regexp-in-string (rx (or (seq line-start (zero-or-more space)) (seq (zero-or-more space) line-end))) "" text)
-				)
-			      )
-			    )
-			  )
+				(replace-regexp-in-string (rx (or (seq line-start (zero-or-more space)) (seq (zero-or-more space) line-end))) "" text)))))
        ;; shorten the text after id if it's too long, say larger than 70 characters
        (shortened-text-after-id
 	(when raw-text-after-id
 	  (if (> (length raw-text-after-id) 70)
 	      (concat (substring raw-text-after-id 0 50)
-		      " [___]"
-		      )
-	    raw-text-after-id)
-	  )
-	)
-       (line-number (line-number-at-pos))
-       )
+		      " [___]")
+	    raw-text-after-id)))
+       (line-number (line-number-at-pos)))
     ;; get an id only if the file has a path
     (if file-name
 	(if inline-id
@@ -669,14 +612,11 @@ If there is an inline id in the current line, use it.
 			current-file-path
 			inline-id
 			(linkin-org-strip-off-id-from-file-name file-name)
-			shortened-text-after-id
-			)
+			shortened-text-after-id)
 	      (format "[[file:%s::(:inline-id %s)][[file] %s]]"
 		      current-file-path
 		      inline-id
-		      (linkin-org-strip-off-id-from-file-name file-name)
-		      )
-	      )
+		      (linkin-org-strip-off-id-from-file-name file-name)))
 	  (format "[[file:%s::%d][[file] %s _ l%d]]"
 		  current-file-path
 		  line-number
@@ -684,20 +624,18 @@ If there is an inline id in the current line, use it.
 		  line-number))
       ;; else if the file has no path, do nothing
       (message "linkin-org: this file has no path, cannot get an id for it.")
-      nil
-      )))
+      nil)))
 
 
 ;; to leave an id in an editable line
 ;;;###autoload
 (defun linkin-org-store-inline ()
   "Leave an id in an editable line and copy a link towards that id in the 'kill-ring'."
-  (let (
-	    (id (linkin-org-create-id))
-	    (range
+  (let ((id (linkin-org-create-id))
+	(range
          (list (line-beginning-position)
-		       (goto-char (line-end-position 1))))
-	    (current-line (buffer-substring-no-properties
+	       (goto-char (line-end-position 1))))
+	(current-line (buffer-substring-no-properties
                        (line-beginning-position)
                        (line-end-position))))
     ;; insert an inline id only if there is none already
@@ -720,15 +658,13 @@ If there is an inline id in the current line, use it.
                   ;; if not, then comment the line
                   ;; go to the beginning of the line
                   (beginning-of-line)
-                  (insert "# ")
-                  )
+                  (insert "# "))
                 ;; return to the beginning of the line
                 (beginning-of-line)
                 ;; go two char forward to skip the # and the space
                 (forward-char 2)
                 ;; insert the id
-                (insert "[id:" id "] ")
-                )
+                (insert "[id:" id "] "))
             ;; else if the mode is not org-mode, just comment the line
             (let
                 ;; check if there are comments, if yes go at the beginning of them
@@ -738,18 +674,11 @@ If there is an inline id in the current line, use it.
                 (comment-or-uncomment-region (apply #'min range) (apply #'max range))
                 (comment-beginning))
               ;; just insert the id at the beginning of the comments
-	          (insert "[id:" id "] ")
-              )
-            )
-          )
-        )
-      )
+	          (insert "[id:" id "] "))))))
     ;; copy the link
     (linkin-org-get)
     ;; go the end of the line
-    (end-of-line)
-    )
-  )
+    (end-of-line)))
 
 
 
@@ -792,10 +721,7 @@ Do nothing if the file already has an id."
      ;; if in a dired buffer, get a link towards the file under point
      ((string= (symbol-name major-mode) "dired-mode") (kill-new (linkin-org-dired-get-link)))
      ;; else, get a link towards the current line of the buffer
-     ((not buffer-read-only) (kill-new (linkin-org-get-inline)))
-     )
-    )
-  )
+     ((not buffer-read-only) (kill-new (linkin-org-get-inline))))))
 
 
 
@@ -823,11 +749,9 @@ Do nothing if the file already has an id."
 ;;;###autoload
 (defun linkin-org-file-open (link)
   "Open the file at LINK."
-  (let* (
-	 (file-path (org-element-property :path link))
+  (let* ((file-path (org-element-property :path link))
 	 (metadata (org-element-property :metadata link))
-	 (line-number-or-id (org-element-property :search-option link))
-	 )
+	 (line-number-or-id (org-element-property :search-option link)))
     (when (file-exists-p file-path)
       ;; open the file from a dired buffer using the function `linkin-org-open-file-as-in-dired'
       (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function-in-dired)
@@ -836,18 +760,10 @@ Do nothing if the file already has an id."
 	(cond
 	 (;; if line-number-or-id matches an id, search for that id in the buffer
 	  (linkin-org-extract-id line-number-or-id)
-	  (org-link-search line-number-or-id)
-	  )
-	 (
-	  ;; else, if it matches a number, go to that line number
+	  (org-link-search line-number-or-id))
+	 (;; else, if it matches a number, go to that line number
 	  (string-match-p "^[0-9]+$" line-number-or-id)
-	  (org-goto-line (string-to-number line-number-or-id))
-	  )
-	 )
-	)
-      )
-    )
-  )
+	  (org-goto-line (string-to-number line-number-or-id))))))))
 
 
 ;;;###autoload
@@ -858,8 +774,7 @@ LINK is an org element as returned by the standard org link parser `parse-org-li
 If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
 "
   (let*
-      (
-       ;; get the raw link, that is, the string containing the data of the link
+      (;; get the raw link, that is, the string containing the data of the link
        (link-raw-link (org-element-property :raw-link link))
        ;; get the type of the link
        (link-type (org-element-property :type link))
@@ -869,64 +784,41 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
        ;; extract the path, that is, the substring of link-path before the first :: if there is one
        (link-path (car (string-split link-path "::")))
        ;; get the metadata, that is, the alist after the last "::" in the link-raw-link
-       (link-metadata (let
-                          (
-                           (index (string-match "::" link-raw-link))
-			   (link-parts (split-string link-raw-link "::"))
-			   )
+       (link-metadata (let ((index (string-match "::" link-raw-link))
+			   (link-parts (split-string link-raw-link "::")))
 			;; if there is metadata
                         (when index
 			  ;; get the string after the last "::"
-                          (read (car (last link-parts)))
-			  )
-			)
-		      )
+                          (read (car (last link-parts))))))
        (link-inline-id (when (plist-get link-metadata :inline-id)
-			 (symbol-name (plist-get link-metadata :inline-id))
-			 )
-		       )
-       )
+			 (symbol-name (plist-get link-metadata :inline-id)))))
     ;; compute the new path, if we should resolve the path for that link type
     (when (and
 	   link-path
 	   (member link-type linkin-org-link-types-to-check-for-id)
-	   (not no-path-resolving)
-	   )
-      (org-element-put-property link :path (linkin-org-resolve-path link-path))
-      )
-    (when link-metadata
-      (org-element-put-property link :metadata link-metadata)
-      )
+	   (not no-path-resolving))
+      (org-element-put-property link :path (linkin-org-resolve-path link-path)))
+    (when link-metadata (org-element-put-property link :metadata link-metadata))
     ;; if the link has an inline id, add it to the link as a search string value
-    (if link-inline-id
-	(org-element-put-property link :search-option (concat "id:" link-inline-id))
+    (if link-inline-id (org-element-put-property link :search-option (concat "id:" link-inline-id))
       ;; else, check if the original search option is an id
       (if-let
 	  (id (linkin-org-extract-id (org-element-property :search-option link)))
 	  ;; then add the id: keyword to the search option
-	  (org-element-put-property link :search-option (concat "id:" id))
-	)
-      )
-    link
-    )
-  )
+	  (org-element-put-property link :search-option (concat "id:" id))))
+    link))
 
 ;;;###autoload
 (defun linkin-org-redirect-link-opening (std-link-opening-function link &optional args)
   "A function to format the arguments of `org-link-open'"
   (let
-      (
-       ;; resolve the link, so that it has a correct path and metadata
-       (link (linkin-org-resolve-link link))
-       )
+      (;; resolve the link, so that it has a correct path and metadata
+       (link (linkin-org-resolve-link link)))
    (if (and linkin-org-open-links-as-in-dired-p (string= (org-element-property :type link) "file"))
        ;; open the link as in Dired if it's a file link and if the user wants to
        (linkin-org-file-open link)
      ;; else call the standard link opening function
-     (funcall std-link-opening-function link link)
-     )
-   )
-  )
+     (funcall std-link-opening-function link link))))
 
 ;;;###autoload
 (define-minor-mode linkin-org-mode
@@ -938,16 +830,13 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
 	(advice-add 'org-link-open :around #'linkin-org-redirect-link-opening)
     ;; (advice-add 'org-link-open :filter-args #'plug-in-org-link-open)
     ;; (advice-remove 'org-link-open #'linkin-org-link-open)
-    (advice-remove 'org-link-open #'linkin-org-redirect-link-opening)
-    )
-  )
+    (advice-remove 'org-link-open #'linkin-org-redirect-link-opening)))
 
 ;;;###autoload
 (defun linkin-org-turn-on-minor-mode ()
   "Turn on linkin-org minor mode."
   (interactive)
-  (linkin-org-mode 1)
-  )
+  (linkin-org-mode 1))
 
 (define-global-minor-mode linkin-org-global-mode linkin-org-mode linkin-org-turn-on-minor-mode)
 
