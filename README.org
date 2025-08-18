@@ -126,6 +126,8 @@ with straight
   ;; ;; uncomment those two lines of code to open your linked files as if you opened them from dired
   ;; (setq linkin-org-open-links-as-in-dired-p t)
   ;; (setq linkin-org-opening-file-function-in-dired #'dired-open-file)
+  ;; ;; determines where the ids are positioned in the file name, can be 'head or 'tail. defaults to 'head
+  ;; (setq linkin-org-id-position-in-file-name 'tail)
 
   ;; start the linkin-org global mode
   (linkin-org-global-mode 1)

@@ -50,6 +50,10 @@
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
 (defcustom linkin-org-link-types-to-check-for-id '("file" "pdf") "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
 
+
+(defcustom linkin-org-id-position-in-file-name 'head "The position of the id in the file or directory name. Can be 'head or 'tail.")
+
+
 (defcustom linkin-org-open-links-as-in-dired-p nil "If non-nil, open links as if they were opened in Dired. Use the function in `linkin-org-opening-file-function-in-dired' to open the file.")
 
 (defcustom linkin-org-opening-file-function-in-dired #'dired-find-file "Function to use to open a file. This function is called as the point is on the file in a dired buffer.")
@@ -115,10 +119,34 @@ If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-re
             (
 	     ;; remove the id
 	     (file-name-without-id (replace-regexp-in-string id "" file-name))
+	     ;; remove the separator
+	     )
+	  (cond
+	   ;; if the id is at the tail of the file name
+	   (
+	    (eq linkin-org-id-position-in-file-name 'tail)
+	    (replace-regexp-in-string
+	     ;; (concat linkin-org-id-regexp "\\(?:\\.[^.]*\\)?$")
+	     (concat linkin-org-sep-regexp (rx (seq (?  (seq "." (zero-or-more (not ".")))) line-end)))
+	     ;; (rx (seq (?  (seq "." (zero-or-more (not ".")))) line-end))
+	     (lambda (match)
+	       ;; remove the leading separator
+	       ;; (substring match 0 (1- (length match)))
+	       (replace-regexp-in-string (concat "^" linkin-org-sep-regexp) "" match)
+	       )
+	     file-name-without-id
+	    )
+	    )
+	    (t
 	     ;; remove the heading sep -- if there is one
-	     (file-name-without-sep (replace-regexp-in-string (concat "^" linkin-org-sep-regexp) "" file-name-without-id)))
-          file-name-without-sep)
-      file-name)))
+	     (replace-regexp-in-string (concat "^" linkin-org-sep-regexp) "" file-name-without-id)
+	     )
+	   )
+	  )
+      file-name
+      )
+    )
+  )
 
 (defun linkin-org-give-id-to-file-name (file-name &optional id)
   "Take a file name FILE-NAME (without path) and return a new file name with id.
@@ -130,8 +158,28 @@ Does not add an id if FILE-NAME already has one.
       file-name
     ;; else add an id
     (if id
-	(concat id linkin-org-sep file-name)
-      (concat (linkin-org-create-id) linkin-org-sep file-name))))
+	;; if we must add the id at the tail of the file name
+	(if (eq linkin-org-id-position-in-file-name 'tail)
+	    (replace-regexp-in-string
+	     (rx (seq (?  (seq "." (zero-or-more (not ".")))) line-end))
+	     (lambda (match)
+	       (concat linkin-org-sep id match))
+	     file-name
+	     )
+	  ;; else just add the id at the head of the file name
+	  (concat id linkin-org-sep file-name)
+	  )
+      ;; else if no id is provided
+      (if (eq linkin-org-id-position-in-file-name 'tail)
+	  (replace-regexp-in-string
+	   (rx (seq (?  (seq "." (zero-or-more (not ".")))) line-end))
+	   (lambda (match)
+	     (concat linkin-org-sep (linkin-org-create-id) match))
+	   file-name
+	   )
+	;; else just add the id at the head of the file name
+	(concat (linkin-org-create-id) linkin-org-sep file-name))))
+	)
 
 (defun linkin-org-escape-square-brackets (str)
   "Escape occurrences of '\\\\', '\\[', and '\\]' in the string STR."
