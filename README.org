@@ -71,7 +71,7 @@ For that, linkin-org will attempt two heuristics: First, it tries to resolve the
 
 
 
-The links follow a similar syntax as usual org links.
+The links follow a syntax similar to usual org links.
 For more convenient link-based workflows, it is however tempting to store more information in the links.
 For that, linkin-org defines a new format to store metadata in the links.
 For example, a link that points towards the line above looks like this:
