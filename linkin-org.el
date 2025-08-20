@@ -26,6 +26,9 @@
 ;; linkin-org proposes to access your data with reliable links to place your written notes at the center of your workflow.
 ;; The links work fast and are easy to create; most importantly, the links are reliable and can robustly support a whole link-based workflow.
 
+
+;;; Code:
+
 (require 'ol)
 (require 'org-element-ast)
 (require 's)
@@ -35,28 +38,84 @@
 
 ;;;; -------------------------------------------- main variables
 
+
+
+(defgroup linkin-org nil
+  "An emacs package to make org link reliable."
+  :group 'convenience
+  )
+
+
+
 ;; define the directory where the function linkin-org-store stores the files and directories by default
-(defcustom linkin-org-store-directory (expand-file-name "~/") "The directory where 'linkin-org-store' stores data by default.")
+(defcustom linkin-org-store-directory
+  (expand-file-name "~/")
+  "The directory where 'linkin-org-store' stores data by default."
+  :type 'string
+  :group 'linkin-org
+  )
+
 ;; define whether to store the file directly in the directory defined by 'linkin-org-store-directory' without asking anything
-(defcustom linkin-org-store-file-directly-p nil "If non-nil, store the file directly in the directory defined by 'linkin-org-store-directory' without asking for a new name.")
+(defcustom
+  linkin-org-store-file-directly-p
+  nil
+  "If non-nil, store the file directly in the directory defined by 'linkin-org-store-directory' without asking for a new name."
+  :type 'boolean
+  :group 'linkin-org
+  )
 
 ;; define the directories where to search when a link is broken
 ;; this is a list of directories that are searched in order to resolve broken links
-(defcustom linkin-org-search-directories-to-resolve-broken-links (list (expand-file-name "~/")) "The list of directories to search (in order) when a link is broken.")
+(defcustom
+  linkin-org-search-directories-to-resolve-broken-links
+  (list (expand-file-name "~/"))
+  "The list of directories to search (in order) when a link is broken."
+  :type 'list
+  :group 'linkin-org
+  )
 
 ;; define a regexp to match file names (without the directory part) that are not considered when resolving broken links
-(defcustom linkin-org-file-names-to-ignore (rx (or (seq (* anychar) "~" line-end) (seq line-start "" line-end))) "Define a regexp to match file names (without the directory part) that are not considered when resolving broken links.")
+(defcustom
+  linkin-org-file-names-to-ignore (rx (or (seq (* anychar) "~" line-end) (seq line-start "" line-end)))
+  "Define a regexp to match file names (without the directory part) that are not considered when resolving broken links."
+  :type 'regexp
+  :group 'linkin-org
+  )
 
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
-(defcustom linkin-org-link-types-to-check-for-id '("file" "pdf") "List of link types such that, if the link is broken, the ids in the link are used to resolve the link.")
+(defcustom
+  linkin-org-link-types-to-check-for-id
+  '("file" "pdf")
+  "List of link types. Links with those types will have their path resolved when opened."
+  :type 'list
+  :group 'linkin-org
+  )
 
 
-(defcustom linkin-org-id-position-in-file-name 'head "The position of the id in the file or directory name. Can be 'head or 'tail.")
+(defcustom
+  linkin-org-id-position-in-file-name
+  'head
+  "The position of the id in the file or directory name. Can be 'head or 'tail."
+  :type 'symbol
+  :group 'linkin-org
+  )
 
 
-(defcustom linkin-org-open-links-as-in-dired-p nil "If non-nil, open links as if they were opened in Dired. Use the function in `linkin-org-opening-file-function-in-dired' to open the file.")
+(defcustom
+  linkin-org-open-links-as-in-dired-p
+  nil
+  "If non-nil, open links as if they were opened in Dired. Use the function in `linkin-org-opening-file-function-in-dired' to open the file."
+  :type 'boolean
+  :group 'linkin-org
+  )
 
-(defcustom linkin-org-opening-file-function-in-dired #'dired-find-file "Function to use to open a file. This function is called as the point is on the file in a dired buffer.")
+(defcustom
+  linkin-org-opening-file-function-in-dired
+  #'dired-find-file
+  "Function to use to open a file. This function is called as the point is on the file in a Dired buffer."
+  :type 'function
+  :group 'linkin-org
+  )
 
 
 
@@ -151,8 +210,7 @@ If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-re
 (defun linkin-org-give-id-to-file-name (file-name &optional id)
   "Take a file name FILE-NAME (without path) and return a new file name with id.
   If ID is provided, use it as the id.
-Does not add an id if FILE-NAME already has one.
-"
+Does not add an id if FILE-NAME already has one."
   (if (linkin-org-extract-id file-name)
       ;; if the file already has an id, dont add one
       file-name
@@ -465,7 +523,12 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 		(cond
 		 ((not linkin-org-store-file-directly-p)
 		  (let
-		      ((raw-user-given-path (read-directory-name "Give new location: " (file-name-as-directory linkin-org-store-directory) (file-name-as-directory linkin-org-store-directory) nil)))
+		      ((raw-user-given-path
+			(read-directory-name
+			 "Give new location: "
+			 (file-name-as-directory linkin-org-store-directory)
+			 (file-name-as-directory linkin-org-store-directory)
+			 nil)))
 		    (if (file-directory-p raw-user-given-path)
 			;; if the user provided path is a directory, then add at the end the initial name of the directory
 			(concat (file-name-as-directory raw-user-given-path) file-name)
@@ -507,7 +570,12 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
 	      (cond
 	       ((not linkin-org-store-file-directly-p)
 		(let
-		    ((raw-user-given-path (read-directory-name "Give new location: " (file-name-as-directory linkin-org-store-directory) (file-name-as-directory linkin-org-store-directory) nil)))
+		    ((raw-user-given-path
+		      (read-directory-name
+		       "Give new location: "
+		       (file-name-as-directory linkin-org-store-directory)
+		       (file-name-as-directory linkin-org-store-directory)
+		       nil)))
 		  (if (file-directory-p raw-user-given-path)
 		      ;; if the user provided path is a directory, then add at the end the initial name of the directory
 		      (concat (file-name-as-directory raw-user-given-path) file-name)
@@ -539,7 +607,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before runn
           (revert-buffer))))))
 
 (defun linkin-org-open-link-and-do-function (link function-to-perform)
-  "Open the link in string form STRING-LINK, apply the function FUNCTION-TO-PERFORM, come back."
+  "Open the LINK in string form STRING-LINK, apply the function FUNCTION-TO-PERFORM, come back."
   (let (;; remember the current buffer and the current position of point
         (init-buffer (current-buffer))
         (init-point (point))
@@ -643,7 +711,10 @@ If there is an inline id in the current line, use it.
 			      (if (string-match-p "\\`[[:space:]]*\\'" text)
 				  nil
 				;; else, delete the leading and trailing spaces
-				(replace-regexp-in-string (rx (or (seq line-start (zero-or-more space)) (seq (zero-or-more space) line-end))) "" text)))))
+				(replace-regexp-in-string
+				 (rx (or (seq line-start (zero-or-more space)) (seq (zero-or-more space) line-end)))
+				 ""
+				 text)))))
        ;; shorten the text after id if it's too long, say larger than 70 characters
        (shortened-text-after-id
 	(when raw-text-after-id
@@ -766,7 +837,7 @@ Do nothing if the file already has an id."
   (interactive)
   (let ((mode (symbol-name major-mode)))
     (cond
-     ;; if in a dired buffer, get a link towards the file under point
+     ;; if in a Dired buffer, get a link towards the file under point
      ((string= (symbol-name major-mode) "dired-mode") (kill-new (linkin-org-dired-get-link)))
      ;; else, get a link towards the current line of the buffer
      ((not buffer-read-only) (kill-new (linkin-org-get-inline))))))
@@ -801,8 +872,10 @@ Do nothing if the file already has an id."
 	 (metadata (org-element-property :metadata link))
 	 (line-number-or-id (org-element-property :search-option link)))
     (when (file-exists-p file-path)
-      ;; open the file from a dired buffer using the function `linkin-org-open-file-as-in-dired'
-      (linkin-org-perform-function-as-if-in-dired-buffer file-path linkin-org-opening-file-function-in-dired)
+      ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
+      (linkin-org-perform-function-as-if-in-dired-buffer
+       file-path
+       linkin-org-opening-file-function-in-dired)
       ;; go to the id if specified
       (when line-number-or-id
 	(cond
@@ -819,8 +892,7 @@ Do nothing if the file already has an id."
   "Parse the metadata in LINK.
 Returns a link org element with a resolved path and an additional :metadata property.
 LINK is an org element as returned by the standard org link parser `parse-org-link'.
-If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
-"
+If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link."
   (let*
       (;; get the raw link, that is, the string containing the data of the link
        (link-raw-link (org-element-property :raw-link link))
@@ -858,7 +930,8 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
 
 ;;;###autoload
 (defun linkin-org-redirect-link-opening (std-link-opening-function link &optional args)
-  "A function to format the arguments of `org-link-open'"
+  "Open the org element LINK and its associated ARGS with `linkin-org-file-open' in case `linkin-org-open-links-as-in-dired-p' is non-nil.
+Otherwise, calls the function STD-LINK-OPENING-FUNCTION to open it."
   (let
       (;; resolve the link, so that it has a correct path and metadata
        (link (linkin-org-resolve-link link)))
@@ -874,7 +947,7 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link.
   :init-value nil
   :lighter nil
   (if linkin-org-mode
-      ;; replace org-lin-open with linkin-org-open, so that dired is used to open links in case it is asked
+      ;; replace org-lin-open with linkin-org-open, so that Dired is used to open links in case it is asked
 	(advice-add 'org-link-open :around #'linkin-org-redirect-link-opening)
     ;; (advice-add 'org-link-open :filter-args #'plug-in-org-link-open)
     ;; (advice-remove 'org-link-open #'linkin-org-link-open)
