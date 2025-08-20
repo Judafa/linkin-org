@@ -209,7 +209,7 @@ If ID-REGEXP is not provided then replace it with the value of 'linkin-org-id-re
 
 (defun linkin-org-give-id-to-file-name (file-name &optional id)
   "Take a file name FILE-NAME (without path) and return a new file name with id.
-  If ID is provided, use it as the id.
+If ID is provided, use it as the id.
 Does not add an id if FILE-NAME already has one."
   (if (linkin-org-extract-id file-name)
       ;; if the file already has an id, dont add one
@@ -835,12 +835,11 @@ Do nothing if the file already has an id."
 (defun linkin-org-get ()
   "Kill a link towards what is under point."
   (interactive)
-  (let ((mode (symbol-name major-mode)))
     (cond
      ;; if in a Dired buffer, get a link towards the file under point
      ((string= (symbol-name major-mode) "dired-mode") (kill-new (linkin-org-dired-get-link)))
      ;; else, get a link towards the current line of the buffer
-     ((not buffer-read-only) (kill-new (linkin-org-get-inline))))))
+     ((not buffer-read-only) (kill-new (linkin-org-get-inline)))))
 
 
 
@@ -959,6 +958,7 @@ Otherwise, calls the function STD-LINK-OPENING-FUNCTION to open it."
   (interactive)
   (linkin-org-mode 1))
 
+;;;###autoload
 (define-global-minor-mode linkin-org-global-mode linkin-org-mode linkin-org-turn-on-minor-mode)
 
 
