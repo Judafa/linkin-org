@@ -1,4 +1,4 @@
-;;; linkin-org.el --- An emacs workflow with fast, reliable links -*- lexical-binding: t -*-
+;;; linkin-org.el --- An Emacs workflow with fast, reliable links -*- lexical-binding: t -*-
 
 ;; Copyright 2025 Julien Dallot
 
@@ -20,7 +20,7 @@
 ;; distributed under the License is distributed on an "AS IS" BASIS,
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and
-;; limitations under the License. 
+;; limitations under the License.
 
 ;;; Commentary:
 ;; linkin-org proposes to access your data with reliable links.
@@ -59,7 +59,7 @@
 (defcustom
 linkin-org-store-file-directly-p
 nil
-"If non-nil, store the file directly in the directory defined by `linkin-org-store-directory' without asking for a new name."
+"If non-nil, store the file to store directly in `linkin-org-store-directory'."
 :type 'boolean
 :group 'linkin-org)
 
@@ -254,7 +254,7 @@ string-link nil t 1))
 Return nil if no such path could be found.
 Starting from the root directory, climbs up FILE-PATH directory by directory;
 Whenever the current subpath is not valid, tries resolving using id.
-This always finds your file back if you only renamed files (and preserved the ids).
+This finds your file back if you only renamed files (and preserved the ids).
 It does not work if you changed the location of some directories in FILE-PATH.
 It is assumed you already checked that FILE-PATH is not a valid path."
 (let*
@@ -426,7 +426,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 (unless (eq file-found-p 'not-found)
     resolved-file-path)))
 
-;; [id:20250423T204506]
+
 (defun linkin-org-resolve-path (file-path)
 "Try different approaches to resolve the file paht FILE-PATH."
 (cond
@@ -480,24 +480,24 @@ The function is applied as if the point was on that file in Dired."
 (defun linkin-org-store-file ()
 "Store the file under point in Dired."
 (let* (
-	(file-path (dired-file-name-at-point))
-	(file-name (cond
-		    ;; if it's a directory
-		    ((file-directory-p file-path)
+       (file-path (dired-file-name-at-point))
+       (file-name (cond
+		   ;; if it's a directory
+		   ((file-directory-p file-path)
 		    (file-name-nondirectory (directory-file-name file-path)))
-		    ;; else if it's a file
-		    (t (file-name-nondirectory file-path))))
-	;; is the file already in the list of directories to check in case of a broken link
-	(is-file-already-in-store-directory? (cl-some #'identity (mapcar
-								(lambda (dir)
-								    (s-prefix?
+		   ;; else if it's a file
+		   (t (file-name-nondirectory file-path))))
+       ;; is the file already in the list of directories to check in case of a broken link
+       (is-file-already-in-store-directory? (cl-some #'identity (mapcar
+								 (lambda (dir)
+								   (s-prefix?
 								    (expand-file-name dir)
 								    (expand-file-name file-path)))
-								linkin-org-search-directories-to-resolve-broken-links))))
-;; check wether it's a file or a directory
-(if (file-directory-p file-path)
-    ;; if it's a directory
-    (progn
+								 linkin-org-search-directories-to-resolve-broken-links))))
+  ;; check wether it's a file or a directory
+  (if (file-directory-p file-path)
+      ;; if it's a directory
+      (progn
 	(let*
 	    ;; compute the complete new file path to store the dir into, without id, including name at the end
 	    ((new-raw-file-path
@@ -914,8 +914,8 @@ link))
 
 ;;;###autoload
 (defun linkin-org-redirect-link-opening (std-link-opening-function link &optional args)
-"Open the LINK and its associated ARGS.
-If `linkin-org-open-links-as-in-dired-p' is non-nil, open it with as if in Dired.
+"Open the LINK.
+If `linkin-org-open-links-as-in-dired-p' is non-nil, open it as if in Dired.
 Otherwise, calls the function STD-LINK-OPENING-FUNCTION to open it."
 (let
     (;; resolve the link, so that it has a correct path and metadata
