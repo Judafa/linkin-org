@@ -69,7 +69,7 @@ nil
 linkin-org-search-directories-to-resolve-broken-links
 (list (expand-file-name "~/"))
 "The list of directories to search (in order) when a link is broken."
-:type 'list
+:type '(string)
 :group 'linkin-org)
 
 ;; define a regexp to match file names (without the directory part) that are not considered when resolving broken links
@@ -84,7 +84,7 @@ linkin-org-file-names-to-ignore (rx (or (seq (* anychar) "~" line-end) (seq line
 linkin-org-link-types-to-check-for-id
 '("file" "pdf")
 "List of link types such that their path is resolved when opened."
-:type 'list
+:type '(string)
 :group 'linkin-org)
 
 
@@ -851,13 +851,13 @@ Do nothing if the file already has an id."
 (defun linkin-org-file-open (link)
 "Open the file at LINK."
 (let* ((file-path (org-element-property :path link))
-       (metadata (org-element-property :metadata link))
+       ;; (metadata (org-element-property :metadata link))
        (line-number-or-id (org-element-property :search-option link)))
   (when (file-exists-p file-path)
     ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
     (linkin-org-perform-function-as-if-in-dired-buffer
-    file-path
-    linkin-org-opening-file-function-in-dired)
+     file-path
+     linkin-org-opening-file-function-in-dired)
     ;; go to the id if specified
     (when line-number-or-id
       (cond
