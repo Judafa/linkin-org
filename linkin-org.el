@@ -752,20 +752,21 @@ Otherwise use the line number."
     (if (eq (apply #'min range) (apply #'max range))
 	;; if the current line is empty, do special treatment since I cannot easily comment an empty line
 	(progn
-	    ;; insert the id
-		(insert "[id:" id "] ")
-	    ;; comment the line
-	    (comment-or-uncomment-region (line-beginning-position) (goto-char (line-end-position 1))))
-	;; else, if the line is non empty
-	;; do a differenet treatment if the mode is org-mode, since there's a bug there
-	(if (eq major-mode 'org-mode)
-	    (progn
+	  ;; insert the id
+	  (insert "[id:" id "] ")
+	  ;; comment the line
+	  (comment-or-uncomment-region (line-beginning-position) (goto-char (line-end-position 1))))
+      ;; else, if the line is non empty
+      ;; do a differenet treatment if the mode is org-mode, since there's a bug there
+      ;; (if (eq major-mode 'org-mode)
+      (if (derived-mode-p 'org-mode)
+	  (progn
 	    ;; check if the first characters are # followed by a space
 	    (unless (s-matches-p "^# " current-line)
-		;; if not, then comment the line
-		;; go to the beginning of the line
-		(beginning-of-line)
-		(insert "# "))
+	      ;; if not, then comment the line
+	      ;; go to the beginning of the line
+	      (beginning-of-line)
+	      (insert "# "))
 	    ;; return to the beginning of the line
 	    (beginning-of-line)
 	    ;; go two char forward to skip the # and the space
