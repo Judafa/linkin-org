@@ -1,4 +1,4 @@
-;;; linkin-org.el --- an emacs workflow with fast, reliable links -*- lexical-binding: t -*-
+;;; linkin-org.el --- An emacs workflow with fast, reliable links -*- lexical-binding: t -*-
 
 ;; Copyright 2025 Julien Dallot
 
@@ -23,8 +23,10 @@
 ;; limitations under the License. 
 
 ;;; Commentary:
-;; linkin-org proposes to access your data with reliable links to place your written notes at the center of your workflow.
-;; The links work fast and are easy to create; most importantly, the links are reliable and can robustly support a whole link-based workflow.
+;; linkin-org proposes to access your data with reliable links.
+;; The links work fast and are easy to create.
+;; Most importantly, the links are reliable and
+;; robustly support a whole link-based workflow.
 
 
 ;;; Code:
@@ -42,27 +44,24 @@
 
 (defgroup linkin-org nil
 "An emacs package to make org link reliable."
-:group 'convenience
-)
+:group 'convenience)
 
 
 
 ;; define the directory where the function linkin-org-store stores the files and directories by default
 (defcustom linkin-org-store-directory
 (expand-file-name "~/")
-"The directory where 'linkin-org-store' stores data by default."
+"The directory where `linkin-org-store' stores data by default."
 :type 'string
-:group 'linkin-org
-)
+:group 'linkin-org)
 
-;; define whether to store the file directly in the directory defined by 'linkin-org-store-directory' without asking anything
+;; define whether to store the file directly in the directory defined by `linkin-org-store-directory' without asking anything
 (defcustom
 linkin-org-store-file-directly-p
 nil
-"If non-nil, store the file directly in the directory defined by 'linkin-org-store-directory' without asking for a new name."
+"If non-nil, store the file directly in the directory defined by `linkin-org-store-directory' without asking for a new name."
 :type 'boolean
-:group 'linkin-org
-)
+:group 'linkin-org)
 
 ;; define the directories where to search when a link is broken
 ;; this is a list of directories that are searched in order to resolve broken links
@@ -71,16 +70,14 @@ linkin-org-search-directories-to-resolve-broken-links
 (list (expand-file-name "~/"))
 "The list of directories to search (in order) when a link is broken."
 :type 'list
-:group 'linkin-org
-)
+:group 'linkin-org)
 
 ;; define a regexp to match file names (without the directory part) that are not considered when resolving broken links
 (defcustom
 linkin-org-file-names-to-ignore (rx (or (seq (* anychar) "~" line-end) (seq line-start "" line-end)))
 "Regexp that matches file names not considered when resolving broken links."
 :type 'regexp
-:group 'linkin-org
-)
+:group 'linkin-org)
 
 ;; List of link types such that, if the link is broken, the ids in the link are used to resolve the link
 (defcustom
@@ -88,8 +85,7 @@ linkin-org-link-types-to-check-for-id
 '("file" "pdf")
 "List of link types such that their path is resolved when opened."
 :type 'list
-:group 'linkin-org
-)
+:group 'linkin-org)
 
 
 (defcustom
@@ -97,8 +93,7 @@ linkin-org-id-position-in-file-name
 'head
 "The position of the id in the file or directory name, can be 'head or 'tail."
 :type 'symbol
-:group 'linkin-org
-)
+:group 'linkin-org)
 
 
 (defcustom
@@ -106,16 +101,14 @@ linkin-org-open-links-as-in-dired-p
 nil
 "If non-nil, open links as if they were opened in Dired."
 :type 'boolean
-:group 'linkin-org
-)
+:group 'linkin-org)
 
 (defcustom
 linkin-org-opening-file-function-in-dired
 #'dired-find-file
 "Function to use to open a file from Dired."
 :type 'function
-:group 'linkin-org
-)
+:group 'linkin-org)
 
 
 
@@ -162,7 +155,7 @@ time-string))
 (defun linkin-org-extract-id (s &optional id-regexp)
 "Return a substring of string S that matches ID-REGEXP.
 Returns nil if no match was found.
-If ID-REGEXP is not provided then replace it with 'linkin-org-id-regexp'."
+If ID-REGEXP is not provided then replace it with `linkin-org-id-regexp'."
 (unless id-regexp
 (setq id-regexp linkin-org-id-regexp))
 (when (stringp s)
@@ -346,7 +339,7 @@ It recursively searches for files contained in DIRECTORIES-TO-LOOK-INTO.
 Returns nil if FILE-PATH has no id or if no matching file was found.
 FILE-PATH can be the path of a file or a directory.
 If not provided, DIRECTORIES-TO-LOOK-INTO
-is set to 'linkin-org-search-directories-to-resolve-broken-links'.
+is set to `linkin-org-search-directories-to-resolve-broken-links'.
 It is assumed you already checked that FILE-PATH is not a valid path before."
 (let*
     (;; expand file path
@@ -596,13 +589,14 @@ The function is applied as if the point was on that file in Dired."
 
 (defun linkin-org-open-link-and-do-function (string-link function-to-perform)
 "Open STRING-LINK, apply FUNCTION-TO-PERFORM, come back."
-(let (;; remember the current buffer and the current position of point
-    (init-buffer (current-buffer))
-    (init-point (point))
-    ;; save the current buffer list
-    (init-buffer-list (buffer-list))
-    new-buffer)
-(unwind-protect
+(let (
+      ;; remember the current buffer and the current position of point
+      (init-buffer (current-buffer))
+      (init-point (point))
+      ;; save the current buffer list
+      (init-buffer-list (buffer-list))
+      new-buffer)
+  (unwind-protect
     (progn
 	;; Open to the link
 	(org-link-open string-link)
@@ -777,12 +771,12 @@ Otherwise use the line number."
 	(let
 	    ;; check if there are comments, if yes go at the beginning of them
 	    ((comments-p (comment-beginning)))
-	    (unless comments-p
+	  (unless comments-p
 	    ;; if there are no comments to go at the beginning to, comment the whole line and go at the beg of comments
 	    (comment-or-uncomment-region (apply #'min range) (apply #'max range))
 	    (comment-beginning))
-	    ;; just insert the id at the beginning of the comments
-		(insert "[id:" id "] "))))))
+	  ;; just insert the id at the beginning of the comments
+	  (insert "[id:" id "] "))))))
 ;; copy the link
 (linkin-org-get)
 ;; go the end of the line
@@ -798,26 +792,26 @@ Otherwise use the line number."
 Do nothing if the file already has an id."
 (interactive)
 (let* (
-	(file-path (dired-file-name-at-point))
-	;; t if file-path is a directory, nil if it's a file
-	(is-directory? (file-directory-p file-path))
-	;; get the file-name, or directory name
-	(file-name
+       (file-path (dired-file-name-at-point))
+       ;; t if file-path is a directory, nil if it's a file
+       (is-directory? (file-directory-p file-path))
+       ;; get the file-name, or directory name
+       (file-name
 	(if is-directory?
 	    (file-name-nondirectory (directory-file-name file-path))
-	    (file-name-nondirectory file-path)))
-	;; get the file path without the name of the file
-	(file-path-sans-name
+	  (file-name-nondirectory file-path)))
+       ;; get the file path without the name of the file
+       (file-path-sans-name
 	(if is-directory?
 	    (file-name-directory (directory-file-name file-path))
-	    (file-name-directory file-path))))
-    ;; if the file doesnt already has an id, rename the file or directory with an id at the front
-    (unless (linkin-org-extract-id file-name)
+	  (file-name-directory file-path))))
+  ;; if the file doesnt already has an id, rename the file or directory with an id at the front
+  (unless (linkin-org-extract-id file-name)
     (rename-file
-	file-path
-	(concat
-	file-path-sans-name
-	(linkin-org-give-id-to-file-name file-name)))
+     file-path
+     (concat
+      file-path-sans-name
+      (linkin-org-give-id-to-file-name file-name)))
     (revert-buffer))))
 
 
@@ -825,10 +819,10 @@ Do nothing if the file already has an id."
 "Kill a link towards what is under point."
 (interactive)
 (cond
-    ;; if in a Dired buffer, get a link towards the file under point
-    ((string= (symbol-name major-mode) "dired-mode") (kill-new (linkin-org-dired-get-link)))
-    ;; else, get a link towards the current line of the buffer
-    ((not buffer-read-only) (kill-new (linkin-org-get-inline)))))
+ ;; if in a Dired buffer, get a link towards the file under point
+ ((string= (symbol-name major-mode) "dired-mode") (kill-new (linkin-org-dired-get-link)))
+ ;; else, get a link towards the current line of the buffer
+ ((not buffer-read-only) (kill-new (linkin-org-get-inline)))))
 
 
 
@@ -841,12 +835,12 @@ Do nothing if the file already has an id."
 (let*
     ((mode (symbol-name major-mode)))
 (cond
-    ;; If in a Dired buffer
-    ((string= mode "dired-mode")
-    (linkin-org-store-file))
-    ;; If in an editable buffer
-    ((not buffer-read-only)
-    (linkin-org-store-inline)))))
+ ;; If in a Dired buffer
+ ((string= mode "dired-mode")
+  (linkin-org-store-file))
+ ;; If in an editable buffer
+ ((not buffer-read-only)
+  (linkin-org-store-inline)))))
 
 
 
@@ -857,20 +851,22 @@ Do nothing if the file already has an id."
 (defun linkin-org-file-open (link)
 "Open the file at LINK."
 (let* ((file-path (org-element-property :path link))
-	(metadata (org-element-property :metadata link))
-	(line-number-or-id (org-element-property :search-option link)))
-(when (file-exists-p file-path)
+       (metadata (org-element-property :metadata link))
+       (line-number-or-id (org-element-property :search-option link)))
+  (when (file-exists-p file-path)
     ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
     (linkin-org-perform-function-as-if-in-dired-buffer
     file-path
     linkin-org-opening-file-function-in-dired)
     ;; go to the id if specified
     (when line-number-or-id
-    (cond
-	(;; if line-number-or-id matches an id, search for that id in the buffer
+      (cond
+       (
+	;; if line-number-or-id matches an id, search for that id in the buffer
 	(linkin-org-extract-id line-number-or-id)
 	(org-link-search line-number-or-id))
-	(;; else, if it matches a number, go to that line number
+       (
+	;; else, if it matches a number, go to that line number
 	(string-match-p "^[0-9]+$" line-number-or-id)
 	(org-goto-line (string-to-number line-number-or-id))))))))
 
