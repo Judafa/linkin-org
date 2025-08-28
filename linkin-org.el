@@ -724,7 +724,7 @@ Otherwise use the line number."
 		(linkin-org-strip-off-id-from-file-name file-name)
 		line-number))
     ;; else if the file has no path, do nothing
-    (message "linkin-org: this file has no path, cannot get an id for it.")
+    (message "linkin-org: this buffer has no path, cannot produce a link towards it.")
     nil)))
 
 
@@ -822,7 +822,12 @@ Do nothing if the file already has an id."
  ;; if in a Dired buffer, get a link towards the file under point
  ((string= (symbol-name major-mode) "dired-mode") (kill-new (linkin-org-dired-get-link)))
  ;; else, get a link towards the current line of the buffer
- ((not buffer-read-only) (kill-new (linkin-org-get-inline)))))
+ ((not buffer-read-only)
+  (let
+      ((inline-link (linkin-org-get-inline)))
+    ;; copy the link only if a non-nil link was computed
+    (when inline-link
+      (kill-new (linkin-org-get-inline)))))))
 
 
 
