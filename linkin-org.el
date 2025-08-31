@@ -1,4 +1,4 @@
-;;; linkin-org.el --- An Emacs workflow with fast, reliable links -*- lexical-binding: t -*-
+;;; linkin-org.el --- A workflow with fast, reliable links -*- lexical-binding: t -*-
 
 ;; Copyright 2025 Julien Dallot
 
@@ -29,21 +29,22 @@
 ;; robustly support a whole link-based workflow.
 
 
-;;; Code:
-
 (require 'ol)
+(require 'org)
 (require 'org-element-ast)
 (require 's)
 (require 'dash)
 (require 'dired)
 
 
+;;; Code:
+
 ;;;; -------------------------------------------- main variables
 
 
 
 (defgroup linkin-org nil
-"An emacs package to make org link reliable."
+"A package to make org link reliable."
 :group 'convenience)
 
 
@@ -91,7 +92,7 @@ linkin-org-link-types-to-check-for-id
 (defcustom
 linkin-org-id-position-in-file-name
 'head
-"The position of the id in the file or directory name, can be 'head or 'tail."
+"The position of the id in the file or directory name, can be head or tail."
 :type 'symbol
 :group 'linkin-org)
 
@@ -153,15 +154,15 @@ The id is a string with the year, month, day, hour, minute, second."
 time-string))
 
 (defun linkin-org-extract-id (s &optional id-regexp)
-"Return a substring of string S that matches ID-REGEXP.
+  "Return a substring of string S that matches ID-REGEXP.
 Returns nil if no match was found.
 If ID-REGEXP is not provided then replace it with `linkin-org-id-regexp'."
-(unless id-regexp
-(setq id-regexp linkin-org-id-regexp))
-(when (stringp s)
-(when (string-match id-regexp s)
-    ;; this function returns a list of list of strings
-    (car (car (s-match-strings-all id-regexp s))))))
+  (unless id-regexp
+    (setq id-regexp linkin-org-id-regexp))
+  (when (stringp s)
+    (when (string-match id-regexp s)
+      ;; this function returns a list of list of strings
+      (car (car (s-match-strings-all id-regexp s))))))
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
 "Take a file name FILE-NAME (without path) and strip off the id part."
@@ -758,7 +759,7 @@ Otherwise use the line number."
 	    ;; check if the first characters are # followed by a space
 	    (unless (s-matches-p "^# " current-line)
 	      ;; if not, then comment the line
-	      ;; go to the beginning of the line
+	      ;; go to the beginning of the line and insert a hashtag
 	      (beginning-of-line)
 	      (insert "# "))
 	    ;; return to the beginning of the line
@@ -918,7 +919,7 @@ If NO-PATH-RESOLVING is non-nil, do not resolve the path of the link."
 link))
 
 ;;;###autoload
-(defun linkin-org-redirect-link-opening (std-link-opening-function link &optional args)
+(defun linkin-org-redirect-link-opening (std-link-opening-function link &optional _args)
 "Open the LINK.
 If `linkin-org-open-links-as-in-dired-p' is non-nil, open it as if in Dired.
 Otherwise, calls the function STD-LINK-OPENING-FUNCTION to open it."
