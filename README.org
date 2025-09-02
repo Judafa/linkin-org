@@ -30,7 +30,7 @@ linkin-org suggests a simple, blazingly fast workflow to store and retrieve your
 
 linkin-org provides two main commands:
 - ~linkin-org-store~ stores what you have under the cursor so that links towards it become *reliable*.
-  It works on a file (in a dired buffer) and a line in an editable file (org, markdown, python, whatever).
+  It works on a file or a directory (in a dired buffer) and a line in an editable file (org, markdown, python, whatever).
   It directly copies the link in your clipboard so you can paste it right away.
   It adds an id to your data (changing your file name or the current editable line) so links towards it become reliable.
 
