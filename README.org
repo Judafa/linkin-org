@@ -2,7 +2,9 @@ linkin-org --- an emacs workflow with fast, reliable links.
 
 * Overview
 
-linkin-org allows you to access your data with reliable links.
+A link, also called a hyperlink, is text that redirect to data.
+The main problem of links is, they stop working if the data changes location or name.
+linkin-org allows you to access your data with *reliable* links.
 The links are made reliable thanks to ids attached to your data --- directories, files and lines.
 By design, it suggests a simple yet crazy efficient workflow centered around your written notes.
 
@@ -27,12 +29,12 @@ linkin-org suggests a simple, blazingly fast workflow to store and retrieve your
 * Everything with 2 commands
 
 linkin-org provides two main commands:
-- ~linkin-org-store~ stores what you have at point so that links towards it become *reliable*.
+- ~linkin-org-store~ stores what you have under the cursor so that links towards it become *reliable*.
   It works on a file (in a dired buffer) and a line in an editable file (org, markdown, python, whatever).
   It directly copies the link in your clipboard so you can paste it right away.
   It adds an id to your data (changing your file name or the current editable line) so links towards it become reliable.
 
-- ~linkin-org-get~ copies a link towards what you have at point in your clipboard; it does not modify your data.
+- ~linkin-org-get~ copies a link towards what you have under the cursor in your clipboard; it does not modify your data.
   This works on a file (in dired), a line in an editable file, on selected words in a pdf (using the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]] in [[https://github.com/vedang/pdf-tools][pdf-tools]]), on a music track in mingus (using the extension [[https://github.com/Judafa/linkin-org-music-link][linkin-org-music-link]] in [[https://github.com/pft/mingus][mingus]]).
   The link may not be reliable; it will be reliable if you called ~linkin-org-store~ beforehand on the data.
 
