@@ -6,7 +6,7 @@ A link is a piece of text that redirects to some data.
 The main problem of a link is, it stops working if the data changes location or name, we say it became broken.
 linkin-org allows you to access your local data --- directories, files or lines --- with *reliable* links that never break.
 The links are made reliable thanks to ids attached to your data.
-By design, linkin-org suggests a simple yet crazy efficient workflow centered around your written notes.
+# By design, linkin-org suggests a simple yet crazy efficient workflow centered around your written notes.
 
 
 In a few words, linkin-org is:
