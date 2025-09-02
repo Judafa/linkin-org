@@ -2,7 +2,7 @@ linkin-org --- an emacs workflow with fast, reliable links.
 
 * Overview
 
-A link, also called a hyperlink, is a piece of text that redirects to some data.
+A link is a piece of text that redirects to some data.
 The main problem of a link is, it stops working if the data changes location or name, we say it became broken.
 linkin-org allows you to access your local data --- directories, files or lines --- with *reliable* links that never break.
 The links are made reliable thanks to ids attached to your data.
