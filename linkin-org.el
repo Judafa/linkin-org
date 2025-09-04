@@ -799,10 +799,10 @@ Otherwise use the line number."
 	(if inline-id
 	    (if shortened-text-after-id
 		(format
-		 "[[file:%s::(:inline-id %s)][[file] %s _ \"%s\"]]"
+		 "[[file:%s::(:inline-id %s)][[file] \"%s\"]]"
 		 current-file-path
 		 inline-id
-		 (linkin-org-strip-off-id-from-file-name file-name)
+		 ;; (linkin-org-strip-off-id-from-file-name file-name)
 		 shortened-text-after-id)
 	      (format
 	       "[[file:%s::(:inline-id %s)][[file] %s]]"
