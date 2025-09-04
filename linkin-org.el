@@ -851,7 +851,7 @@ Otherwise use the line number."
 	  (if (derived-mode-p 'org-mode)
 	      (progn
 		;; check if the first characters are # followed by a space
-		(unless (s-matches-p "^# " current-line)
+		(unless (string-match-p "^# " current-line)
 		  ;; if not, then comment the line
 		  ;; go to the beginning of the line and insert a hashtag
 		  (beginning-of-line)
