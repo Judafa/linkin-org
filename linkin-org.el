@@ -159,29 +159,20 @@
 (defun linkin-org-create-id ()
   "Return an id.
 The id is a string with the year, month, day, hour, minute, second."
-  (let* ((time-string
-	  (format-time-string "%Y%m%dT%H%M%S" (current-time))))
-    time-string))
+  (format-time-string "%Y%m%dT%H%M%S" (current-time)))
 
-(defun linkin-org-extract-id (s &optional id-regexp)
-  "Return a substring of string S that matches ID-REGEXP.
-Returns nil if no match was found.
-If ID-REGEXP is not provided then replace it with `linkin-org-id-regexp'."
-  (unless id-regexp (setq id-regexp linkin-org-id-regexp))
-  (when (stringp s)
-    (when (string-match id-regexp s)
-      ;; this function returns a list of list of strings
-      (car (car (s-match-strings-all id-regexp s))))))
+(defun linkin-org-extract-id (str)
+  "Return an id contains in string STR.
+The returned id matches the regexp `linkin-org-id-regexp'.
+Returns nil if no match was found."
+  (when (stringp str)
+    (save-match-data
+      (when (string-match linkin-org-id-regexp str)
+	(match-string 0 str)))))
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
   "Take a file name FILE-NAME (without path) and strip off the id part.
 Also strip off the separator -- if possible."
-  ;; (let* (
-  ;; 	 (id (linkin-org-extract-id file-name linkin-org-id-regexp)))
-    ;; (if id
-	;; (let* (;; remove the id
-	;;        (file-name-without-id
-	;; 	(replace-regexp-in-string id "" file-name)))
   (cond
    (
     ;; if the id is at the tail of the file name
@@ -312,7 +303,7 @@ It is assumed you already checked that FILE-PATH is not a valid path."
 	    ;; else, try to resolve it with id
 	    (if-let* ;; get the id of the considered file/dir, if it exists
 		((id
-		  (linkin-org-extract-id sub-dir linkin-org-id-regexp)))
+		  (linkin-org-extract-id sub-dir)))
 		;; if the file has an id, try to resolve it
 		(cond
 		 (;; try with fd, if installed
@@ -360,8 +351,8 @@ It is assumed you already checked that FILE-PATH is not a valid path."
 			 (-filter
 			  (lambda (s)
 			    (or
-			     (not (s-equals? s "."))
-			     (not (s-equals? s ".."))))
+			     (not (string-equal s "."))
+			     (not (string-equal s ".."))))
 			  (directory-files building-dir t id t))))))
 	      ;; else if there is no id, then we cannot resolve the file. set the buidling path to nil
 	      (setq building-dir nil))))))
@@ -453,8 +444,8 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 		    ;; get rid of the stupid "." and ".." files
 		    (lambda (s)
 		      (or
-		       (not (s-equals? s "."))
-		       (not (s-equals? s ".."))))
+		       (not (string-equal s "."))
+		       (not (string-equal s ".."))))
 		    (directory-files-recursively dir id t))))
 	    ;; if we found a match, the search is over
 	    (when resolved-file-path (setq file-found-p 'found))
@@ -532,7 +523,7 @@ The function is applied as if the point was on that file in Dired."
 	  (cl-some #'identity
 		   (mapcar
 		    (lambda (dir)
-		      (s-prefix?
+		      (string-prefix-p
 		       (expand-file-name dir)
 		       (expand-file-name file-path)))
 		    linkin-org-search-directories-to-resolve-broken-links))))
@@ -759,7 +750,7 @@ Otherwise use the line number."
 	   (line-end-position)))
 	 ;; get the id in the current line, if there is one
 	 (inline-id-with-prefix
-	  (linkin-org-extract-id current-line linkin-org-inline-id-regexp))
+	  (linkin-org-extract-id current-line))
 	 ;; remove the leading id: part of the inline id
 	 (inline-id
 	  (when inline-id-with-prefix
