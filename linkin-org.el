@@ -174,36 +174,48 @@ If ID-REGEXP is not provided then replace it with `linkin-org-id-regexp'."
       (car (car (s-match-strings-all id-regexp s))))))
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
-  "Take a file name FILE-NAME (without path) and strip off the id part."
-  (let* ((id (linkin-org-extract-id file-name linkin-org-id-regexp)))
-    (if id
-	(let* (;; remove the id
-	       (file-name-without-id
-		(replace-regexp-in-string id "" file-name)))
-	  (cond
-	   ;; if the id is at the tail of the file name
-	   ((eq linkin-org-id-position-in-file-name 'tail)
-	    (replace-regexp-in-string
-	     ;; (concat linkin-org-id-regexp "\\(?:\\.[^.]*\\)?$")
-	     (concat linkin-org-sep-regexp
-		     (rx
-		      (seq
-		       (? (seq "." (zero-or-more (not "."))))
-		       line-end)))
-	     ;; (rx (seq (?  (seq "." (zero-or-more (not ".")))) line-end))
-	     (lambda (match)
-	       ;; remove the leading separator
-	       ;; (substring match 0 (1- (length match)))
-	       (replace-regexp-in-string
-		(concat "^" linkin-org-sep-regexp)
-		"" match))
-	     file-name-without-id))
-	   (t
-	    ;; remove the heading sep -- if there is one
-	    (replace-regexp-in-string
-	     (concat "^" linkin-org-sep-regexp)
-	     "" file-name-without-id))))
-      file-name)))
+  "Take a file name FILE-NAME (without path) and strip off the id part.
+Also strip off the separator -- if possible."
+  ;; (let* (
+  ;; 	 (id (linkin-org-extract-id file-name linkin-org-id-regexp)))
+    ;; (if id
+	;; (let* (;; remove the id
+	;;        (file-name-without-id
+	;; 	(replace-regexp-in-string id "" file-name)))
+  (cond
+   (
+    ;; if the id is at the tail of the file name
+    (string-match
+     (rx (seq (zero-or-more anychar) (regexp linkin-org-id-regexp) (? (seq "." (zero-or-more (not ".")))) line-end))
+     file-name)
+    (replace-regexp-in-string
+     (rx (seq (? (regexp linkin-org-sep-regexp)) (regexp linkin-org-id-regexp) (? (seq "." (zero-or-more (not ".")))) line-end))
+     (lambda (str)
+       ;; return the extension, if there is one
+       (save-match-data
+	 (if (string-match (rx (seq "." (zero-or-more (not ".")) line-end)) str)
+	     (match-string 0 str)
+	   ""
+	   )
+	 )
+       )
+     file-name))
+   (
+    ;; else if the id is at the head of the file name
+    (string-match
+     (rx (seq line-start (regexp linkin-org-id-regexp) (zero-or-more anychar)))
+     file-name)
+    (replace-regexp-in-string
+     (rx (seq line-start (regexp linkin-org-id-regexp) (? (regexp linkin-org-sep-regexp))))
+     ""
+     file-name)
+    )
+   (t
+    ;; else if the id is neither at the beginning or at the end, just remove the id
+    (replace-regexp-in-string
+     linkin-org-id-regexp
+     ""
+     file-name))))
 
 (defun linkin-org-give-id-to-file-name (file-name &optional id)
   "Insert an id into FILE-NAME.
