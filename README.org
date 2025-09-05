@@ -3,7 +3,8 @@ linkin-org --- an emacs workflow with fast, reliable links.
 * Overview
 
 A link is a piece of text that redirects to some data.
-The main problem of a link is, it stops working if the data changes location or name, we say the link became broken.
+Links are amazing: you can refer to any data from your written notes, making it easy to centralize and organize information.
+The main problem is, a link stops working if the linked data changes its location or name, we say the link became broken.
 linkin-org allows you to access your local data --- directories, files or lines --- with *reliable* links that never break.
 The links are made reliable thanks to ids attached to your data.
 # By design, linkin-org suggests a simple yet crazy efficient workflow centered around your written notes.
