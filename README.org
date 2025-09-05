@@ -74,23 +74,24 @@ and a line that you can reliably access via a link (here with a python syntax) l
 
 
 When you open a link that contains an outdated path (e.g., the linked file was renamed or moved), linkin-org will try to resolve the link using the ids in the path.
-For that, linkin-org will attempt two heuristics: First, it tries to resolve the path with local id search (fast, always works if the file was only renamed); Second, it performs an exhaustive recursive search in the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~ (slower, always works as long as the file is in one of those directories).
+For that, linkin-org will attempt two heuristics.
+First, it tries to resolve the path with local id search (fast, always works if the file was only renamed); Second, it performs an exhaustive recursive search in the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~ (slower, always works as long as the file is in one of those directories).
 
 
 
-The links follow a syntax similar to usual org links.
-For more convenient link-based workflows, it is however tempting to store more information in the links.
-For that, linkin-org defines a new format to store metadata in the links.
-For example, a link that points towards the line above looks like this:
-#+begin_src example
-[[file:/home/juliend/Downloads/20250816T174006--filename.py::(:inline-id 20250425T160020)][[file] filename.py]]
-#+end_src
+# The links follow a syntax similar to usual org links.
+# For more convenient link-based workflows, it is however tempting to store more information in the links.
+# For that, linkin-org defines a new format to store metadata in the links.
+# For example, a link that points towards the line above looks like this:
+# #+begin_src example
+# [[file:/home/juliend/Downloads/20250816T174006--filename.py::(:inline-id 20250425T160020)][[file] filename.py]]
+# #+end_src
 
-Sometimes, more information is needed.
-This is the case of the pdf link for example (defined in the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]]), where we need to specify the page and the place to highlight on the page:
-#+begin_src example
-[[pdf:~/Dropbox/FourreTout/Papers/20250325T235411--The purely functional software deployment model.pdf::(:page 98 :edges (0.190915 0.268993 0.398431 0.289572))][[pdf] p98 _ "File system objects"]]
-#+end_src
+# Sometimes, more information is needed.
+# This is the case of the pdf link for example (defined in the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]]), where we need to specify the page and the place to highlight on the page:
+# #+begin_src example
+# [[pdf:~/Dropbox/FourreTout/Papers/20250325T235411--The purely functional software deployment model.pdf::(:page 98 :edges (0.190915 0.268993 0.398431 0.289572))][[pdf] p98 _ "File system objects"]]
+# #+end_src
 
 
 
