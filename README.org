@@ -179,7 +179,7 @@ If you respect them, your links will always work.
    The reverse order will break your links.
    Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
    But if you later decide to attach an id to the data, all your previous links towards the data will be broken.
-4. *Keep your data inside directories that linkin-org uses to resolve paths*.
+4. *Keep your data inside directories that linkin-org searches to resolve paths*.
    Those directories are listed in ~linkin-org-search-directories-to-resolve-broken-links~.
    linkin-org recursively searches throughout those directories to find your data in last resort.
    # No link is broken if the linked data has an id and lies inside those directories.
