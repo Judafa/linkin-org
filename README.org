@@ -8,7 +8,7 @@ Problem is, a link stops working when the linked data was renamed or moved to an
 Links are fragile and thus cannot support a whole workflow.
 
 
-Linkin-org solves this problem.
+*Linkin-org solves this problem*.
 Linkin-org allows you to access your local data --- directories, files or lines --- with *reliable* links that never break.
 The links are made reliable thanks to ids attached to your data.
 # By design, linkin-org suggests a simple yet crazy efficient workflow centered around your written notes.
