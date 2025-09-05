@@ -508,12 +508,11 @@ The function is applied as if the point was on that file in Dired."
   "Store the file under point in Dired."
   (let* ((file-path (dired-file-name-at-point))
 	 (file-name
-	  (cond
-	   ;; if it's a directory
-	   ((file-directory-p file-path)
-	    (file-name-nondirectory (directory-file-name file-path)))
+	  (if (file-directory-p file-path)
+	      ;; if it's a directory
+	      (file-name-nondirectory (directory-file-name file-path))
 	   ;; else if it's a file
-	   (t (file-name-nondirectory file-path))))
+	   (file-name-nondirectory file-path)))
 	 ;; is the file already in the list of directories to check in case of a broken link
 	 (is-file-already-in-store-directory?
 	  (cl-some #'identity
@@ -527,15 +526,26 @@ The function is applied as if the point was on that file in Dired."
     (if (file-directory-p file-path)
 	;; if it's a directory
 	(progn
-	  (let* ;; compute the complete new file path to store the dir into, without id, including name at the end
+	  (let*
+	      ;; compute the complete new file path to store the dir into, without id, including name at the end
 	      ((new-raw-file-path
 		(cond
 		 ((not linkin-org-store-file-directly-p)
-		  (let ((raw-user-given-path
+		  (let* (
+			 (default-dir
+			  (if is-file-already-in-store-directory?
+			      (file-name-as-directory
+			       (file-name-directory
+				(expand-file-name
+				 (directory-file-name file-path))))
+			    (file-name-as-directory linkin-org-store-directory)
+			   ))
+			 ;; ask the user for the new location of the directory
+			 (raw-user-given-path
 			 (read-directory-name
-			  "Give new location: "
-			  (file-name-as-directory linkin-org-store-directory)
-			  (file-name-as-directory linkin-org-store-directory)
+			  "Move To: "
+			  default-dir
+			  default-dir
 			  nil)))
 		    (if (file-directory-p raw-user-given-path)
 			;; if the user provided path is a directory, then add at the end the initial name of the directory
@@ -544,6 +554,7 @@ The function is applied as if the point was on that file in Dired."
 			 file-name)
 		      ;; else if the user provided a file name at the end of the path, use it
 		      raw-user-given-path)))
+		 ;; else, we store the data directly without asking the user
 		 (t
 		  (concat
 		   (file-name-as-directory linkin-org-store-directory)
@@ -577,11 +588,8 @@ The function is applied as if the point was on that file in Dired."
 		      (expand-file-name
 		       (directory-file-name linkin-org-store-directory)))
 		     new-file-name)))))
-	    ;; (message "new-raw-file-path: %s" new-raw-file-path)
-	    ;; (message "new-raw-file-name: %s" new-raw-file-name)
-	    ;; (message "new-file-path: %s" new-file-path)
-	    ;; (copy-directory file-path new-file-path)
-	    (rename-file file-path new-file-path)
+	    (unless (file-exists-p new-file-path)
+	     (rename-file file-path new-file-path))
 	    ;; copy a link towards the stored directory
 	    (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
 	    ;; update the Dired buffer
@@ -591,11 +599,20 @@ The function is applied as if the point was on that file in Dired."
 	(let* ((new-raw-file-path
 		(cond
 		 ((not linkin-org-store-file-directly-p)
-		  (let ((raw-user-given-path
+		  (let* (
+			 (default-dir
+			  (if is-file-already-in-store-directory?
+			      (file-name-as-directory
+			       (file-name-directory
+				(expand-file-name
+				 (directory-file-name file-path))))
+			    (file-name-as-directory linkin-org-store-directory)
+			   ))
+			(raw-user-given-path
 			 (read-directory-name
-			  "Give new location: "
-			  (file-name-as-directory linkin-org-store-directory)
-			  (file-name-as-directory linkin-org-store-directory)
+			  "Move To: "
+			  default-dir
+			  default-dir
 			  nil)))
 		    (if (file-directory-p raw-user-given-path)
 			;; if the user provided path is a directory, then add at the end the initial name of the directory
@@ -637,7 +654,9 @@ The function is applied as if the point was on that file in Dired."
 		      (expand-file-name
 		       (directory-file-name linkin-org-store-directory)))
 		     new-file-name)))))
-	  (rename-file file-path new-file-path)
+
+	  (unless (file-exists-p new-file-path)
+	    (rename-file file-path new-file-path))
 	  (linkin-org-perform-function-as-if-in-dired-buffer new-file-path 'linkin-org-dired-get-link)
 	  ;; update the Dired buffer
 	  (revert-buffer))))))
