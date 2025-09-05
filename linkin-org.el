@@ -186,10 +186,7 @@ Also strip off the separator -- if possible."
        (save-match-data
 	 (if (string-match (rx (seq "." (zero-or-more (not ".")) line-end)) str)
 	     (match-string 0 str)
-	   ""
-	   )
-	 )
-       )
+	   "")))
      file-name))
    (
     ;; else if the id is at the head of the file name
@@ -199,8 +196,7 @@ Also strip off the separator -- if possible."
     (replace-regexp-in-string
      (rx (seq line-start (regexp linkin-org-id-regexp) (? (regexp linkin-org-sep-regexp))))
      ""
-     file-name)
-    )
+     file-name))
    (t
     ;; else if the id is neither at the beginning or at the end, just remove the id
     (replace-regexp-in-string
