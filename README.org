@@ -120,12 +120,52 @@ This works with the extension [[https://github.com/Judafa/linkin-org-pdf-link][l
 
 
 * Installing linkin-org
+with melpa
+#+begin_src emacs-lisp
+
+(use-package linkin-org
+  :config
+  ;; set this to the place where you want to store your files by default
+  (setq linkin-org-store-directory "~/")
+  ;; set this to a list of directories that will be searched (in order) to resolve broken links
+  (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
+  ;; so that plain search triggered by opening a link work in org files 
+  (setq org-link-search-must-match-exact-headline nil)
+  ;; ;; uncomment those two lines of code to open your linked files as if you opened them from dired
+  ;; (setq linkin-org-open-links-as-in-dired-p t)
+  ;; (setq linkin-org-opening-file-function-in-dired #'dired-open-file)
+  ;; ;; determines where the ids are positioned in the file name, can be 'head or 'tail. defaults to 'head
+  ;; (setq linkin-org-id-position-in-file-name 'tail)
+
+  ;; start the linkin-org global mode
+  (linkin-org-global-mode 1)
+  )
+
+
+
+
+;; ;; uncomment to install other link types
+;; (use-package linkin-org-pdf-link
+;;   :straight (linkin-org-pdf-link
+;; 	     :type git
+;; 	     :host github
+;; 	     :repo "Judafa/linkin-org-pdf-link")
+;;   )
+
+;; (use-package linkin-org-music-link
+;;   :straight (linkin-org-music-link
+;; 	     :type git
+;; 	     :host github
+;; 	     :repo "Judafa/linkin-org-music-link")
+;;   )
+#+end_src
+
 with straight
 #+begin_src emacs-lisp
 (use-package linkin-org
   :straight (linkin-org :type git :host github :repo "Judafa/linkin-org")
   :config
-  ;; set this to the place where you want to store your files
+  ;; set this to the place where you want to store your files by default
   (setq linkin-org-store-directory "~/")
   ;; set this to a list of directories that will be searched (in order) to resolve broken links
   (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
