@@ -371,7 +371,7 @@ Here are personal tips, this is a matter of preference.
 
 My biggest inspiration is the [[https://github.com/protesilaos/denote][Denote]] package by Protesilaos Stavrou, and also the [[https://github.com/org-roam/org-roam][org-roam]] package.
 Both of those packages use ids that are directly attached to the file names for a note-taking purpose.
-Linkin-org's default syntax is taken from Denote --- by default, linkin-org's path resolving system works for both denote and org-roam syntaxes.
+Linkin-org's default syntax is taken from Denote --- by default, linkin-org's path resolving system is compatible with both denote and org-roam syntaxes.
 
 I also took inspiration from the [[https://github.com/NixOS/nix][nix package manager]], and the [[https://github.com/NixOS/nix][nixos]] operating system.
 Those softwares use cryptographic hashes to uniquely identify packages.
