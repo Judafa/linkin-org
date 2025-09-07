@@ -198,44 +198,37 @@ Also strip off the separator -- if possible."
      ""
      file-name))
    (t
-    ;; else if the id is neither at the beginning or at the end, just remove the id
+    ;; else if the id is neither at the beginning nor at the end, just remove the id
     (replace-regexp-in-string
      linkin-org-id-regexp
      ""
      file-name))))
 
-(defun linkin-org-give-id-to-file-name (file-name &optional id)
+(defun linkin-org-give-id-to-file-name (file-name &optional is-directory-p)
   "Insert an id into FILE-NAME.
-If ID is provided, use it as the id.
+If IS-DIRECTORY-P is non-nil, then insert an id as if FILE-NAME is a directory.
 Does not add an id if FILE-NAME already has one."
   (if (linkin-org-extract-id file-name)
       ;; if the file already has an id, dont add one
       file-name
     ;; else add an id
-    (if id
+    (if (eq linkin-org-id-position-in-file-name 'tail)
 	;; if we must add the id at the tail of the file name
-	(if (eq linkin-org-id-position-in-file-name 'tail)
+	(if (not is-directory-p)
+	    ;; if file-name is not a directory, then insert the id before the extension (eg, .txt)
 	    (replace-regexp-in-string
 	     (rx
 	      (seq
 	       (? (seq "." (zero-or-more (not "."))))
 	       line-end))
-	     (lambda (match) (concat linkin-org-sep id match))
+	     (lambda (match)
+	       (concat linkin-org-sep (linkin-org-create-id) match))
 	     file-name)
-	  ;; else just add the id at the head of the file name
-	  (concat id linkin-org-sep file-name))
-      ;; else if no id is provided
-      (if (eq linkin-org-id-position-in-file-name 'tail)
-	  (replace-regexp-in-string
-	   (rx
-	    (seq
-	     (? (seq "." (zero-or-more (not "."))))
-	     line-end))
-	   (lambda (match)
-	     (concat linkin-org-sep (linkin-org-create-id) match))
-	   file-name)
-	;; else just add the id at the head of the file name
-	(concat (linkin-org-create-id) linkin-org-sep file-name)))))
+	  ;; else if this file-name is a directory name, just insert the id at the end
+	  (concat file-name linkin-org-sep (linkin-org-create-id))
+	  )
+      ;; else just add the id at the head of the file name
+      (concat (linkin-org-create-id) linkin-org-sep file-name))))
 
 (defun linkin-org-escape-square-brackets (str)
   "Escape occurrences of '\\\\', '\\[', and '\\]' in the string STR."
@@ -567,7 +560,7 @@ The function is applied as if the point was on that file in Dired."
 		(file-name-nondirectory new-raw-file-path))
 	       ;; give the file name an id
 	       (new-file-name
-		(linkin-org-give-id-to-file-name new-raw-file-name))
+		(linkin-org-give-id-to-file-name new-raw-file-name t))
 	       ;; get the new file path
 	       (new-file-path
 		(if (not linkin-org-store-file-directly-p)
@@ -915,7 +908,7 @@ Do nothing if the file already has an id."
        file-path
        (concat
 	file-path-sans-name
-	(linkin-org-give-id-to-file-name file-name)))
+	(linkin-org-give-id-to-file-name file-name is-directory?)))
       (revert-buffer))))
 
 
