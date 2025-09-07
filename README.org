@@ -181,13 +181,14 @@ If you respect them, your links will always work.
    In that case, remove the id of the copied file by hand and create another id for that file.
    Also, some softwares (such as latex) will create auxiliary files with the same name as your original file.
    In that case, a solution is to attach the id to the directory that contains your file instead.
-3. *Attach an id before creating a link*.
+3. *Attach an id before you create a link*.
    The reverse order will break your links.
    Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
    But if you later decide to attach an id to the data, all your previous links towards the data will be broken.
-4. *Keep your data inside directories that linkin-org searches to resolve paths*.
+4. *Keep your data inside the directories marked for id resolving*.
    Those directories are listed in ~linkin-org-search-directories-to-resolve-broken-links~.
    linkin-org recursively searches throughout those directories to find your data in last resort.
+   By default, ~linkin-org-store~ always suggests to store your data in one of those directories.
    # No link is broken if the linked data has an id and lies inside those directories.
 
 With its builtin commands, linkin-org suggests a simple workflow that respects all four golden rules at once: whenever you want to keep a data in your local memory, take the habit to run ~linkin-org-store~ and then paste the link in a written note.

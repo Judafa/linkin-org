@@ -453,7 +453,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 
 
 (defun linkin-org-resolve-path (file-path)
-  "Try different approaches to resolve the file paht FILE-PATH."
+  "Try different approaches to resolve the file path FILE-PATH."
   (cond
    ;; if the path is already correct, do nothing
    ((file-exists-p file-path)
