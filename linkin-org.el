@@ -471,7 +471,10 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 (defun linkin-org-perform-function-as-if-in-dired-buffer (file-path function-to-perform)
   "Apply FUNCTION-TO-PERFORM on a file with path FILE-PATH.
 The function is applied as if the point was on that file in Dired."
-  (let* (;; to make operation silent
+  (let* (
+	 ;; dont print messages while loading the package
+	 (inhibit-message t)
+	 ;; to make operation silent
 	 (org-inhibit-startup nil)
 	 ;; get the full path
 	 (file-path (expand-file-name file-path))
