@@ -1,4 +1,4 @@
-linkin-org --- an emacs workflow with unbreakable links.
+linkin-org --- unbreakable links.
 
 * Overview
 
