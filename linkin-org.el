@@ -943,6 +943,22 @@ Do nothing if the file already has an id."
       (linkin-org-store-inline)))))
 
 
+;;;###autoload
+(defun linkin-org-rename (new-file-name-sans-directory)
+  "Rename the file under point in a Dired buffer."
+  (interactive (list (read-string
+		      "Enter new name: "
+		      (concat (linkin-org-extract-id (file-name-nondirectory (dired-file-name-at-point))) linkin-org-sep))))
+  (let*
+      (
+       (old-file-name (dired-file-name-at-point))
+       (new-file-name (concat (file-name-as-directory (file-name-directory old-file-name)) new-file-name-sans-directory)
+       )
+      )
+    (rename-file old-file-name new-file-name)
+    (revert-buffer)
+    )
+  )
 
 
 
