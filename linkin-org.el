@@ -44,7 +44,7 @@
 
 
 (defgroup linkin-org nil
-  "A package to make org link reliable."
+  "A package to make org links reliable."
   :group 'convenience)
 
 
@@ -945,6 +945,27 @@ Do nothing if the file already has an id."
 
 
 
+;;;###autoload
+(defun linkin-org-open-link-in-dired (link)
+  "Open the file at LINK."
+  (interactive)
+  (let* ((file-path (org-element-property :path link))
+	 ;; (metadata (org-element-property :metadata link))
+	 (line-number-or-id (org-element-property :search-option link)))
+    (when (file-exists-p file-path)
+      ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
+      (linkin-org-perform-function-as-if-in-dired-buffer
+       file-path
+       linkin-org-opening-file-function-in-dired)
+      ;; go to the id if specified
+      (when line-number-or-id
+	(cond
+	 (;; if line-number-or-id matches an id, search for that id in the buffer
+	  (linkin-org-extract-id line-number-or-id)
+	  (org-link-search line-number-or-id))
+	 (;; else, if it matches a number, go to that line number
+	  (string-match-p "^[0-9]+$" line-number-or-id)
+	  (org-goto-line (string-to-number line-number-or-id))))))))
 
 
 ;;;###autoload
