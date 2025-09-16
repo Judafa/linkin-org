@@ -100,6 +100,12 @@
   :type 'boolean
   :group 'linkin-org)
 
+(defcustom linkin-org-open-in-dired-p
+  nil
+  "If non-nil, open file links in a dired buffer."
+  :type 'boolean
+  :group 'linkin-org)
+
 (defcustom linkin-org-opening-file-function-in-dired
   #'dired-find-file
   "Function to use to open a file from Dired."
@@ -962,26 +968,12 @@ Do nothing if the file already has an id."
 
 
 ;;;###autoload
-(defun linkin-org-open-link-in-dired (link)
+(defun linkin-org-open-link-in-dired ()
   "Open the file at LINK."
   (interactive)
-  (let* ((file-path (org-element-property :path link))
-	 ;; (metadata (org-element-property :metadata link))
-	 (line-number-or-id (org-element-property :search-option link)))
-    (when (file-exists-p file-path)
-      ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
-      (linkin-org-perform-function-as-if-in-dired-buffer
-       file-path
-       linkin-org-opening-file-function-in-dired)
-      ;; go to the id if specified
-      (when line-number-or-id
-	(cond
-	 (;; if line-number-or-id matches an id, search for that id in the buffer
-	  (linkin-org-extract-id line-number-or-id)
-	  (org-link-search line-number-or-id))
-	 (;; else, if it matches a number, go to that line number
-	  (string-match-p "^[0-9]+$" line-number-or-id)
-	  (org-goto-line (string-to-number line-number-or-id))))))))
+  (let
+      ((linkin-org-open-in-dired-p t))
+    (org-open-at-point-global)))
 
 
 ;;;###autoload
@@ -990,20 +982,30 @@ Do nothing if the file already has an id."
   (let* ((file-path (org-element-property :path link))
 	 ;; (metadata (org-element-property :metadata link))
 	 (line-number-or-id (org-element-property :search-option link)))
-    (when (file-exists-p file-path)
-      ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
-      (linkin-org-perform-function-as-if-in-dired-buffer
-       file-path
-       linkin-org-opening-file-function-in-dired)
-      ;; go to the id if specified
-      (when line-number-or-id
-	(cond
-	 (;; if line-number-or-id matches an id, search for that id in the buffer
-	  (linkin-org-extract-id line-number-or-id)
-	  (org-link-search line-number-or-id))
-	 (;; else, if it matches a number, go to that line number
-	  (string-match-p "^[0-9]+$" line-number-or-id)
-	  (org-goto-line (string-to-number line-number-or-id))))))))
+     (when (file-exists-p file-path)
+       (if linkin-org-open-in-dired-p
+	   ;; if the user wants to open its links in dired
+	   (progn
+	     ;; open a dired buffer visiting the directory of the file
+	     (dired (file-name-directory file-path))
+	     ;; go to the line with the opened file in the dired buffer
+	     (dired-goto-file file-path)
+	    )
+       ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
+       (linkin-org-perform-function-as-if-in-dired-buffer
+	file-path
+	linkin-org-opening-file-function-in-dired)
+       ;; go to the id if specified
+       (when line-number-or-id
+	 (cond
+	  (;; if line-number-or-id matches an id, search for that id in the buffer
+	   (linkin-org-extract-id line-number-or-id)
+	   (org-link-search line-number-or-id))
+	  (;; else, if it matches a number, go to that line number
+	   (string-match-p "^[0-9]+$" line-number-or-id)
+	   (org-goto-line (string-to-number line-number-or-id))))))
+     )
+    ))
 
 
 ;;;###autoload
