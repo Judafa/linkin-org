@@ -989,7 +989,7 @@ Do nothing if the file already has an id."
 	     ;; open a dired buffer visiting the directory of the file
 	     (dired (file-name-directory file-path))
 	     ;; go to the line with the opened file in the dired buffer
-	     (dired-goto-file file-path)
+	     (dired-goto-file (expand-file-name file-path))
 	    )
        ;; open the file from a Dired buffer using the function `linkin-org-open-file-as-in-dired'
        (linkin-org-perform-function-as-if-in-dired-buffer
