@@ -282,7 +282,9 @@ It is assumed you already checked that FILE-PATH is not a valid path."
 	 ;; doesnt work on windows!
 	 (split-path (split-string file-path "/"))
 	 ;; remove empty strings ""
-	 (split-path (seq-remove 'string-empty-p split-path)))
+	 (split-path (seq-remove 'string-empty-p split-path))
+	 ;; get the extension of the file name, if any (ie, txt)
+	 (file-extension (file-name-extension file-path)))
     (dolist (sub-dir split-path)
       ;; building-dir is set of nil as soon as we know the path cannot be resolved.
       (when building-dir
@@ -325,8 +327,18 @@ It is assumed you already checked that FILE-PATH is not a valid path."
 			 (lambda (s)
 			   (not (string-match-p linkin-org-file-names-to-ignore s)))
 			 resolved-dir))
-		  ;; take the first match, after filtering
-		  (setq resolved-dir (car resolved-dir))
+		  ;; filter further to take the file with the right extension, if it exists
+		  (if-let 
+		      ((resolved-dir-filter-by-extensions
+			(seq-filter
+			 (lambda (s)
+			   (string-equal file-extension (file-name-extension s)))
+			 resolved-dir)))
+		      ;; take a match with the right exension if it exists
+		      (setq resolved-dir (car resolved-dir-filter-by-extensions))
+		      ;; else just take the first match
+		      (setq resolved-dir (car resolved-dir))
+		      )
 		  (if resolved-dir
 		      ;; if we found a match, append the resolved dir to the building dir
 		      (setq building-dir
@@ -380,6 +392,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 	 (file-found-p
 	  (if directories-to-look-into 'search-in-progress 'not-found))
 	 (tmp-dirs directories-to-look-into)
+	 (file-extension (file-name-extension file-path))
 	 resolved-file-path)
     ;; try for each dir in directories-to-look-into
     (while (and id (eq file-found-p 'search-in-progress))
@@ -416,8 +429,19 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 			 (lambda (s)
 			   (not (string-match-p linkin-org-file-names-to-ignore s)))
 			 resolved-file-path))
-		  ;; take the first match, after filtering
-		  (setq resolved-file-path (car resolved-file-path)))))
+		  ;; filter further to take the file with the right extension, if it exists
+		  (if-let 
+		      ((resolved-file-path-filter-by-extensions
+			(seq-filter
+			 (lambda (s)
+			   (string-equal file-extension (file-name-extension s)))
+			 resolved-file-path)))
+		      ;; take a match with the right exension if it exists
+		      (setq resolved-file-path (car resolved-file-path-filter-by-extensions))
+		      ;; else just take the first match
+		      (setq resolved-file-path (car resolved-file-path))))))
+		  ;; ;; take the first match, after filtering
+		  ;; (setq resolved-file-path (car resolved-file-path)))))
 	    ;; if we found a match, the search is over
 	    (when resolved-file-path
 	      (setq file-found-p 'found)
