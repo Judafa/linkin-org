@@ -436,12 +436,12 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 	    (setq resolved-file-path
 		  (car
 		   (-filter
-		    ;; get rid of the stupid "." and ".." files
+		    ;; get rid of the "." and ".." files
 		    (lambda (s)
 		      (or
 		       (not (string-equal s "."))
 		       (not (string-equal s ".."))))
-		    (directory-files-recursively dir id t))))
+		    (directory-files-recursively dir id t t))))
 	    ;; if we found a match, the search is over
 	    (when resolved-file-path (setq file-found-p 'found))
 	    ;; if we found no match and if we looked into all the dirs
