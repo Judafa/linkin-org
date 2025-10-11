@@ -167,14 +167,17 @@
 The id is a string with the year, month, day, hour, minute, second."
   (format-time-string "%Y%m%dT%H%M%S" (current-time)))
 
-(defun linkin-org-extract-id (str)
+(defun linkin-org-extract-id (str &optional id-regexp)
   "Return an id contains in string STR.
-The returned id matches the regexp `linkin-org-id-regexp'.
+If ID-REGEXP is non nil, use it as a regular expression to spot the id.
+Else, returned id matches the regexp `linkin-org-id-regexp'.
 Returns nil if no match was found."
-  (when (stringp str)
-    (save-match-data
-      (when (string-match linkin-org-id-regexp str)
-	(match-string 0 str)))))
+  (let
+      ((regexp (if id-regexp id-regexp linkin-org-id-regexp str)))
+    (when (stringp str)
+     (save-match-data
+       (when (string-match regexp str)
+	 (match-string 0 str))))))
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
   "Take a file name FILE-NAME (without path) and strip off the id part.
@@ -791,7 +794,7 @@ Otherwise use the line number."
 	   (line-end-position)))
 	 ;; get the id in the current line, if there is one
 	 (inline-id-with-prefix
-	  (linkin-org-extract-id current-line))
+	  (linkin-org-extract-id current-line (concat "id:" linkin-org-id-regexp)))
 	 ;; remove the leading id: part of the inline id
 	 (inline-id
 	  (when inline-id-with-prefix
