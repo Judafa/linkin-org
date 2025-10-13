@@ -51,15 +51,15 @@
 
 ;; define the directory where the function linkin-org-store stores the files and directories by default
 (defcustom linkin-org-store-directory
-  (expand-file-name "~/")
-  "The directory where `linkin-org-store' stores data by default."
-  :type 'string
+  (list (expand-file-name "~/"))
+  "The directories where `linkin-org-store' stores data by default."
+  :type '(string)
   :group 'linkin-org)
 
 ;; define whether to store the file directly in the directory defined by `linkin-org-store-directory' without asking anything
 (defcustom linkin-org-store-file-directly-p
   nil
-  "If non-nil, store the file to store directly in `linkin-org-store-directory'."
+  "If non-nil, store the file directly in car of `linkin-org-store-directory'."
   :type 'boolean
   :group 'linkin-org)
 
@@ -173,7 +173,7 @@ If ID-REGEXP is non nil, use it as a regular expression to spot the id.
 Else, returned id matches the regexp `linkin-org-id-regexp'.
 Returns nil if no match was found."
   (let
-      ((regexp (if id-regexp id-regexp linkin-org-id-regexp str)))
+      ((regexp (if id-regexp id-regexp linkin-org-id-regexp)))
     (when (stringp str)
      (save-match-data
        (when (string-match regexp str)
@@ -550,7 +550,7 @@ The function is applied as if the point was on that file in Dired."
 		      (string-prefix-p
 		       (expand-file-name dir)
 		       (expand-file-name file-path)))
-		    linkin-org-search-directories-to-resolve-broken-links))))
+		    linkin-org-store-directory))))
     ;; check wether it's a file or a directory
     (if (file-directory-p file-path)
 	;; if it's a directory
@@ -567,7 +567,7 @@ The function is applied as if the point was on that file in Dired."
 			       (file-name-directory
 				(expand-file-name
 				 (directory-file-name file-path))))
-			    (file-name-as-directory linkin-org-store-directory)
+			    (file-name-as-directory (car linkin-org-store-directory))
 			   ))
 			 ;; ask the user for the new location of the directory
 			 (raw-user-given-path
@@ -586,7 +586,7 @@ The function is applied as if the point was on that file in Dired."
 		 ;; else, we store the data directly without asking the user
 		 (t
 		  (concat
-		   (file-name-as-directory linkin-org-store-directory)
+		   (file-name-as-directory (car linkin-org-store-directory))
 		   file-name))))
 	       ;; get the new raw file name
 	       (new-raw-file-name
@@ -615,7 +615,7 @@ The function is applied as if the point was on that file in Dired."
 		    (concat
 		     (file-name-as-directory
 		      (expand-file-name
-		       (directory-file-name linkin-org-store-directory)))
+		       (directory-file-name (car linkin-org-store-directory))))
 		     new-file-name)))))
 	    (unless (file-exists-p new-file-path)
 	     (rename-file file-path new-file-path))
@@ -635,7 +635,7 @@ The function is applied as if the point was on that file in Dired."
 			       (file-name-directory
 				(expand-file-name
 				 (directory-file-name file-path))))
-			    (file-name-as-directory linkin-org-store-directory)
+			    (file-name-as-directory (car linkin-org-store-directory))
 			   ))
 			(raw-user-given-path
 			 (read-directory-name
@@ -652,7 +652,7 @@ The function is applied as if the point was on that file in Dired."
 		      raw-user-given-path)))
 		 (t
 		  (concat
-		   (file-name-as-directory linkin-org-store-directory)
+		   (file-name-as-directory (car linkin-org-store-directory))
 		   file-name))))
 	       ;; get the new raw file name
 	       (new-raw-file-name
@@ -681,7 +681,7 @@ The function is applied as if the point was on that file in Dired."
 		    (concat
 		     (file-name-as-directory
 		      (expand-file-name
-		       (directory-file-name linkin-org-store-directory)))
+		       (directory-file-name (car linkin-org-store-directory))))
 		     new-file-name)))))
 
 	  (unless (file-exists-p new-file-path)
