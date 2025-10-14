@@ -17,7 +17,7 @@ The links are made reliable thanks to ids attached to your data.
 
 In a few words, linkin-org is:
 - *reliable*: your links just always work.
-  It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]) and you should be ok seeing ids in your file names and in your notes.
+  It takes a bit of discipline (see the [[#the-4-golden-rules:-how-reliable-are-the-links-exactly?][4 golden rules]]) and you should be ok seeing ids in your file names and in your notes.
   You get used to it!
 - *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) without risk to break your links.
   All you have to do is to not change or remove the ids.
