@@ -51,15 +51,15 @@
 
 ;; define the directory where the function linkin-org-store stores the files and directories by default
 (defcustom linkin-org-store-directory
-  (expand-file-name "~/")
-  "The directory where `linkin-org-store' stores data by default."
-  :type 'string
+  (list (expand-file-name "~/"))
+  "The directories where `linkin-org-store' stores data by default."
+  :type '(string)
   :group 'linkin-org)
 
 ;; define whether to store the file directly in the directory defined by `linkin-org-store-directory' without asking anything
 (defcustom linkin-org-store-file-directly-p
   nil
-  "If non-nil, store the file to store directly in `linkin-org-store-directory'."
+  "If non-nil, store the file directly in car of `linkin-org-store-directory'."
   :type 'boolean
   :group 'linkin-org)
 
@@ -167,14 +167,17 @@
 The id is a string with the year, month, day, hour, minute, second."
   (format-time-string "%Y%m%dT%H%M%S" (current-time)))
 
-(defun linkin-org-extract-id (str)
+(defun linkin-org-extract-id (str &optional id-regexp)
   "Return an id contains in string STR.
-The returned id matches the regexp `linkin-org-id-regexp'.
+If ID-REGEXP is non nil, use it as a regular expression to spot the id.
+Else, returned id matches the regexp `linkin-org-id-regexp'.
 Returns nil if no match was found."
-  (when (stringp str)
-    (save-match-data
-      (when (string-match linkin-org-id-regexp str)
-	(match-string 0 str)))))
+  (let
+      ((regexp (if id-regexp id-regexp linkin-org-id-regexp)))
+    (when (stringp str)
+     (save-match-data
+       (when (string-match regexp str)
+	 (match-string 0 str))))))
 
 (defun linkin-org-strip-off-id-from-file-name (file-name)
   "Take a file name FILE-NAME (without path) and strip off the id part.
@@ -282,7 +285,9 @@ It is assumed you already checked that FILE-PATH is not a valid path."
 	 ;; doesnt work on windows!
 	 (split-path (split-string file-path "/"))
 	 ;; remove empty strings ""
-	 (split-path (seq-remove 'string-empty-p split-path)))
+	 (split-path (seq-remove 'string-empty-p split-path))
+	 ;; get the extension of the file name, if any (ie, txt)
+	 (file-extension (file-name-extension file-path)))
     (dolist (sub-dir split-path)
       ;; building-dir is set of nil as soon as we know the path cannot be resolved.
       (when building-dir
@@ -325,8 +330,18 @@ It is assumed you already checked that FILE-PATH is not a valid path."
 			 (lambda (s)
 			   (not (string-match-p linkin-org-file-names-to-ignore s)))
 			 resolved-dir))
-		  ;; take the first match, after filtering
-		  (setq resolved-dir (car resolved-dir))
+		  ;; filter further to take the file with the right extension, if it exists
+		  (if-let 
+		      ((resolved-dir-filter-by-extensions
+			(seq-filter
+			 (lambda (s)
+			   (string-equal file-extension (file-name-extension s)))
+			 resolved-dir)))
+		      ;; take a match with the right exension if it exists
+		      (setq resolved-dir (car resolved-dir-filter-by-extensions))
+		      ;; else just take the first match
+		      (setq resolved-dir (car resolved-dir))
+		      )
 		  (if resolved-dir
 		      ;; if we found a match, append the resolved dir to the building dir
 		      (setq building-dir
@@ -380,6 +395,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 	 (file-found-p
 	  (if directories-to-look-into 'search-in-progress 'not-found))
 	 (tmp-dirs directories-to-look-into)
+	 (file-extension (file-name-extension file-path))
 	 resolved-file-path)
     ;; try for each dir in directories-to-look-into
     (while (and id (eq file-found-p 'search-in-progress))
@@ -416,8 +432,19 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 			 (lambda (s)
 			   (not (string-match-p linkin-org-file-names-to-ignore s)))
 			 resolved-file-path))
-		  ;; take the first match, after filtering
-		  (setq resolved-file-path (car resolved-file-path)))))
+		  ;; filter further to take the file with the right extension, if it exists
+		  (if-let 
+		      ((resolved-file-path-filter-by-extensions
+			(seq-filter
+			 (lambda (s)
+			   (string-equal file-extension (file-name-extension s)))
+			 resolved-file-path)))
+		      ;; take a match with the right exension if it exists
+		      (setq resolved-file-path (car resolved-file-path-filter-by-extensions))
+		      ;; else just take the first match
+		      (setq resolved-file-path (car resolved-file-path))))))
+		  ;; ;; take the first match, after filtering
+		  ;; (setq resolved-file-path (car resolved-file-path)))))
 	    ;; if we found a match, the search is over
 	    (when resolved-file-path
 	      (setq file-found-p 'found)
@@ -436,12 +463,12 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 	    (setq resolved-file-path
 		  (car
 		   (-filter
-		    ;; get rid of the stupid "." and ".." files
+		    ;; get rid of the "." and ".." files
 		    (lambda (s)
 		      (or
 		       (not (string-equal s "."))
 		       (not (string-equal s ".."))))
-		    (directory-files-recursively dir id t))))
+		    (directory-files-recursively dir id t t))))
 	    ;; if we found a match, the search is over
 	    (when resolved-file-path (setq file-found-p 'found))
 	    ;; if we found no match and if we looked into all the dirs
@@ -523,7 +550,7 @@ The function is applied as if the point was on that file in Dired."
 		      (string-prefix-p
 		       (expand-file-name dir)
 		       (expand-file-name file-path)))
-		    linkin-org-search-directories-to-resolve-broken-links))))
+		    linkin-org-store-directory))))
     ;; check wether it's a file or a directory
     (if (file-directory-p file-path)
 	;; if it's a directory
@@ -540,7 +567,7 @@ The function is applied as if the point was on that file in Dired."
 			       (file-name-directory
 				(expand-file-name
 				 (directory-file-name file-path))))
-			    (file-name-as-directory linkin-org-store-directory)
+			    (file-name-as-directory (car linkin-org-store-directory))
 			   ))
 			 ;; ask the user for the new location of the directory
 			 (raw-user-given-path
@@ -559,7 +586,7 @@ The function is applied as if the point was on that file in Dired."
 		 ;; else, we store the data directly without asking the user
 		 (t
 		  (concat
-		   (file-name-as-directory linkin-org-store-directory)
+		   (file-name-as-directory (car linkin-org-store-directory))
 		   file-name))))
 	       ;; get the new raw file name
 	       (new-raw-file-name
@@ -588,7 +615,7 @@ The function is applied as if the point was on that file in Dired."
 		    (concat
 		     (file-name-as-directory
 		      (expand-file-name
-		       (directory-file-name linkin-org-store-directory)))
+		       (directory-file-name (car linkin-org-store-directory))))
 		     new-file-name)))))
 	    (unless (file-exists-p new-file-path)
 	     (rename-file file-path new-file-path))
@@ -608,7 +635,7 @@ The function is applied as if the point was on that file in Dired."
 			       (file-name-directory
 				(expand-file-name
 				 (directory-file-name file-path))))
-			    (file-name-as-directory linkin-org-store-directory)
+			    (file-name-as-directory (car linkin-org-store-directory))
 			   ))
 			(raw-user-given-path
 			 (read-directory-name
@@ -625,7 +652,7 @@ The function is applied as if the point was on that file in Dired."
 		      raw-user-given-path)))
 		 (t
 		  (concat
-		   (file-name-as-directory linkin-org-store-directory)
+		   (file-name-as-directory (car linkin-org-store-directory))
 		   file-name))))
 	       ;; get the new raw file name
 	       (new-raw-file-name
@@ -654,7 +681,7 @@ The function is applied as if the point was on that file in Dired."
 		    (concat
 		     (file-name-as-directory
 		      (expand-file-name
-		       (directory-file-name linkin-org-store-directory)))
+		       (directory-file-name (car linkin-org-store-directory))))
 		     new-file-name)))))
 
 	  (unless (file-exists-p new-file-path)
@@ -767,7 +794,7 @@ Otherwise use the line number."
 	   (line-end-position)))
 	 ;; get the id in the current line, if there is one
 	 (inline-id-with-prefix
-	  (linkin-org-extract-id current-line))
+	  (linkin-org-extract-id current-line (concat "id:" linkin-org-id-regexp)))
 	 ;; remove the leading id: part of the inline id
 	 (inline-id
 	  (when inline-id-with-prefix

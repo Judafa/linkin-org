@@ -126,8 +126,8 @@ with melpa
 
 (use-package linkin-org
   :config
-  ;; set this to the place where you want to store your files by default
-  (setq linkin-org-store-directory "~/")
+  ;; the first element of that list is the default storing place
+  (setq linkin-org-store-directory (list "~/"))
   ;; set this to a list of directories that will be searched (in order) to resolve broken links
   (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
   ;; so that plain search triggered by opening a link work in org files 
@@ -166,8 +166,8 @@ with straight
 (use-package linkin-org
   :straight (linkin-org :type git :host github :repo "Judafa/linkin-org")
   :config
-  ;; set this to the place where you want to store your files by default
-  (setq linkin-org-store-directory "~/")
+  ;; the first element of that list is the default storing place
+  (setq linkin-org-store-directory (list "~/"))
   ;; set this to a list of directories that will be searched (in order) to resolve broken links
   (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
   ;; so that plain search triggered by opening a link work in org files 
