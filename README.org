@@ -1,4 +1,4 @@
-linkin-org --- unbreakable links.
+linkin-org --- unbreakable links. *This package is recent, (any!) feedback is much appreciated! If you meet problems or would like some improvement, most helpful is to create a github issue.*
 
 * Overview
 
