@@ -6,7 +6,7 @@
 ;; Maintainer: Julien Dallot <judafa@protonmail.com>
 ;; URL: https://github.com/Judafa/linkin-org
 ;; Version: 1.0
-;; Package-Requires: ((emacs "30.1") (s "1.30.0") (dash "2.20.0"))
+;; Package-Requires: ((emacs "30.1"))
 
 ;; This file is not part of GNU Emacs
 
@@ -32,7 +32,6 @@
 (require 'ol)
 (require 'org)
 (require 'org-element-ast)
-(require 'dash)
 (require 'dired)
 
 
