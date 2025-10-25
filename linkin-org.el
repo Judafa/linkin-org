@@ -358,7 +358,7 @@ It is assumed you already checked that FILE-PATH is not a valid path."
 		  ;; else, just use emacs-lisp code to find a matching id. slowest option
 		  (setq building-dir
 			(car
-			 (-filter
+			 (seq-filter
 			  (lambda (s)
 			    (or
 			     (not (string-equal s "."))
@@ -462,7 +462,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 	   (t
 	    (setq resolved-file-path
 		  (car
-		   (-filter
+		   (seq-filter
 		    ;; get rid of the "." and ".." files
 		    (lambda (s)
 		      (or
