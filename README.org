@@ -1,4 +1,6 @@
-linkin-org --- unbreakable links.
+linkin-org --- unbreakable links. 
+
+*This package is recent, (any!) feedback is much appreciated! If you meet problems or would like some improvement, most helpful is to create a github issue.*
 
 * Overview
 
@@ -17,7 +19,7 @@ The links are made reliable thanks to ids attached to your data.
 
 In a few words, linkin-org is:
 - *reliable*: your links just always work.
-  It takes a bit of discipline (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]) and you should be ok seeing ids in your file names and in your notes.
+  It takes a bit of discipline (see the [[#the-4-golden-rules-how-reliable-are-the-links-exactly][4 golden rules]]) and you should be ok seeing ids in your file names and in your notes.
   You get used to it!
 - *fully distributed*: rename, move, modify your files from literally anywhere (emacs, a file browser, a cloud server, ...) without risk to break your links.
   All you have to do is to not change or remove the ids.
@@ -61,7 +63,7 @@ linkin-org provides two main commands:
 
 
 * How does it work?
-An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#how-reliable-are-the-links-exactly][4 golden rules]]).
+An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#the-4-golden-rules-how-reliable-are-the-links-exactly][4 golden rules]]).
 The ids used by linkin-org are time stamps that are precise to the second.
 Concretely, a file that you can reliably access via a link has an id in its name, like:
 #+begin_src example
@@ -203,7 +205,7 @@ with straight
 
 
 * Dependencies
-linkin-org depends on the [[https://github.com/magnars/s.el][string manipulation library (s.el)]] and [[https://github.com/magnars/dash.el][dash.el]].
+linkin-org depends on [[https://github.com/magnars/dash.el][dash.el]].
 For fast link recovery, it is recommended to have [[https://github.com/sharkdp/fd][fd]] installed.
 
 * The 4 golden rules: How Reliable are the links exactly?
@@ -217,11 +219,11 @@ If you respect them, your links will always work.
 2. *Make sure that each id is unique.*
    linkin-org uses time stamps to generate the ids.
    The time stamps are precise to the second.
-   So if you only use linkin-org's builtin functions to create ids and space the calls by one second, there will be no problem.
-   But be careful when you start copying files: if you dont change the file name of the copied file, you end up with two similar ids.
+   So if you space id creations by one second, there will be no problem.
+   But be careful when you start copying files: if you dont change the file name of the copied file, you end up with two similar ids leading to undefined behaviors when opening a link.
    In that case, remove the id of the copied file by hand and create another id for that file.
-   Also, some softwares (such as latex) will create auxiliary files with the same name as your original file.
-   In that case, a solution is to attach the id to the directory that contains your file instead.
+   # Also, some softwares (latex, gimp) create auxiliary files with the same name as your original file.
+   # In that case, a solution is to attach the id to the directory that contains your file instead.
 3. *Attach an id before you create a link*.
    The reverse order will break your links.
    Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
@@ -265,7 +267,7 @@ Here are personal tips, this is a matter of preference.
   #+end_src
 - Attach your ids as deep as possible in your file system, best directly in the file name.
   Usually, best not to over-engineer with ids everywhere along the file paths.
-- Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository or a latex document); then, attach the id to the folder that contains it.
+- Sometimes, you dont want to attach ids directly to the files (e.g. a file in a git repository); then, your can attach the id to the folder that contains it.
 - Place the most relevant link at the top of the note.
   It can be a link towards some data you access a lot in the context of the note.
   It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and open the pdf link I pasted there last time I stopped reading to go back where I was.

@@ -32,7 +32,6 @@
 (require 'ol)
 (require 'org)
 (require 'org-element-ast)
-(require 's)
 (require 'dash)
 (require 'dired)
 
