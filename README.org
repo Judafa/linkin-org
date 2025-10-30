@@ -205,7 +205,7 @@ with straight
 
 
 * Dependencies
-linkin-org depends on [[https://github.com/magnars/dash.el][dash.el]].
+Linkin-org does not have dependencies and works out-of-the-box with emacs 30 and higher.
 For fast link recovery, it is recommended to have [[https://github.com/sharkdp/fd][fd]] installed.
 
 * The 4 golden rules: How Reliable are the links exactly?
