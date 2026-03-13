@@ -129,7 +129,7 @@
      (= 2 digit)
      (= 2 digit)
      (= 2 digit)
-     (? (seq "==" (* alnum))))
+     )
     ;; org-roam style
     (seq line-start
 	 (= 4 digit)
@@ -840,7 +840,7 @@ Otherwise use the line number."
 	(if inline-id
 	    (if shortened-text-after-id
 		(format
-		 "[[file:%s::(:inline-id %s)][[line] \"%s\"]]"
+		 "[[file:%s::(:inline-id %s)][[line] %s]]"
 		 current-file-path
 		 inline-id
 		 ;; (linkin-org-strip-off-id-from-file-name file-name)
