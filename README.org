@@ -1,7 +1,5 @@
 linkin-org --- unbreakable links. 
 
-*This package is recent, (any!) feedback is much appreciated! If you meet problems or would like some improvement, most helpful is to create a github issue.*
-
 * Overview
 
 A link is a piece of text that redirects to some data.
@@ -11,10 +9,9 @@ Links are amazing: you can access your local data directly from your written not
 Problem is, a link stops working when the linked data was renamed or moved to another place.
 
 
-*Linkin-org solves this problem*.
+Linkin-org solves this problem.
 Linkin-org allows you to access your local data --- directories, files or lines --- with *reliable* links that never break.
 The links are made reliable thanks to ids attached to your data.
-# By design, linkin-org suggests a simple yet crazy efficient workflow centered around your written notes.
 
 
 In a few words, linkin-org is:
@@ -28,11 +25,7 @@ In a few words, linkin-org is:
 - *simple*: there are two main commands: ~linkin-org-store~ and ~linkin-org-get~
 
 
-# linkin-org turns your written notes into precise, reliable access points towards your data.
 linkin-org suggests a simple, blazingly fast workflow to store and retrieve your data: store the data (~linkin-org-store~), paste the link in your note, retrieve the data (with standard link opening command ~org-open-at-point-global~).
-# The links are fast and easy to create; most importantly, the links are *reliable* and can robustly support a whole link-based workflow.
-
-# By design, *linkin-org does not interfere with other types of workflows*: if you want to organize your files with another method in parallel (directory hierarchy or good file-naming for instance), you can, linkin-org was built to keep working seamlessly as your files are renamed and moved around.
 
 * Everything with 2 commands
 
@@ -46,22 +39,6 @@ linkin-org provides two main commands:
   This works on a file (in dired), a line in an editable file, on selected words in a pdf (using the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]] in [[https://github.com/vedang/pdf-tools][pdf-tools]]), on a music track in mingus (using the extension [[https://github.com/Judafa/linkin-org-music-link][linkin-org-music-link]] in [[https://github.com/pft/mingus][mingus]]).
   The link may not be reliable; it will be reliable if you called ~linkin-org-store~ beforehand on the data.
 
-# - ~linkin-org-open~ opens the link at point.
-#   If the known path towards the data is no valid anymore, uses ids to retrieve it.
-
-
-
-# * Meet linkin-org
-
-# I find it easier to retrieve information with context.
-# Need that train ticket for your travel in Spain? Some people will browse their mails, others will look into their "Tickets" folder, others will search their files for keywords hoping they used to name the ticket file right.
-# For my part, I search for "sp tra" through my org notes, go to the note "spain travel", and from there I open the ticket link that I pasted there some time ago.
-# It took me between 1 and 2 seconds; Most importantly, I could do the whole storing-retrieving process without mental overhead.
-# That's because it's so easy to retrieve information using context: everything that relates to my travel is stored in the corresponding note.
-# # If the information relates to more than one context, just paste the link multiple times in each corresponding note ... I decently cannot list all the advantages here for brevity!
-
-
-
 * How does it work?
 An id system makes sure that your links will always work even if you move, rename or modify the linked data (see the [[#the-4-golden-rules-how-reliable-are-the-links-exactly][4 golden rules]]).
 The ids used by linkin-org are time stamps that are precise to the second.
@@ -73,29 +50,11 @@ and a line that you can reliably access via a link (here with a python syntax) l
 #+begin_src python
 # [id:20250425T160020] link gets you there
 #+end_src
-# Thanks to the ids, your links keep working as you rename your files (do not modify or delete the id in the name!), move your files around, or modify the content of your files (do not modify or delete the ids in there!).
 
 
 When you open a link that contains an outdated path (e.g., the linked file was renamed or moved), linkin-org will try to resolve the link using the ids in the path.
 For that, linkin-org will attempt two heuristics.
-First, it tries to resolve the path with local id search (fast, always works if the file was only renamed); Second, it performs an exhaustive recursive search in the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~ (slower, always works as long as the file is in one of those directories).
-
-
-
-# The links follow a syntax similar to usual org links.
-# For more convenient link-based workflows, it is however tempting to store more information in the links.
-# For that, linkin-org defines a new format to store metadata in the links.
-# For example, a link that points towards the line above looks like this:
-# #+begin_src example
-# [[file:/home/juliend/Downloads/20250816T174006--filename.py::(:inline-id 20250425T160020)][[file] filename.py]]
-# #+end_src
-
-# Sometimes, more information is needed.
-# This is the case of the pdf link for example (defined in the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]]), where we need to specify the page and the place to highlight on the page:
-# #+begin_src example
-# [[pdf:~/Dropbox/FourreTout/Papers/20250325T235411--The purely functional software deployment model.pdf::(:page 98 :edges (0.190915 0.268993 0.398431 0.289572))][[pdf] p98 _ "File system objects"]]
-# #+end_src
-
+First, it tries to resolve the path with local id search (fast, always works if the file was only renamed); Second, it performs an exhaustive recursive search in the directories listed in the variable ~linkin-org-search-directories~ (slower, always works as long as the file is in one of those directories).
 
 
 
@@ -116,12 +75,6 @@ Opening the copied link gets you to the right page and highlight the words you w
 If the pdf file has an id then your link will always work: perfect for fast, reliable reading notes.
 This works with the extension [[https://github.com/Judafa/linkin-org-pdf-link][linkin-org-pdf-link]] and the pdf reader [[https://github.com/vedang/pdf-tools][pdf-tools]].
 
-# *** And more
-# Easily define new link types with custom actions and take advantage of linkin-org's reliable path resolving (for that, just add your link type inside the ~linkin-org-link-types-to-check-for-id~ list).
-# Three other link types are already builtin: the pdf link type (that we already saw above), the video link type stores and replays precise moments of a videos (youtube or stored locally, works with [[https://github.com/mpv-player/mpv][mpv]]), the music link type launchs musics with links (you can easily turn your org notes into playlists, works with [[https://github.com/MusicPlayerDaemon/MPD][mpd]]).
-# Even more: you can use the links to automate some actions: to turn some notes into a web browser session manager, to quickly save selected text or save elfeed entries (see the last section for examples).
-
-
 * Installing linkin-org
 with melpa
 #+begin_src emacs-lisp
@@ -131,7 +84,7 @@ with melpa
   ;; the first element of that list is the default storing place
   (setq linkin-org-store-directory (list "~/"))
   ;; set this to a list of directories that will be searched (in order) to resolve broken links
-  (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
+  (setq linkin-org-search-directories (list "~/Downloads" "~/"))
   ;; so that plain search triggered by opening a link work in org files 
   (setq org-link-search-must-match-exact-headline nil)
   ;; ;; uncomment those two lines of code to open your linked files as if you opened them from dired
@@ -171,7 +124,7 @@ with straight
   ;; the first element of that list is the default storing place
   (setq linkin-org-store-directory (list "~/"))
   ;; set this to a list of directories that will be searched (in order) to resolve broken links
-  (setq linkin-org-search-directories-to-resolve-broken-links (list "~/Downloads" "~/"))
+  (setq linkin-org-search-directories (list "~/Downloads" "~/"))
   ;; so that plain search triggered by opening a link work in org files 
   (setq org-link-search-must-match-exact-headline nil)
   ;; ;; uncomment those two lines of code to open your linked files as if you opened them from dired
@@ -222,30 +175,18 @@ If you respect them, your links will always work.
    So if you space id creations by one second, there will be no problem.
    But be careful when you start copying files: if you dont change the file name of the copied file, you end up with two similar ids leading to undefined behaviors when opening a link.
    In that case, remove the id of the copied file by hand and create another id for that file.
-   # Also, some softwares (latex, gimp) create auxiliary files with the same name as your original file.
-   # In that case, a solution is to attach the id to the directory that contains your file instead.
 3. *Attach an id before you create a link*.
    The reverse order will break your links.
    Nevertheless, you can create links without any ids involved (use ~linkin-org-get~ on the data).
    But if you later decide to attach an id to the data, all your previous links towards the data will be broken.
 4. *Keep your data inside the directories marked for id resolving*.
-   Those directories are listed in ~linkin-org-search-directories-to-resolve-broken-links~.
+   Those directories are listed in ~linkin-org-search-directories~.
    linkin-org recursively searches throughout those directories to find your data in last resort.
    By default, ~linkin-org-store~ always suggests to store your data in one of those directories.
    # No link is broken if the linked data has an id and lies inside those directories.
 
 With its builtin commands, linkin-org suggests a simple workflow that respects all four golden rules at once: whenever you want to keep a data in your local memory, take the habit to run ~linkin-org-store~ and then paste the link in a written note.
 
-
-
-# And now, here are the operations that *always preserve your links*:
-# - If a file or a directory has an id attached then it is always safe to rename it (dont change or remove the id in the name of course!).
-# - It is always safe to modify the content of a file as long as no inline id is changed or removed.
-# - If a file or a directory has an id attached then it is always safe to move it into a subdirectory of one of the directories listed in the variable ~linkin-org-search-directories-to-resolve-broken-links~.
-#   # In case you cannot retrieve a file, you can add your entire home directory to that variable (the default, you may change it to more fine-grained directories for faster link recovery).
-#   # As a particular case, if your data is already in such a subfolder then it is always safe to move the data one folder deeper.
-
-# Note: We say that an operation on a data is "safe" if any non-broken link toward the data are still non-broken after the operation was applied to the data.
 
 
 * A few tips
@@ -272,142 +213,6 @@ Here are personal tips, this is a matter of preference.
   It can be a link towards some data you access a lot in the context of the note.
   It can also be a link toward a precise place of the note itself --- for instance, my reading notes always start with a link that takes me to the end of the note; I then go one line up and open the pdf link I pasted there last time I stopped reading to go back where I was.
   With this, your fingers quickly learn the automation "go to the note -> org-next-link -> org-open-at-point-global" to access a data quickly.
-
-
-# * Code Examples
-# ** Save selected text
-# This code saves some text ~text~ at the location where ~link~ points to.
-# #+begin_src emacs-lisp
-# (defun my-store-some-text (text link)
-#   (linkin-org-open-link-and-do-function link
-#                                           (lambda ()
-#                                             ;; go to the end of the current line
-#                                             (end-of-line)
-#                                             ;; insert a line break
-#                                             (insert "\n")
-#                                             ;; create a section labeled with the current date
-#                                             (insert (format "** %s" (format-time-string "%Y-%m-%d %H:%M:%S saved text" (current-time))))
-#                                             (insert "\n")
-#                                             ;; insert the text
-#                                             (insert text)
-#                                             )
-#                                           )
-#   )
-# #+end_src
-
-# You should now redefine ~linkin-org-store~ as follows.
-# Replace <put your link here> by a link towards the location where you want to save the text.
-# To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
-# #+begin_src emacs-lisp
-# (defun linkin-org-store ()
-#   "Store what is under point and kill a link to it"
-#   (interactive)
-#   (let*
-#       ((mode (symbol-name major-mode)))
-#     (cond
-#      ;; If text is selected
-#      ((region-active-p)
-#       (progn
-#        (my-store-some-text
-#         (buffer-substring (region-beginning) (region-end))
-#         "<put your link there>"
-#         )
-#        ;; unselect the region
-#        (deactivate-mark)
-#        )
-#       )
-#      ;; If in a dired buffer
-#      ((string= mode "dired-mode")
-#       (linkin-org-store-file t)
-#       )
-#      ;; If in mu4e
-#      ((string= mode "mu4e-view-mode")
-#       (my/sauve-piece-jointe-dans-fourre-tout)
-#       )
-#      ;; If in an editable buffer
-#      ((not buffer-read-only)
-#       (linkin-org-store-inline-id)
-#       )
-#      )
-#     )
-#   )
-# #+end_src
-
-# ** Save an elfeed entry
-# This code saves the url and title of the elfeed entry at point at a location where ~link~ points towards.
-# #+begin_src emacs-lisp
-# (defun my-save-elfeed-entry (link)
-#   ;; save the elfeed entry under point
-#   (let (
-# 	(buffer (current-buffer))
-# 	(entries (elfeed-search-selected))
-# 	)
-#     (cl-loop for entry in entries
-#              do (let*
-# 		            (
-# 		             (title (elfeed-entry-title entry))
-# 		             (url (elfeed-entry-link entry))
-# 		             )
-#                   (linkin-org-open-link-and-do-function link
-#                                                           (lambda ()
-#                                                             (end-of-line)
-# 		                                                    ;; Insert header
-# 		                                                    (insert (concat "\n" "** " title))
-# 		                                                    ;; add today's date as a header property
-# 		                                                    (org-set-property "DATE" (format-time-string "[%Y-%m-%d %a %H:%M]"))
-# 		                                                    ;; Go to the end of the header's properties
-# 		                                                    (org-end-of-meta-data)
-# 		                                                    ;; insert the url
-# 		                                                    (insert url)
-# 		                                                    (insert "\n")
-#                                                             )
-#                                                           )
-
-# 		          )
-# 	         )
-#     )
-#   )
-# #+end_src
-
-
-# You should redefine ~linkin-org-store~ as follows.
-# Replace <put your link here> by a link towards the location where you want to save the text.
-# To obtain such a link, go at the place where you want to store your saved texts and run ~linkin-org-store~.
-# #+begin_src emacs-lisp
-# ;; If in elfeed
-# (defun linkin-org-store ()
-#   "Store what is under point and kill a link to it"
-#   (interactive)
-#   (let*
-#       ((mode (symbol-name major-mode)))
-#     (cond
-#      ;; If text is selected
-#      ((region-active-p)
-#       (progn
-#        (my-store-some-text
-#         "<put your link there>"
-#         (buffer-substring (region-beginning) (region-end))
-#         )
-#        ;; unselect the region
-#        (deactivate-mark)
-#        )
-#       )
-#      ;; If in a dired buffer
-#      ((string= mode "dired-mode")
-#       (linkin-org-store-file t)
-#       )
-#      ;; If in mu4e
-#      ((string= mode "mu4e-view-mode")
-#       (my/sauve-piece-jointe-dans-fourre-tout)
-#       )
-#      ;; If in an editable buffer
-#      ((not buffer-read-only)
-#       (linkin-org-store-inline-id)
-#       )
-#      )
-#     )
-#   )
-# #+end_src
 
 
 * Inspirations and Related Packages

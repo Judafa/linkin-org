@@ -63,7 +63,7 @@
 
 ;; define the directories where to search when a link is broken
 ;; this is a list of directories that are searched in order to resolve broken links
-(defcustom linkin-org-search-directories-to-resolve-broken-links
+(defcustom linkin-org-search-directories
   (list (expand-file-name "~/"))
   "The list of directories to search (in order) when a link is broken."
   :type '(string)
@@ -381,7 +381,7 @@ It recursively searches for files contained in DIRECTORIES-TO-LOOK-INTO.
 Returns nil if FILE-PATH has no id or if no matching file was found.
 FILE-PATH can be the path of a file or a directory.
 If not provided, DIRECTORIES-TO-LOOK-INTO
-is set to `linkin-org-search-directories-to-resolve-broken-links'.
+is set to `linkin-org-search-directories'.
 It is assumed you already checked that FILE-PATH is not a valid path before."
   (let* (;; expand file path
 	 (file-path (expand-file-name file-path))
@@ -389,7 +389,7 @@ It is assumed you already checked that FILE-PATH is not a valid path before."
 	 (directories-to-look-into
 	  (if directories-to-look-into
 	      directories-to-look-into
-	    linkin-org-search-directories-to-resolve-broken-links))
+	    linkin-org-search-directories))
 	 ;; get the name and id of the file or directory to look for
 	 (file-name
 	  (if (file-directory-p file-path)
