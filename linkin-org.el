@@ -1034,7 +1034,6 @@ Do nothing if the file already has an id."
 ;;;###autoload
 (defun linkin-org-file-open (link)
   "Open the file at LINK."
-    (message "hello")
   (let* ((file-path (org-element-property :path link))
 	 ;; (metadata (org-element-property :metadata link))
 	 (line-number-or-id (org-element-property :search-option link)))
